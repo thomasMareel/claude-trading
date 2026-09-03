@@ -1,0 +1,98 @@
+# ==========================================================================
+#  Configuration du banc d'essai de trading automatise
+#  Tout ce qui compte se regle ici. Le code ne contient aucun chiffre magique.
+# ==========================================================================
+
+experiment:
+  name: "duel-llm-vs-rules"
+  # Capital total du banc d'essai, dans la devise de cotation (quote).
+  total_capital: 100.0
+  # Repartition entre les deux cerveaux. Doit sommer a 1.0
+  allocation:
+    llm: 0.5
+    rules: 0.5
+
+exchange:
+  id: "binance"
+  quote: "USDT"
+  # Les paires suivies. Garde-en peu : chaque paire ajoute du bruit et des frais.
+  symbols:
+    - "BTC/USDT"
+    - "ETH/USDT"
+    - "SOL/USDT"
+  timeframe: "4h"
+  # Nombre de bougies historiques chargees a chaque cycle pour les indicateurs.
+  lookback_candles: 300
+  # Frais reels appliques en paper trading (taker Binance spot standard).
+  fee_rate: 0.001
+  # Slippage simule en paper trading, en fraction du prix.
+  slippage: 0.0005
+
+# --------------------------------------------------------------------------
+#  Couche de risque. Ces limites sont DETERMINISTES et non negociables.
+#  Aucun cerveau, LLM ou regles, ne peut les contourner.
+# --------------------------------------------------------------------------
+risk:
+  # Part maximale du book d'un cerveau engagee sur une seule position.
+  max_position_pct: 0.40
+  # Nombre maximum de positions ouvertes simultanement, par cerveau.
+  max_open_positions: 2
+  # Taille minimale d'un ordre, en quote. Binance refuse en dessous de ~5 USDT.
+  min_order_value: 12.0
+  # Budget de trades. C'est le garde-fou anti-frais le plus important.
+  max_round_trips_per_week: 3
+  # Perte journaliere maximale, en fraction du book du cerveau.
+  # Depassee, le cerveau est gele jusqu'au lendemain.
+  max_daily_loss_pct: 0.06
+  # Coupe-circuit global. Si le book total tombe sous ce seuil du capital
+  # initial, tout s'arrete definitivement et une alerte est ecrite.
+  kill_switch_drawdown_pct: 0.25
+  # Stop loss et take profit obligatoires sur chaque position, en fraction.
+  stop_loss_pct: 0.08
+  take_profit_pct: 0.15
+  # Aucun levier, aucun short. Spot uniquement.
+  allow_short: false
+  allow_leverage: false
+
+# --------------------------------------------------------------------------
+#  Cerveau LLM
+# --------------------------------------------------------------------------
+llm:
+  model: "claude-opus-5"
+  # low | medium | high | xhigh | max  -> pilote la profondeur de reflexion
+  # et donc le cout. medium est un bon compromis pour ce cas d'usage.
+  effort: "medium"
+  max_tokens: 4000
+  # Plafond de depense API par jour, en dollars. Depasse, le cerveau LLM
+  # passe en "hold" et le journal l'indique. Protege contre une boucle folle.
+  max_daily_api_cost_usd: 1.00
+  # Tarifs utilises pour l'estimation du cout, en dollars par million de tokens.
+  price_input_per_mtok: 5.0
+  price_output_per_mtok: 25.0
+
+# --------------------------------------------------------------------------
+#  Cerveau a regles. Strategie de suivi de tendance volontairement simple
+#  et NON optimisee : c'est un temoin, pas un candidat au surapprentissage.
+# --------------------------------------------------------------------------
+rules:
+  ema_fast: 50
+  ema_slow: 200
+  rsi_period: 14
+  rsi_overbought: 72
+  atr_period: 14
+
+# --------------------------------------------------------------------------
+#  Moteur
+# --------------------------------------------------------------------------
+engine:
+  # Intervalle entre deux cycles de decision, en heures.
+  cycle_hours: 4
+  # "paper" ou "live". Le passage en live exige EN PLUS un fichier LIVE_ARMED
+  # a la racine du projet, cree a la main. Double securite volontaire.
+  mode: "paper"
+  # Utiliser le testnet Binance plutot que le marche reel en mode live.
+  use_testnet: false
+
+storage:
+  db_path: "data/trading.db"
+  journal_path: "logs/decisions.jsonl"

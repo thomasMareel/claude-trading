@@ -1,0 +1,11 @@
+.env
+data/*.db
+data/*.db-journal
+logs/*.log
+logs/*.jsonl
+__pycache__/
+*.pyc
+.venv/
+venv/
+LIVE_ARMED
+.pytest_cache/

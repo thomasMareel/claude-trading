@@ -1,0 +1,255 @@
+"""Cerveau LLM : Claude recoit un dossier de marche et rend des decisions
+structurees, avec son raisonnement ecrit.
+
+Ce que ce cerveau NE fait PAS :
+  - il ne passe aucun ordre, il propose
+  - il ne connait pas les cles API
+  - il ne peut pas depasser les limites de la couche de risque, qui
+    relit et tranche apres lui
+
+Cout : chaque appel est mesure et cumule. Au-dela du plafond journalier
+(config llm.max_daily_api_cost_usd), le cerveau rend "hold" sur tout et
+le journal l'indique clairement.
+"""
+from __future__ import annotations
+
+import json
+import os
+from typing import Any
+
+import anthropic
+
+from .base import BrainContext, Decision
+
+# Schema de sortie impose au modele. Redige a la main pour garantir
+# additionalProperties=false a chaque niveau (exige par structured outputs).
+OUTPUT_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "market_view": {
+            "type": "string",
+            "description": "Lecture globale du marche en 2 a 4 phrases, en francais.",
+        },
+        "decisions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "symbol": {"type": "string"},
+                    "action": {"type": "string", "enum": ["buy", "sell", "hold"]},
+                    "size_pct_of_equity": {
+                        "type": "number",
+                        "description": "Pour buy uniquement : part du book a engager, entre 0 et la limite max_position_pct. 0 sinon.",
+                    },
+                    "confidence": {"type": "number", "description": "Entre 0 et 1."},
+                    "reasoning": {
+                        "type": "string",
+                        "description": "Justification en francais, 2 a 5 phrases, concrete et chiffree.",
+                    },
+                },
+                "required": ["symbol", "action", "size_pct_of_equity", "confidence", "reasoning"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    "required": ["market_view", "decisions"],
+    "additionalProperties": False,
+}
+
+SYSTEM_PROMPT = """Tu es le gestionnaire d'un petit book de trading crypto spot, long-only, sur bougies de 4 heures. Tu es evalue sur un horizon de plusieurs semaines contre deux temoins : un bot a regles de suivi de tendance et la simple detention de bitcoin.
+
+Regles du jeu, non negociables (une couche de risque deterministe relit chaque decision et refusera tout ce qui les viole) :
+- Spot uniquement. Pas de short, pas de levier. "sell" ne s'applique qu'a une position ouverte.
+- Une seule position par symbole, pas de renforcement.
+- Au plus `max_open_positions` positions ouvertes en meme temps.
+- Une position engage au plus `max_position_pct` du book.
+- Budget de nouvelles positions : `round_trips_budget` par semaine. Chaque ouverture consomme une unite. Il t'est indique combien il en reste.
+- Chaque position recoit automatiquement un stop de perte et un objectif de gain fixes. Tu n'as pas a les gerer, mais tu peux vendre avant.
+- Les frais sont de `fee_rate` par ordre, soit le double pour un aller-retour. Sur un book de cette taille, trader souvent est le moyen le plus sur de perdre. "hold" est une reponse legitime et frequente.
+
+Ce que l'on attend de toi :
+- Une lecture honnete du marche, puis une decision par symbole.
+- Un raisonnement concret, chiffre, en francais, qui cite les indicateurs et le contexte fournis. Ce texte est lu par un humain qui cherche a comprendre comment tu raisonnes. Pas de langue de bois, pas de "le marche est incertain" sans suite.
+- Tiens compte de tes decisions passees et de leur resultat : si tu as eu tort, dis pourquoi.
+- Une confiance calibree : 0.9 doit etre rare.
+
+Tu ne connais ni l'avenir ni les news. Tu ne vois que les prix et les indicateurs fournis. Ne pretends pas savoir ce que tu ne sais pas."""
+
+
+def _fmt_candles(df, n: int = 12) -> list[dict[str, Any]]:
+    tail = df.tail(n)
+    out = []
+    for _, r in tail.iterrows():
+        out.append({
+            "t": r["dt"].strftime("%m-%d %Hh"),
+            "o": round(float(r["open"]), 4),
+            "h": round(float(r["high"]), 4),
+            "l": round(float(r["low"]), 4),
+            "c": round(float(r["close"]), 4),
+            "v": round(float(r["volume"]), 1),
+        })
+    return out
+
+
+def build_packet(ctx: BrainContext) -> dict[str, Any]:
+    """Le dossier complet remis au modele. Journalise tel quel."""
+    return {
+        "horodatage_utc": ctx.now_iso,
+        "book": {
+            "capital_initial": round(ctx.initial_capital, 2),
+            "cash_disponible": round(ctx.cash, 2),
+            "valeur_positions": round(ctx.positions_value, 2),
+            "equity": round(ctx.equity, 2),
+            "performance_totale_pct": round((ctx.equity / ctx.initial_capital - 1) * 100, 2),
+            "pnl_du_jour_pct": round(ctx.daily_pnl_pct, 2),
+        },
+        "limites": {
+            **ctx.limits,
+            "fee_rate": ctx.fee_rate,
+            "round_trips_budget": ctx.round_trips_budget,
+            "round_trips_restants_cette_semaine": max(0, ctx.round_trips_budget - ctx.round_trips_used),
+        },
+        "positions_ouvertes": [
+            {
+                "symbol": p.symbol,
+                "entree": p.entry_price,
+                "prix_actuel": p.current_price,
+                "pnl_pct": round(p.pnl_pct, 2),
+                "valeur": round(p.value_quote, 2),
+                "ouverte_le": p.opened_at,
+                "stop_loss": p.stop_loss,
+                "take_profit": p.take_profit,
+            }
+            for p in ctx.positions
+        ],
+        "marches": {
+            sym: {
+                "prix": snap.price,
+                "indicateurs": snap.indicators,
+                "dernieres_bougies_4h": _fmt_candles(snap.df),
+            }
+            for sym, snap in ctx.markets.items()
+        },
+        "tes_decisions_recentes": ctx.recent_decisions,
+        "tes_trades_clotures_recents": ctx.recent_trades,
+    }
+
+
+class LLMBrain:
+    name = "llm"
+
+    def __init__(self, cfg, storage):
+        self.cfg = cfg
+        self.storage = storage
+        self.model = str(cfg.get("llm.model", "claude-opus-5"))
+        self.effort = str(cfg.get("llm.effort", "medium"))
+        self.max_tokens = int(cfg.get("llm.max_tokens", 4000))
+        self.max_daily_cost = float(cfg.get("llm.max_daily_api_cost_usd", 1.0))
+        self.p_in = float(cfg.get("llm.price_input_per_mtok", 5.0))
+        self.p_out = float(cfg.get("llm.price_output_per_mtok", 25.0))
+        self.max_position_pct = float(cfg.get("risk.max_position_pct", 0.4))
+        self._client: anthropic.Anthropic | None = None
+
+    @property
+    def client(self) -> anthropic.Anthropic:
+        if self._client is None:
+            self._client = anthropic.Anthropic()  # lit ANTHROPIC_API_KEY depuis l'env
+        return self._client
+
+    @staticmethod
+    def _has_credentials() -> bool:
+        return bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
+
+    # ------------------------------------------------------------------
+    def decide(self, ctx: BrainContext) -> list[Decision]:
+        if not self._has_credentials():
+            return self._fail(ctx, "cle API Claude absente : renseigne ANTHROPIC_API_KEY "
+                                   "dans .env pour activer ce cerveau")
+
+        spent = self.storage.api_cost_today()
+        if spent >= self.max_daily_cost:
+            msg = (f"plafond API journalier atteint ({spent:.2f} $ >= {self.max_daily_cost:.2f} $) : "
+                   f"aucune decision demandee au modele, hold force")
+            self.storage.event("warning", "llm_brain", msg)
+            return [Decision(s, "hold", reasoning=msg, raw={"skipped": "budget"}) for s in ctx.markets]
+
+        packet = build_packet(ctx)
+        user_msg = (
+            "Voici le dossier de ce cycle. Rends ta lecture du marche puis une decision "
+            "pour CHAQUE symbole liste dans `marches`.\n\n"
+            + json.dumps(packet, ensure_ascii=False, indent=1)
+        )
+
+        try:
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=self.max_tokens,
+                system=SYSTEM_PROMPT,
+                thinking={"type": "adaptive", "display": "summarized"},
+                output_config={
+                    "effort": self.effort,
+                    "format": {"type": "json_schema", "schema": OUTPUT_SCHEMA},
+                },
+                messages=[{"role": "user", "content": user_msg}],
+            )
+        except anthropic.RateLimitError as e:
+            return self._fail(ctx, f"rate limit API : {e}")
+        except anthropic.APIStatusError as e:
+            return self._fail(ctx, f"erreur API {e.status_code} : {e.message}")
+        except anthropic.APIConnectionError as e:
+            return self._fail(ctx, f"connexion API impossible : {e}")
+        except Exception as e:  # rien venant de l'API ne doit tuer un cycle
+            return self._fail(ctx, f"appel API en echec ({type(e).__name__}) : {e}")
+
+        # --- cout ---
+        u = response.usage
+        cost = (u.input_tokens * self.p_in + u.output_tokens * self.p_out) / 1_000_000
+        self.storage.record_api_cost(self.model, u.input_tokens, u.output_tokens, cost)
+
+        if response.stop_reason == "refusal":
+            detail = getattr(response, "stop_details", None)
+            return self._fail(ctx, f"le modele a refuse de repondre ({detail})")
+        if response.stop_reason == "max_tokens":
+            return self._fail(ctx, "reponse tronquee (max_tokens) : augmenter llm.max_tokens")
+
+        thinking = " ".join(
+            b.thinking for b in response.content if b.type == "thinking" and b.thinking
+        ).strip()
+        text = next((b.text for b in response.content if b.type == "text"), "")
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError as e:
+            return self._fail(ctx, f"JSON invalide renvoye par le modele : {e}")
+
+        market_view = str(data.get("market_view", "")).strip()
+        by_symbol: dict[str, dict[str, Any]] = {}
+        for d in data.get("decisions", []):
+            by_symbol[str(d.get("symbol", ""))] = d
+
+        out: list[Decision] = []
+        for sym in ctx.markets:
+            d = by_symbol.get(sym)
+            if d is None:
+                out.append(Decision(sym, "hold", reasoning="(symbole omis par le modele) hold",
+                                    raw={"market_view": market_view, "thinking": thinking}))
+                continue
+            action = d.get("action", "hold")
+            pct = max(0.0, min(float(d.get("size_pct_of_equity", 0.0)), self.max_position_pct))
+            size = round(ctx.equity * pct, 2) if action == "buy" else None
+            conf = max(0.0, min(float(d.get("confidence", 0.5)), 1.0))
+            out.append(Decision(
+                sym, action, size_quote=size, confidence=conf,
+                reasoning=str(d.get("reasoning", "")).strip(),
+                raw={
+                    "market_view": market_view,
+                    "size_pct_of_equity": pct,
+                    "thinking": thinking,
+                    "usage": {"input": u.input_tokens, "output": u.output_tokens, "cost_usd": round(cost, 4)},
+                },
+            ))
+        return out
+
+    def _fail(self, ctx: BrainContext, why: str) -> list[Decision]:
+        self.storage.event("warning", "llm_brain", why)
+        return [Decision(s, "hold", reasoning=f"hold par defaut : {why}", raw={"error": why})
+                for s in ctx.markets]
