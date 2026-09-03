@@ -49,9 +49,11 @@ def main() -> int:
         return 0
 
     last_cycle = None
+    view_shown: set[tuple[str, str]] = set()
     for r in rows:
         if r["cycle_id"] != last_cycle:
-            console.rule(f"[bold]{r['cycle_id']}")
+            label = "chien de garde " if r["cycle_id"].startswith("WD") else ""
+            console.rule(f"[bold]{label}{r['cycle_id']}")
             last_cycle = r["cycle_id"]
         raw = json.loads(r["raw"] or "{}")
         status = "[green]acceptee[/]" if r["accepted"] else f"[yellow]refusee[/] : {r['reject_reason']}"
@@ -59,7 +61,9 @@ def main() -> int:
         conf = f"  confiance {r['confidence']:.2f}" if r["confidence"] is not None else ""
         title = f"{r['brain']}  {r['symbol']}  [bold]{r['action'].upper()}[/]{size}{conf}   {status}"
         body = r["reasoning"] or ""
-        if raw.get("market_view") and r["symbol"] == rows[0]["symbol"]:
+        key = (r["cycle_id"], r["brain"])
+        if raw.get("market_view") and key not in view_shown:
+            view_shown.add(key)
             body = f"[italic]Lecture du marche : {raw['market_view']}[/]\n\n{body}"
         if args.thinking and raw.get("thinking"):
             body += f"\n\n[dim]reflexion : {raw['thinking'][:1500]}[/]"

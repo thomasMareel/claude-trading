@@ -62,7 +62,9 @@ llm:
   # low | medium | high | xhigh | max  -> pilote la profondeur de reflexion
   # et donc le cout. medium est un bon compromis pour ce cas d'usage.
   effort: "medium"
-  max_tokens: 4000
+  # La reflexion du modele compte dans ce plafond : trop bas, la reponse
+  # est tronquee et le cerveau rend hold avec un avertissement.
+  max_tokens: 8000
   # Plafond de depense API par jour, en dollars. Depasse, le cerveau LLM
   # passe en "hold" et le journal l'indique. Protege contre une boucle folle.
   max_daily_api_cost_usd: 1.00
@@ -87,6 +89,9 @@ rules:
 engine:
   # Intervalle entre deux cycles de decision, en heures.
   cycle_hours: 4
+  # Entre deux cycles, un chien de garde verifie stops, objectifs et
+  # coupe-circuit a cet intervalle, sans appeler aucun cerveau. 0 = desactive.
+  watchdog_minutes: 5
   # "paper" ou "live". Le passage en live exige EN PLUS un fichier LIVE_ARMED
   # a la racine du projet, cree a la main. Double securite volontaire.
   mode: "paper"

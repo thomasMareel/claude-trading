@@ -154,6 +154,47 @@ def test_kill_switch_liquidates_everything():
     assert st.open_positions() == []
 
 
+def test_watchdog_closes_stop_between_cycles():
+    brain = ScriptedBrain("rules", [[Decision("BTC/USDT", "buy", size_quote=20.0)]])
+    eng, st, data = make_engine({"BTC/USDT": 100.0, "ETH/USDT": 10.0}, {"rules": brain})
+    eng.run_cycle()
+    assert eng.check_stops() == 0
+    data.prices["BTC/USDT"] = 91.0
+    assert eng.check_stops() == 1
+    closed = st.closed_positions("rules")
+    assert len(closed) == 1 and closed[0]["close_reason"] == "stop_loss"
+    assert st.recent_decisions("rules", 1)[0]["cycle_id"].startswith("WD")
+    assert st.last_equity("rules")["positions_value"] == 0.0
+
+
+def test_watchdog_trips_kill_switch():
+    brain = ScriptedBrain("rules", [[Decision("BTC/USDT", "buy", size_quote=20.0)]])
+    eng, st, data = make_engine({"BTC/USDT": 100.0, "ETH/USDT": 10.0}, {"rules": brain})
+    eng.run_cycle()
+    data.prices["BTC/USDT"] = 20.0
+    assert eng.check_stops() == 1
+    assert st.kill_switch_tripped() and st.open_positions() == []
+
+
+def test_in_progress_candle_is_excluded_from_indicators():
+    import time
+
+    class LiveData(FakeData):
+        def fetch_ohlcv(self, symbol, timeframe, limit=300, since=None):
+            rows = super().fetch_ohlcv(symbol, timeframe, limit - 1, since)
+            rows.append([int(time.time() * 1000) - 60_000, 1e6, 1e6, 1e6, 1e6, 1.0])
+            return rows
+
+    st = Storage(":memory:")
+    data = LiveData({"BTC/USDT": 100.0, "ETH/USDT": 10.0})
+    eng = Engine(CFG, st, data, PaperExecutor(0.001, 0.0005, data.amount_to_precision),
+                 {}, RiskManager(CFG, st))
+    markets = eng._refresh_markets()
+    assert markets["BTC/USDT"].df["close"].iloc[-1] < 1e5   # la bougie ouverte est ignoree
+    assert markets["BTC/USDT"].price == 100.0               # mais le prix live est la
+    assert st.candle_count("BTC/USDT", "4h") == 261          # 260 cloturees + 1 en cours, toutes stockees
+
+
 def test_crashing_brain_does_not_break_cycle():
     class Boom:
         name = "rules"

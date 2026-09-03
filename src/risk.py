@@ -71,10 +71,10 @@ class RiskManager:
         return ctx.daily_pnl_pct <= -self.max_daily_loss_pct * 100
 
     # ------------------------------------------------------------------
-    def forced_exits(self, ctx: BrainContext) -> list[tuple[PositionView, str]]:
+    def forced_exits(self, positions: list[PositionView]) -> list[tuple[PositionView, str]]:
         """Stop de perte et objectif de gain. Prioritaires sur tout cerveau."""
         out = []
-        for p in ctx.positions:
+        for p in positions:
             if p.stop_loss and p.current_price <= p.stop_loss:
                 out.append((p, "stop_loss"))
             elif p.take_profit and p.current_price >= p.take_profit:

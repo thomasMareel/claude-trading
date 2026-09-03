@@ -46,10 +46,11 @@ def main() -> int:
 
     cfg = load_config()
     cycle_hours = int(cfg.get("engine.cycle_hours", 4))
+    watchdog_min = int(cfg.get("engine.watchdog_minutes", 5))
     mode = "paper" if args.paper else "live" if args.live else None
     engine = build_engine(cfg, mode_override=mode)
     console.print(f"[bold]Boucle demarree[/] mode={engine.executor.mode} cycle={cycle_hours}h "
-                  f"symboles={cfg.symbols}")
+                  f"chien de garde={watchdog_min}min symboles={cfg.symbols}")
 
     run_now = args.now
     try:
@@ -60,8 +61,24 @@ def main() -> int:
                 console.print(f"[dim]prochain cycle a {target:%Y-%m-%d %H:%M:%S} UTC "
                               f"(dans {wait/60:.0f} min)[/]")
                 while wait > 0:
-                    time.sleep(min(wait, 60))
+                    time.sleep(min(wait, max(60, watchdog_min * 60)))
                     wait = (target - datetime.now(timezone.utc)).total_seconds()
+                    if wait <= 0 or watchdog_min <= 0:
+                        continue
+                    # entre deux cycles : stops, objectifs, coupe-circuit
+                    try:
+                        n = engine.check_stops()
+                        if n:
+                            console.print(f"[yellow]chien de garde : {n} sortie(s) forcee(s)[/]")
+                    except KeyboardInterrupt:
+                        raise
+                    except Exception as e:
+                        engine.storage.event("warning", "watchdog", f"echec : {e!r}")
+                        console.print(f"[yellow]chien de garde en echec : {e!r}[/]")
+                    if engine.storage.kill_switch_tripped():
+                        console.print("[bold red]Coupe-circuit declenche par le chien de garde. "
+                                      "Boucle arretee.[/]")
+                        return 2
             run_now = False
             try:
                 engine.run_cycle()

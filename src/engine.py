@@ -14,6 +14,7 @@ Ordre d'un cycle :
 """
 from __future__ import annotations
 
+import time
 from datetime import datetime, timezone
 
 from rich.console import Console
@@ -32,6 +33,11 @@ from .risk import RiskManager
 from .storage import Storage, utcnow_iso
 
 console = Console()
+
+
+def timeframe_to_ms(tf: str) -> int:
+    unit = {"m": 60, "h": 3600, "d": 86400, "w": 604800}[tf[-1]]
+    return int(tf[:-1]) * unit * 1000
 
 
 class Engine:
@@ -87,17 +93,67 @@ class Engine:
 
     # ==================================================================
     def _refresh_markets(self) -> dict[str, MarketSnapshot]:
+        """Indicateurs sur bougies CLOTUREES uniquement.
+
+        Au moment du cycle, la bougie en cours n'a que quelques minutes de
+        vie : la garder ferait osciller les signaux d'un cycle a l'autre.
+        Le prix live sert a l'execution, aux stops et au dossier du LLM.
+        """
         out: dict[str, MarketSnapshot] = {}
         prices = self.data.fetch_prices(self.symbols)
+        tf_ms = timeframe_to_ms(self.timeframe)
+        now_ms = int(time.time() * 1000)
         for s in self.symbols:
-            rows = self.data.fetch_ohlcv(s, self.timeframe, limit=self.lookback)
+            rows = self.data.fetch_ohlcv(s, self.timeframe, limit=self.lookback + 1)
             self.storage.upsert_candles(s, self.timeframe, rows)
-            candles = self.storage.candles(s, self.timeframe, limit=self.lookback)
-            df = enrich(candles_to_df(candles), **self.ind_params)
-            # la derniere bougie est en cours : on la remplace par le prix live
-            df.loc[df.index[-1], "close"] = prices[s]
+            candles = self.storage.candles(s, self.timeframe, limit=self.lookback + 1)
+            closed = [c for c in candles if int(c["ts"]) + tf_ms <= now_ms][-self.lookback:]
+            df = enrich(candles_to_df(closed), **self.ind_params)
             out[s] = MarketSnapshot(symbol=s, price=prices[s], df=df, indicators=latest_snapshot(df))
         return out
+
+    # ==================================================================
+    def check_stops(self) -> int:
+        """Chien de garde entre deux cycles : stops, objectifs, coupe-circuit.
+
+        N'appelle aucun cerveau et ne coute rien. Retourne le nombre de
+        positions fermees. Sans lui, un stop a -8 % ne serait verifie que
+        toutes les 4 heures, ce qui n'est pas un stop.
+        """
+        prices = self.data.fetch_prices(self.symbols)
+        cycle_id = "WD" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+        books: dict[str, list[PositionView]] = {}
+        total_equity, initial_total = 0.0, 0.0
+        for name in self.brains:
+            init = self.cfg.brain_capital(name)
+            positions = build_positions(self.storage, name, prices)
+            books[name] = positions
+            total_equity += compute_cash(self.storage, name, init) + sum(p.value_quote for p in positions)
+            initial_total += init
+        if self.risk.kill_switch(total_equity, initial_total):
+            console.print("[bold red]COUPE-CIRCUIT (chien de garde) : liquidation.[/]")
+            n_before = sum(len(p) for p in books.values())
+            self._liquidate_all(cycle_id, prices)
+            return n_before
+
+        n = 0
+        for name, positions in books.items():
+            exits = self.risk.forced_exits(positions)
+            for p, reason in exits:
+                did = self.storage.record_decision(
+                    cycle_id, name, p.symbol, "sell", confidence=1.0,
+                    reasoning=f"chien de garde : {reason} (prix {p.current_price}, "
+                              f"entree {p.entry_price}, stop {p.stop_loss}, objectif {p.take_profit})",
+                    accepted=True, raw={"forced": reason, "watchdog": True},
+                )
+                if self._execute_sell(cycle_id, name, p, prices[p.symbol], reason, did):
+                    n += 1
+            if exits:
+                cash = compute_cash(self.storage, name, self.cfg.brain_capital(name))
+                pv = sum(q.value_quote for q in build_positions(self.storage, name, prices))
+                self.storage.record_equity(name, cash, pv)
+        return n
 
     def _context(self, cycle_id: str, name: str, markets, prices) -> BrainContext:
         init = self.cfg.brain_capital(name)
@@ -123,7 +179,7 @@ class Engine:
 
         # a. sorties forcees
         ctx = self._context(cycle_id, name, markets, prices)
-        for p, reason in self.risk.forced_exits(ctx):
+        for p, reason in self.risk.forced_exits(ctx.positions):
             did = self.storage.record_decision(
                 cycle_id, name, p.symbol, "sell", confidence=1.0,
                 reasoning=f"sortie forcee par la couche de risque : {reason} "

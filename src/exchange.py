@@ -130,46 +130,61 @@ class Exchange:
     def market_buy_quote(self, symbol: str, quote_amount: float) -> dict[str, Any]:
         """Achat au marche pour un montant en quote (ex: 20 USDT)."""
         self._require_trading()
-        # Binance accepte quoteOrderQty pour les market buy.
-        order = self._retry(
-            self._x.create_order, symbol, "market", "buy", None, None,
-            {"quoteOrderQty": self._x.cost_to_precision(symbol, quote_amount)},
-        )
-        return self._normalize_fill(order, symbol)
+        order = self._retry(self._x.create_market_buy_order_with_cost, symbol, quote_amount)
+        return self._normalize_fill(order, symbol, "buy")
 
     def market_sell_base(self, symbol: str, base_amount: float) -> dict[str, Any]:
         self._require_trading()
         amt = self.amount_to_precision(symbol, base_amount)
         order = self._retry(self._x.create_order, symbol, "market", "sell", amt)
-        return self._normalize_fill(order, symbol)
+        return self._normalize_fill(order, symbol, "sell")
 
-    def _normalize_fill(self, order: dict[str, Any], symbol: str) -> dict[str, Any]:
-        """Retourne prix moyen, quantite, valeur, frais en quote."""
+    def _normalize_fill(self, order: dict[str, Any], symbol: str, side: str) -> dict[str, Any]:
+        """Ramene un ordre ccxt a : prix moyen, quantite NETTE detenue,
+        valeur en quote et frais en quote.
+
+        Binance preleve les frais sur l'actif recu : en base pour un achat,
+        en quote pour une vente, ou en BNB si la remise est activee. Le book
+        doit refleter ce que l'on detient vraiment, sinon la vente suivante
+        echouerait pour solde insuffisant. Invariant pour un achat :
+        value_quote + fee_quote == quote reellement sorti du compte.
+        """
         oid = order.get("id")
         # Les market orders Binance reviennent parfois sans 'average' : on re-lit.
         if not order.get("average") or not order.get("filled"):
             time.sleep(0.5)
             order = self._retry(self._x.fetch_order, oid, symbol)
+        base = symbol.split("/")[0]
         filled = float(order.get("filled") or 0.0)
         avg = float(order.get("average") or order.get("price") or 0.0)
         cost = float(order.get("cost") or filled * avg)
-        fee_quote = 0.0
-        for f in order.get("fees") or ([order["fee"]] if order.get("fee") else []):
+        if filled <= 0 or avg <= 0:
+            raise ExchangeError(f"ordre {oid} non rempli : {order}")
+
+        fee_quote, fee_base, fee_other = 0.0, 0.0, 0.0
+        fees = order.get("fees") or ([order["fee"]] if order.get("fee") else [])
+        for f in fees:
             if not f:
                 continue
             cur, amt = f.get("currency"), float(f.get("cost") or 0.0)
             if cur == self.quote:
                 fee_quote += amt
-            elif cur and cur == symbol.split("/")[0] and avg:
-                fee_quote += amt * avg
+            elif cur == base:
+                fee_base += amt
             else:
-                # frais en BNB ou autre : approximation prudente par le taux std
-                fee_quote += cost * float(self.cfg.get("exchange.fee_rate", 0.001))
-        if filled <= 0 or avg <= 0:
-            raise ExchangeError(f"ordre {oid} non rempli : {order}")
+                # BNB ou autre : paye hors de ce book, estime prudemment
+                fee_other += cost * float(self.cfg.get("exchange.fee_rate", 0.001))
+
+        if side == "buy":
+            return {
+                "exchange_id": str(oid), "price": avg,
+                "amount_base": filled - fee_base,
+                "value_quote": cost - fee_base * avg,
+                "fee_quote": fee_base * avg + fee_quote + fee_other,
+            }
         return {
             "exchange_id": str(oid), "price": avg, "amount_base": filled,
-            "value_quote": cost, "fee_quote": fee_quote,
+            "value_quote": cost, "fee_quote": fee_quote + fee_base * avg + fee_other,
         }
 
     def _require_trading(self) -> None:

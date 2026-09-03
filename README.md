@@ -125,6 +125,18 @@ logs/decisions.jsonl   copie lisible du journal des décisions
    - exécution des ventes puis des achats ;
    - relevé d'equity.
 
+Les indicateurs sont calculés sur les bougies **clôturées** uniquement. La
+bougie en cours n'a que quelques minutes de vie au moment du cycle et ferait
+osciller les signaux.
+
+### Entre deux cycles : le chien de garde
+
+Toutes les cinq minutes (`engine.watchdog_minutes`), la boucle vérifie les
+stops, les objectifs et le coupe-circuit sur les prix courants, sans appeler
+aucun cerveau. Sans lui, un stop à 8 % ne serait regardé que toutes les quatre
+heures, ce qui n'est pas un stop. Ces sorties apparaissent dans le journal avec
+un identifiant de cycle préfixé `WD`.
+
 ### Les garde-fous, dans `config.yaml` sous `risk`
 
 | Réglage | Défaut | Effet |

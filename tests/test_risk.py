@@ -112,7 +112,7 @@ def test_forced_exits_stop_and_target():
     hit_stop = _pos(entry=100.0, px=91.0)
     hit_tp = _pos("ETH/USDT", entry=100.0, px=116.0)
     calm = _pos("SOL/USDT", entry=100.0, px=103.0)
-    exits = r.forced_exits(_ctx(positions=[hit_stop, hit_tp, calm]))
+    exits = r.forced_exits([hit_stop, hit_tp, calm])
     assert [(p.symbol, why) for p, why in exits] == [("BTC/USDT", "stop_loss"), ("ETH/USDT", "take_profit")]
 
 
