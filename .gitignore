@@ -9,3 +9,4 @@ __pycache__/
 venv/
 LIVE_ARMED
 .pytest_cache/
+logs/*.log
