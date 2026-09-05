@@ -51,6 +51,7 @@ noté dans l'événement `protocol_start` de la base.
 | Élément | Valeur |
 |---|---|
 | Trader | Claude, `claude-opus-5`, effort `medium`, prompt système figé |
+| Mandat | `experiment.mandate` dans `config.yaml`, une fiche `strategies/<id>.yaml` ; le brief exact est pré-enregistré à t0 |
 | Capital | 100 USDT, une seule book |
 | Marché | Binance spot, BTC/USDT, ETH/USDT, SOL/USDT, bougies 4h |
 | Cadence | un cycle de décision toutes les 4 h, chien de garde toutes les 5 min |
@@ -100,6 +101,15 @@ cours de fenêtre, si une panne dépasse 48 h, ou si Binance change ses règles,
 la fenêtre est close à la date de l'événement, rapportée telle quelle, et
 rien n'est conclu. On ne recolle jamais deux fenêtres pour atteindre le n
 minimal.
+
+**Une fenêtre, un mandat.** Le mandat (brief, profil de risque dans ses
+bornes, univers) fait partie du dispositif figé : il se choisit avant t0 et
+son texte exact est écrit dans `protocol_start`. Changer de mandat, c'est
+clore la fenêtre (`scripts/fenetre.py --clore`), l'archiver, et en ouvrir une
+nouvelle avec son propre t0. Une fenêtre dont le brief a changé en cours de
+route est incomplète. Chaque fiche de mandat annonce d'avance si un verdict
+financier est probable ; pour les mandats lents, la fenêtre se lit sur le
+comportement, l'exposition et la justesse à 24 h, jamais sur le P&L.
 
 ---
 

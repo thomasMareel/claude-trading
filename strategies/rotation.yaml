@@ -1,0 +1,60 @@
+# Mandat « Le meneur du peloton ». Fiche = documentation ET configuration : le brief est injecte tel quel
+# dans le prompt systeme de Claude. Se choisit avant t0 (config.yaml, experiment.mandate).
+id: rotation
+nom: Le meneur du peloton
+famille: force relative
+accroche: Toujours investi sur la seule paire qui a le plus monte sur 20 bougies, et en cash uniquement
+  quand les trois baissent.
+philosophie: |-
+  Les trois paires montent et baissent souvent ensemble, mais pas a la meme vitesse, et l'hypothese de ce mandat est que celle qui mene depuis trois jours (20 bougies de 4 heures) a des chances de garder la tete quelques jours de plus. Ce mandat ne cherche donc pas le bon moment pour entrer mais la bonne paire a detenir : Claude compare la hausse des trois sur 20 bougies (roc_20_pct), achete la meilleure a 40 % du book et ne change de monture que si une autre la devance nettement deux cycles de suite. Il est presque toujours investi, sur une seule position concentree, et ne passe en cash que quand les trois paires baissent. La regle d'une seule position et celle des deux cycles sont des consignes lues dans le journal, pas des garde-fous de la couche de risque : seuls le stop a 10 % et l'objectif a 25 % sont appliques automatiquement. C'est le mandat qui isole le mieux la valeur du choix de la paire, exactement ce que mesure l'ecart au panier equipondere.
+ce_que_claude_regarde:
+- 'roc_20_pct des trois paires, classes du plus haut au plus bas : le classement decide de tout'
+- L'ecart en points de roc_20_pct entre la paire detenue et son meilleur challenger, ecrit en premiere
+  phrase du reasoning pour etre relu au cycle suivant dans tes_decisions_recentes (raison)
+- 'Le signe de roc_20_pct sur les trois paires : tous negatifs, c''est le seul cas ou l''on passe en cash'
+- round_trips_restants_cette_semaine, pour savoir si la rotation se fait en un cycle ou en deux
+- 'rsi, vol_ratio, atr_pct et les 12 bougies : lus pour commenter, jamais pour decider'
+brief: |-
+  Rotation par force relative : tu detiens la seule paire qui a le plus monte sur 20 bougies. A chaque cycle, classe les trois paires par roc_20_pct decroissant et ecris ce classement dans market_view.
+  Entree : sans position, si la paire en tete a un roc_20_pct positif, achete-la a la taille maximale (size_pct_of_equity = max_position_pct), sans attendre de repli : la paire compte plus que le prix d'entree.
+  Une seule position, toujours : jamais de deuxieme paire, pas de renforcement.
+  Memoire : tu ne vois que tes 8 dernieres decisions, raison tronquee a 240 caracteres. Tant que tu detiens une paire, ecris en PREMIERE phrase de chaque reasoning : "Ecart : <challenger> devance <detenue> de <x> points de roc_20_pct", ou "Ecart : aucun challenger".
+  Rotation : change de paire seulement si le meme challenger devance la paire detenue d'au moins 5 points sur deux cycles consecutifs : l'ecart de ce cycle, calcule dans le dossier, et celui du cycle precedent, relu dans tes_decisions_recentes. Un seul cycle ou 3 points : du bruit, ne bouge pas.
+  Rotation justifiee : vends l'ancienne et achete la nouvelle au meme cycle quand round_trips_restants_cette_semaine le permet, sinon achete au cycle suivant.
+  Cash : vends quand les trois roc_20_pct sont negatifs ; rachete la paire en tete des qu'un roc_20_pct redevient positif.
+  Patience : une paire se garde plusieurs jours a deux semaines. Ne vends ni sur une baisse du prix ni sur un rsi haut : seul le classement decide. rsi, vol_ratio, atr_pct et bougies ne servent qu'a commenter.
+  Une rotation, c'est une vente plus un achat : 0,3 % de frais et glissement, une unite de budget. Justifie-la toujours en une phrase chiffree.
+  N'invente rien d'absent du dossier. Donne ton bias a 24 h pour chaque paire, a chaque cycle, meme sans trade.
+univers:
+- BTC/USDT
+- ETH/USDT
+- SOL/USDT
+horizon_bougies: '18 a 60 bougies (3 a 10 jours par paire detenue, jusqu''a deux semaines quand le leader
+  ne change pas), estimation raisonnee : un leader stable allonge la detention, une rotation confirmee
+  ou le stop a 10 % la raccourcit'
+ouvertures_par_semaine_attendues: '0,5 a 1 (estimation raisonnee, budget 2) : un achat initial, puis une
+  rotation ou un rachat apres cash toutes les une a deux semaines, plus les rachats forces par un stop
+  ou un objectif atteint, soit 4 a 8 trades clos en 8 semaines. Le verdict financier est hors de portee
+  par construction, quel que soit le regime : le budget de 2 par semaine plafonne la fenetre a 16 ouvertures
+  (18 si elle chevauche neuf semaines calendaires), donc a moins de 20 trades clos ; et le seuil reduit
+  a 15 ne s''applique que sous 60 % du budget, soit au plus 9 ouvertures, donc au plus 9 trades clos.
+  Ce mandat se juge sur le bias, l''ecart au panier et le respect du brief.'
+risque:
+  max_position_pct: 0.4
+  stop_loss_pct: 0.1
+  take_profit_pct: 0.25
+  max_round_trips_per_week: 2
+quand_ca_marche: |-
+  Quand une paire prend la tete et la garde plusieurs semaines, typiquement SOL dans une phase de prise de risque ou BTC quand le reste s'essouffle : Claude est investi a 40 % dans la meilleure des trois, capte sa surperformance sans avoir a deviner les points bas, et le seul ecart au panier equipondere vient du choix de la paire, ce qui rend le resultat facile a interpreter. Dans une baisse generalisee ou les trois roc_20_pct passent negatifs, il est en cash et ne perd que ce qui a ete perdu avant la sortie. Le filtre des deux cycles ecarte la plupart des changements de tete d'un seul cycle, qui sont frequents sur des bougies de 4 heures.
+quand_ca_casse: |-
+  Quand le classement tourne toutes les semaines sans direction : Claude vend le leader qui vient de s'essouffler pour acheter celui qui vient de monter, juste avant qu'ils s'inversent, et chaque rotation coute environ 0,3 % de frais et de glissement en achetant systematiquement apres la hausse. En marche baissier, il rachete des le premier roc_20_pct positif et peut se faire pieger plusieurs fois de suite, chaque piege coutant jusqu'a 4 % du book (40 % de position, stop a 10 %). Concentre sur une seule paire, souvent la plus volatile, il subit chaque secousse de plein fouet : le stop a 10 % et l'objectif a 25 % sont ses seules protections automatiques, et l'objectif peut couper le leader en pleine course et forcer un rachat plus haut, qui consomme une unite de budget. La regle d'une seule position, celle des deux cycles et l'interdiction de vendre sur le prix ou le rsi sont des consignes : la couche de risque ne les applique pas, leur respect se lit dans le journal, et la regle des deux cycles ne tient que si Claude ecrit bien l'ecart en premiere phrase de son reasoning. Enfin, le verdict financier est hors de portee par arithmetique (16 ouvertures au plus pour un seuil de 20, ou 9 au plus pour un seuil de 15) : le mandat se juge surtout sur le bias, l'ecart au panier et le respect du brief.
+pour_qui:
+- audacieux
+- patient
+- methodique
+axes:
+  horizon: moyen (3 a 10 jours)
+  mouvement: suivre le mouvement
+  temperament: audacieux
+  exposition: moyenne
+  verdict_probable: non

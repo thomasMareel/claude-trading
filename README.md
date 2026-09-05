@@ -16,6 +16,9 @@ d'intelligent. Claude doit faire mieux que ça, net de tout.
 Le protocole de mesure, ce qui compte comme un succès et ce que l'on peut
 conclure ou non, est dans [docs/protocole.md](docs/protocole.md).
 
+**Tout se lit depuis une seule page** : [thomasmareel.github.io/claude-trading](https://thomasmareel.github.io/claude-trading/).
+Le bot y publie ses relevés après chaque cycle. Voir « L'interface » plus bas.
+
 ## Ce qu'il faut savoir avant de commencer
 
 - **Le résultat financier ne sera pas statistiquement significatif.** Avec
@@ -98,14 +101,90 @@ Tests, sans réseau :
 python -m pytest tests -q
 ```
 
+## L'interface
+
+Une page statique, hébergée par GitHub Pages depuis le dossier `docs/`, lit
+des fichiers JSON que le bot exporte et pousse après chaque cycle :
+état du bot, tuiles, courbe d'equity de Claude face au repère (toutes deux en
+valeur de liquidation), exposition, positions, journal des décisions avec le
+raisonnement et les refus, métriques et critères du protocole (explicitement
+**pas un verdict**), catalogue des mandats, fenêtres passées, événements.
+
+- **Le dépôt est public.** Tout ce qui est exporté est visible par tous.
+  L'export ne sort que des champs nommés (liste blanche) et nettoie toute
+  valeur de secret présente dans l'environnement ainsi que les motifs de
+  clés connus. Aucun secret n'a jamais été commité.
+- La page **ne pilote rien**. Les clés restent sur le PC, aucun ordre ne part
+  d'elle. Elle affiche des relevés vieux au plus d'un cycle.
+- Forcer une publication à la main : `python scripts/publier.py`.
+- Deux boutons en bas de page : **Ouvrir Claude Code** et **Demander à Claude**,
+  qui ouvre une demande GitHub pré-remplie (voir « Le pont »).
+
+## Les mandats
+
+Un mandat est la façon dont Claude est missionné : un brief injecté dans son
+prompt système, un profil de risque dans des bornes fixes, un univers. Une
+fiche par mandat dans `strategies/<id>.yaml`. La fiche est à la fois la
+documentation que vous lisez sur la page et la configuration exacte que Claude
+reçoit : ce qui est écrit est ce qui est envoyé.
+
+Le catalogue vient d'un panel de trois propositions notées par deux juges,
+puis d'une passe de vérification sur la faisabilité de chaque règle avec les
+seuls champs du dossier, le chevauchement entre fiches et l'absence de
+promesse. Les fiches s'organisent sur trois axes : l'horizon de détention,
+le rapport au mouvement, le tempérament, défini arithmétiquement par la perte
+sur le book quand un trade tourne mal. Chaque fiche dit honnêtement si un
+verdict financier est probable, et « quand ça casse » avant « quand ça
+marche ».
+
+**Un mandat se choisit avant t0 et ne change plus pendant la fenêtre.** Le
+brief exact est pré-enregistré à t0 ; toute retouche en cours de fenêtre est
+signalée par `scripts/metriques.py` et par la page. Le mandat témoin `libre`
+est obligatoire : Claude y choisit lui-même sa méthode.
+
+Changer de mandat, c'est ouvrir une nouvelle fenêtre :
+
+```bash
+python scripts/fenetre.py                              # état et mandats disponibles
+python scripts/fenetre.py --clore --mandat tendance --yes
+```
+
+La fenêtre courante est archivée dans `docs/data/fenetres.json` (bilan,
+repères, processus, justesse à 24 h), le mandat est écrit dans `config.yaml`,
+l'expérience est remise à zéro, et il faut redémarrer le bot. Refusé en mode
+réel.
+
+## Le pont : demander quelque chose à Claude depuis la page
+
+Le bouton **Demander à Claude** ouvre une demande GitHub (label `demande`).
+Le script `scripts\pont.bat` la traite avec Claude Code en mode non
+interactif, dans une copie de travail git séparée du bot : Claude lit la
+demande, vérifie dans le code et les relevés, répond dans le fil, et si une
+modification est nécessaire l'ouvre en pull request à valider. Il ne passe
+jamais d'ordre, ne touche jamais aux clés, et toute modification de
+configuration ou de mandat est proposée **pour la fenêtre suivante**.
+
+Prérequis : `gh auth status` connecté, et Claude Code connecté dans un
+terminal (`claude`, une fois). Lancer le pont à la main, ou le planifier
+(Planificateur de tâches Windows, une fois par heure). Alternative sans PC :
+une routine Claude dans le cloud, qui exige d'installer l'application GitHub
+de Claude sur le dépôt.
+
 ## Architecture
 
 ```
-config.yaml            tous les réglages
+config.yaml            tous les réglages, dont le mandat actif (experiment.mandate)
+docs/index.html        l'interface, servie par GitHub Pages
+docs/data/*.json       les relevés publiés par le bot (sans aucun secret)
 docs/protocole.md      ce que l'on mesure, ce que l'on peut conclure
 docs/cles-api.md       créer les clés, pas à pas
+strategies/*.yaml      les mandats : documentation et configuration en un seul fichier
 src/
-  config.py            chargement et validation de la config, secrets (env uniquement)
+  config.py            chargement et validation de la config, application du mandat, secrets (env uniquement)
+  mandates.py          chargement et bornes des mandats, brief injecté dans le prompt
+  metrics.py           les métriques du protocole, un seul calcul pour le terminal et la page
+  export.py            export des relevés en JSON, liste blanche et nettoyage des secrets
+  publish.py           add, commit, push des relevés, jamais d'exception vers le trading
   exchange.py          accès Binance via ccxt (données, et ordres en live)
   indicators.py        EMA, RSI, ATR, momentum, en pandas pur
   storage.py           SQLite : bougies, décisions, ordres, positions, equity, repère, coûts
@@ -117,8 +196,9 @@ src/
   brains/
     base.py            contrat : BrainContext -> list[Decision]
     llm_brain.py       Claude, sortie structurée, coût mesuré
-scripts/               points d'entrée
-tests/                 risque, moteur, cerveau, indicateurs, config, comptabilité des ordres
+scripts/               points d'entrée : boucle, cycle, journal, rapport, métriques, singe,
+                       fenêtre, publication, pont, acquittement, vérification des clés
+tests/                 risque, moteur, cerveau, indicateurs, config, ordres, mandats, métriques, export
 data/trading.db        la base, seule source de vérité
 logs/decisions.jsonl   miroir lisible des décisions (pas un journal de secours)
 logs/loop.log          sortie de la boucle détachée

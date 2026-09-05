@@ -1,0 +1,66 @@
+# Mandat « Compression puis detente ». Fiche = documentation ET configuration : le brief est injecte tel quel
+# dans le prompt systeme de Claude. Se choisit avant t0 (config.yaml, experiment.mandate).
+id: compression
+nom: Compression puis detente
+famille: Volatilite
+accroche: Acheter quand le prix se tasse au-dessus de sa moyenne longue, vendre la premiere grande bougie,
+  qu'elle soit verte ou rouge.
+philosophie: |-
+  Les marches alternent des phases ou le prix ne bouge presque plus et des phases ou il part d'un coup. Quand les douze dernieres bougies de 4 heures tiennent dans une fourchette etroite, moins de trois fois l'amplitude habituelle (atr_pct), et que le prix reste au-dessus de sa moyenne longue (ema_slow), Claude achete pendant le calme, avant la cassure : c'est le seul mandat du banc qui achete avant le mouvement, a l'inverse du mandat Cassure confirmee qui attend qu'il soit visible. Ce calme est relatif, pas rare : sur les bougies en base, un cycle sur huit environ remplit toutes les conditions, et le budget de trois ouvertures par semaine sera souvent atteint. Claude vend a la premiere bougie de grande amplitude, dans un sens ou dans l'autre, meme a perte, ou apres cinq jours sans detente ; ces deux sorties, comme la taille et le seuil de trois ATR, sont des consignes du brief que Claude applique lui-meme, la couche de risque ne connaissant que le stop a 6 % et l'objectif a 10 %. Le seuil de trois ATR est une convention posee avant de voir la fenetre, calibree sur 311 bougies d'un regime haussier ou la detente a ete rouge au moins aussi souvent que verte.
+ce_que_claude_regarde:
+- 'dernieres_bougies_4h : H, le plus haut des 12 h, et L, le plus bas des 12 l ; fourchette_pct = 100
+  x (H - L) / close'
+- 'atr_pct : le ratio fourchette_pct / atr_pct doit etre inferieur a 3 pour acheter'
+- 'close et ema_slow : close au-dessus de ema_slow, et close au moins au milieu de la fourchette, soit
+  (H + L) / 2'
+- 'L''amplitude de la derniere bougie, 100 x (h - l) / c : au-dessus de 2 fois atr_pct, c''est trop tard
+  pour acheter, et c''est le signal de vente une fois en position'
+- 'ouverte_le compare a horodatage_utc : sortie au premier cycle ou la position a au moins 118 heures
+  (30 bougies) sans detente'
+- 'round_trips_restants_cette_semaine : a 0, plus aucun achat, hold et bias seulement'
+- 'Rien d''autre : rsi, roc_5_pct, roc_20_pct, vol_ratio et trend sont ignores par consigne'
+brief: |-
+  Tu achetes la compression de volatilite, avant la detente, jamais apres.
+  A chaque cycle, pour chaque symbole, calcule sur les 12 bougies de dernieres_bougies_4h : H = le plus haut des h, L = le plus bas des l, fourchette_pct = 100 x (H - L) / close, puis ratio = fourchette_pct / atr_pct. Ecris ce ratio en premiere phrase de ton reasoning, meme en hold.
+  Achete si ratio < 3, si close est superieur a ema_slow, et si close est superieur ou egal a (H + L) / 2. Les trois conditions, sinon hold. Si ema_slow ou atr_pct vaut null, hold.
+  N'achete pas si la derniere bougie a deja une amplitude 100 x (h - l) / c superieure a 2 fois atr_pct : la detente a commence sans toi, laisse passer.
+  Taille : toujours max_position_pct. Une seule nouvelle position par cycle : si deux symboles sont comprimes, prends celui dont le ratio est le plus bas. Si round_trips_restants_cette_semaine vaut 0, aucun achat.
+  Vends des que la derniere bougie cloturee, ou toute bougie de dernieres_bougies_4h posterieure a ouverte_le, a une amplitude 100 x (h - l) / c superieure a 2 fois atr_pct, que le prix soit monte ou descendu : la detente a eu lieu, le pari est solde. Ne garde pas parce que ca monte encore.
+  Vends aussi au premier cycle ou la position a au moins 118 heures (30 bougies, compare ouverte_le a horodatage_utc) sans detente : rien ne s'est detendu, libere la place.
+  N'ajoute aucune condition sur rsi, roc_5_pct, roc_20_pct, vol_ratio ou trend : ton signal est l'amplitude, pas la direction.
+  Un cycle sur huit environ remplit toutes les conditions : la plupart des cycles restent des hold, et le budget de la semaine sera souvent epuise avant la fin. Chaque aller-retour coute 0,3 % : ne force aucun achat pour le depenser.
+  Donne un bias a 24 h pour chaque symbole a chaque cycle, meme en hold.
+univers:
+- BTC/USDT
+- ETH/USDT
+- SOL/USDT
+horizon_bougies: 3 a 30 bougies (12 h a 5 jours), le plus souvent 1 a 3 jours ; estimation calibree sur
+  311 bougies d'un regime haussier, ou la duree mediane d'un trade rejoue va de 12 h a 2 jours selon la
+  fenetre et ou un trade sur quatre environ sort par la limite des 30 bougies
+ouvertures_par_semaine_attendues: '2 a 3 (budget 3) : estimation calibree sur 311 bougies d''un regime
+  haussier, ou 12 % des cycles remplissent toutes les conditions et ou les regles rejouees (une ouverture
+  par cycle, deux places, budget 3, sortie a 2 ATR ou 118 h) donnent 2,4 a 3,0 ouvertures par semaine,
+  budget sature certaines semaines. Soit 17 a 24 trades clos en 8 semaines : le seuil de 20 exige 2,5
+  ouvertures par semaine, au milieu de la fourchette, tenu tant que le prix reste au-dessus de ema_slow
+  et perdu des qu''il passe dessous (plus aucun signal). Le seuil reduit de 15 est hors de portee par
+  arithmetique (moins de 60 % du budget de 24, c''est 14 ouvertures au plus, donc moins de 15 trades clos).'
+risque:
+  max_position_pct: 0.35
+  stop_loss_pct: 0.06
+  take_profit_pct: 0.1
+  max_round_trips_per_week: 3
+quand_ca_marche: |-
+  Marche haussier qui progresse par paliers : chaque palier est une compression de quelques jours, chaque detente une bougie de 3 a 5 % vers le haut. Claude achete pendant l'attente, a un prix calme, et vend dans la bougie qui bouge, sans avoir eu a deviner la direction ; le prix reste au-dessus de ema_slow, donc le signal revient chaque semaine et le budget de trois ouvertures sert. Le stop a 6 % est rarement approche parce que la fourchette de depart etait etroite : une position qui tourne mal sort le plus souvent par la regle des 2 ATR, vers -2 ou -3 %, avant le stop. Sur les 311 bougies de calibrage, les regles rejouees sur la periode ou ema_slow est calculable donnent 4 trades gagnants sur 7 et +4 % du book en 2,7 semaines, portes par un seul trade sorti a l'objectif de 10 % : c'est le scenario favorable, pas une esperance etablie, car la detente n'a ete verte que deux fois sur quatre.
+quand_ca_casse: |-
+  La detente vers le bas : la grande bougie est rouge, Claude vend a -2 ou -4 % comme la regle l'exige, plusieurs fois de suite dans un marche qui distribue avant de chuter ; trois sorties de ce type coutent 6 a 12 % du capital engage, soit 2 a 4 % du book, sans qu'aucune regle n'ait ete violee. Sur les 311 bougies de calibrage, la detente qui suit une compression a ete rouge plus souvent que verte (4 vertes sur 12 en rejouant les regles sur toute la base, ema_slow approchee la ou elle n'est pas encore calculable), pour 6 trades gagnants sur 17 et -1,5 % du book : l'esperance du mandat n'est pas demontree. Le calme qui dure : positions tenues cinq jours pour rien, soldees a plat moins 0,3 % de friction, capital immobilise pendant que le panier monte. Le seuil de 3 ATR est une convention : il retient le cinquieme a tiers le plus calme des cycles (ratio median 3,5 a 3,7), pas un evenement rare ; et atr_pct est calcule sur 14 bougies, presque la meme fenetre que les 12 mesurees, donc l'ATR baisse en meme temps que la fourchette et le ratio discrimine moins qu'il n'y parait. La sortie a 30 bougies, la vente sur grande bougie et la taille sont des consignes : la couche de risque n'applique que le stop a 6 % et l'objectif a 10 %, leur respect se lit dans le journal apres coup. Enfin, un book expose 25 a 30 % en moyenne ne suit le marche qu'au quart : sur la periode de calibrage le panier detenu a fait +30 % quand les regles rejouees donnaient +4 % ; dans une fenetre franchement haussiere, ce mandat fera moins bien que le repere meme avec une majorite de trades gagnants.
+pour_qui:
+- curieux
+- equilibre
+- methodique
+- actif
+axes:
+  horizon: court (1 a 3 jours)
+  mouvement: anticiper la rupture
+  temperament: equilibre
+  exposition: moyenne
+  verdict_probable: incertain

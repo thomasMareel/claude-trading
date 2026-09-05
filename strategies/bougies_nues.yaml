@@ -1,0 +1,60 @@
+# Mandat « Le Lecteur de bougies ». Fiche = documentation ET configuration : le brief est injecte tel quel
+# dans le prompt systeme de Claude. Se choisit avant t0 (config.yaml, experiment.mandate).
+id: bougies_nues
+nom: Le Lecteur de bougies
+famille: Lecture brute
+accroche: 'Pas d''indicateurs : il lit les douze dernieres bougies comme on lit un visage.'
+philosophie: |-
+  Les moyennes mobiles, le RSI ou l'elan sont des resumes du prix : ils arrivent en retard et se contredisent souvent. Ce mandat demande a Claude de les ignorer et de ne regarder que les douze dernieres bougies de 4 heures de chaque paire : leur taille, leurs meches, la suite de plus bas qui montent ou descendent, le volume qui accompagne ou non le mouvement, comme le font beaucoup de traders humains devant un graphique. On veut savoir si Claude sait lire cette langue sans bequilles. Attention : les indicateurs restent affiches dans son dossier, et l'interdiction de s'en servir est une consigne, pas une contrainte technique ; son respect se lit dans le raisonnement ecrit a chaque cycle, ou Claude doit commencer par nommer les signaux qu'il voit. Il en va de meme pour la limite de 18 bougies par position : rien ne l'applique a sa place.
+ce_que_claude_regarde:
+- 'Les douze bougies de dernieres_bougies_4h de chaque paire (o, h, l, c, v), et rien d''autre : les dix
+  champs d''indicateurs sont affiches mais interdits'
+- 'La suite des plus bas (l) : trois plus bas consecutifs de plus en plus hauts dans les six dernieres
+  bougies, c''est une pression acheteuse'
+- 'Une derniere bougie verte qui cloture au-dessus du plus haut (h) de la derniere bougie rouge parmi
+  les douze, avec plus de volume (v) qu''elle : les acheteurs ont repris la main. Si les douze bougies
+  sont vertes, il n''y a pas de rouge a depasser et le signal est absent'
+- 'Sur l''une des bougies 2, 3 ou 4 en partant de la fin, une meche basse (min(o, c) moins l) au moins
+  deux fois plus longue que le corps, corps nul compris, suivie d''une bougie qui cloture plus haut qu''elle
+  : les prix bas ont ete rejetes. La derniere bougie ne compte pas, sa suivante n''existe pas encore'
+- 'La taille de chaque bougie comparee au corps moyen des douze : une bougie rouge de plus de deux corps
+  moyens est un signal de sortie, une verte de la meme taille veut dire qu''il arrive trop tard'
+- 'ouverte_le dans positions_ouvertes, compare a horodatage_utc, pour la limite de 18 bougies : le seuil
+  est ecrit 70 heures parce que ouverte_le est horodate quelques secondes apres le cycle d''achat ; un
+  seuil a 72 heures ne tomberait qu''a la dix-neuvieme bougie'
+brief: |-
+  Tu lis le prix brut : les douze bougies (o, h, l, c, v) de dernieres_bougies_4h. Indicateurs affiches mais interdits : ema_fast, ema_slow, rsi, atr_pct, roc_5_pct, roc_20_pct, vol_ratio, dist_hh20_pct, dist_ll20_pct, trend.
+  Verte : c > o. Rouge : c < o. Corps : ecart entre o et c. Corps moyen : moyenne des douze corps. Meche basse : min(o, c) moins l.
+  Achete seulement avec deux signaux sur trois : (a) trois l consecutifs de plus en plus hauts parmi les six dernieres ; (b) derniere bougie verte, c au-dessus du h de la derniere rouge des douze (aucune rouge : signal absent), v superieur au sien ; (c) une des bougies 2, 3 ou 4 depuis la fin a une meche basse d'au moins deux fois son corps (corps nul compris) et la suivante cloture plus haut qu'elle.
+  Taille : max_position_pct avec trois signaux, 0,20 avec deux. Un signal flou ne vaut pas les 0,3 % de friction d'un aller-retour (0,2 % de frais, environ 0,1 % de glissement).
+  Vends des que tu le vois, sans attendre le stop, si la derniere bougie est rouge et son corps depasse deux corps moyens, ou si les deux dernieres ont chacune un l sous la precedente.
+  Pas plus de 18 bougies par position : compare ouverte_le a horodatage_utc ; au-dela de 70 heures, vends ou dis pourquoi ta lecture tient. Rien ne t'y force : on lit ta discipline.
+  Patience : round_trips_budget vaut 3 par semaine, pas une cible ; des cycles sans achat sont normaux.
+  Ne fais PAS : deviner une figure sur des bougies ambigues ; acheter apres une verte de plus de deux corps moyens (trop tard) ; consulter un indicateur, meme pour confirmer.
+  Ouvre chaque reasoning par les signaux presents (a+c, ou aucun), puis dis qui pousse, qui lache, ou tu changerais d'avis.
+  A chaque cycle, meme sans trade, donne ton bias a 24 h par paire, deduit des bougies seules.
+univers:
+- BTC/USDT
+- ETH/USDT
+- SOL/USDT
+horizon_bougies: 6 a 18 bougies (1 a 3 jours), estimation raisonnee
+ouvertures_par_semaine_attendues: 2 a 3 (estimation raisonnee ; le budget plafonne a 3)
+risque:
+  max_position_pct: 0.3
+  stop_loss_pct: 0.06
+  take_profit_pct: 0.1
+  max_round_trips_per_week: 3
+quand_ca_marche: |-
+  Dans des marches nerveux mais lisibles, ou les retournements se voient sur les bougies avant que les moyennes ne bougent : il entre plus tot que les mandats a indicateurs et sort plus tot aussi, sur une bougie rouge geante ou deux plus bas qui cassent, sans attendre le stop a 6 %. Avec un objectif a 10 % et un stop a 6 %, friction de 0,3 % comprise, le point d'equilibre est vers 40 % de trades gagnants quand les sorties se font au stop ou a l'objectif ; les ventes anticipees a petite perte relevent ce seuil. C'est surtout le mandat qui teste une competence de lecture plutot qu'une recette : si Claude gagne ici, ce n'est pas parce qu'on lui a dit quoi faire. Sa mesure la plus solide est le bias a 24 h donne a chaque cycle pour les trois paires, soit 168 observations scorees sur la fenetre, deduit des bougies seules : c'est le test le plus direct du banc d'essai sur la question de savoir si les indicateurs aident Claude ou le genent.
+quand_ca_casse: |-
+  Le bruit d'une bougie 4h est de 0,75 a 1 % et beaucoup de figures sur douze bougies sont du pur hasard : Claude risque de voir des histoires partout, de trader au maximum du budget et de payer 0,3 % de friction sur des lectures qui n'etaient rien. Sur trois jours, une position bouge de 3 a 4 % au hasard : son stop a 6 % tombera parfois sur du bruit et ses sorties anticipees vendront des creux. Il n'a aucun filtre de tendance : il peut acheter de jolis rebonds au milieu d'une chute, parce que douze bougies ne disent pas ou est la moyenne a 200 periodes. A l'inverse, dans une hausse si franche que les douze bougies sont vertes, le signal (b) n'existe plus et il n'a que (a) et (c) pour entrer : il achetera peu au moment ou le panier monte le plus. Deux regles de la fiche ne sont que des consignes, l'interdiction des indicateurs et la limite de 18 bougies : la couche de risque n'applique ni l'une ni l'autre, et le prompt de base demande par ailleurs un raisonnement qui cite les indicateurs. Si Claude glisse un rsi ou un trend dans son reasoning, ou garde une position au-dela de 18 bougies (70 heures dans le brief) sans se justifier, c'est un echec du mandat qui se lit dans le journal, pas une erreur du programme. Les douze bougies couvrent 48 heures : sur une position ouverte depuis 60 heures, les bougies d'entree ont disparu du dossier et Claude juge la sortie sans revoir ce qui l'a fait entrer. Son exposition moyenne attendue est faible, autour de 15 a 25 % du book : la plupart du temps il ressemble a du cash, et dans un marche qui monte franchement il restera loin derriere le panier. Enfin, le verdict financier (20 trades clos en 8 semaines, ou 15 si moins de 60 % des 24 ouvertures possibles ont ete utilisees) n'est atteint que s'il ouvre au moins 2,5 fois par semaine, presque le budget entier : a 2 par semaine il finit vers 16 trades, trop peu pour le seuil de 20 et trop pour celui de 15. Le verdict probable est donc incertain ; le bias et l'ecart au panier restent mesurables dans tous les cas.
+pour_qui:
+- curieux
+- equilibre
+- observateur
+axes:
+  horizon: court (1 a 3 jours)
+  mouvement: lecture brute
+  temperament: equilibre
+  exposition: faible
+  verdict_probable: incertain

@@ -1,0 +1,67 @@
+# Mandat « Contrarien de capitulation ». Fiche = documentation ET configuration : le brief est injecte tel quel
+# dans le prompt systeme de Claude. Se choisit avant t0 (config.yaml, experiment.mandate).
+id: contrarien
+nom: Contrarien de capitulation
+famille: retour a la moyenne
+accroche: N'acheter que la panique, en petit, et rendre la monnaie vite.
+philosophie: |-
+  Quand un actif a perdu plusieurs pour cent en quelques bougies, qu'il touche son plus bas de trois jours et que le RSI est ecrase, une partie des vendeurs sont des gens forces de vendre, et le rebond qui suit est souvent rapide mais court. Ce mandat n'achete que ces moments, seulement apres une premiere bougie verte, avec une seule position de 20 % du book, et revend des que le prix a retrouve un niveau normal ou apres trois jours quoi qu'il arrive. Il ne cherche pas le fond, il cherche le rebond technique. Dans un marche qui monte, il n'a rien a faire et reste en cash : c'est prevu, et c'est ecrit ici. La position unique et la sortie a trois jours sont des consignes donnees a Claude, pas des garde-fous de la couche de risque, qui autorise deux positions et ne ferme rien sur la duree : leur respect se verifie dans le journal.
+ce_que_claude_regarde:
+- 'rsi sous 30 : la baisse est extreme'
+- 'dist_ll20_pct sous 2 : le prix est a moins de 2 % de son plus bas de 20 bougies (cette valeur est toujours
+  positive ou nulle) ; le seuil est a 2 et non a 1 parce qu''une bougie verte apres une chute cloture
+  presque toujours plus de 1 % au-dessus du plus bas'
+- 'roc_5_pct inferieur ou egal a -4 : la chute est recente et violente'
+- 'La derniere bougie de dernieres_bougies_4h cloture au-dessus de son ouverture (c superieur a o) : premier
+  signe de stabilisation'
+- 'Pour la sortie : rsi au-dessus de 50, ou close revenu au niveau de ema_fast'
+- 'ouverte_le compare a horodatage_utc : vente au premier cycle ou la position a au moins 70 heures, soit
+  18 bougies (ouverte_le est date quelques secondes apres l''horodatage du cycle d''achat, d''ou 70 et
+  non 72)'
+- 'tes_trades_clotures_recents : un trade dont motif_cloture vaut stop_loss et dont fermee est a moins
+  de 4 heures de horodatage_utc interdit de racheter ce symbole a ce cycle'
+brief: |-
+  Tu es un contrarien de capitulation : tu n'achetes que la panique, jamais la faiblesse ordinaire, et tu rends la monnaie vite.
+  Achete seulement si les quatre conditions sont reunies au meme cycle : rsi sous 30 ; dist_ll20_pct sous 2 (pres du plus bas de 20 bougies) ; roc_5_pct inferieur ou egal a -4 ; derniere bougie de dernieres_bougies_4h avec c superieur a o.
+  Sans bougie verte, n'achete pas, meme si tout le reste crie l'achat : la chute peut continuer. Tu acceptes de rater le point bas exact.
+  Taille : 20 % du book. Une seule position ouverte a la fois, meme si la couche de risque en autorise deux : si deux symboles capitulent, prends celui dont roc_5_pct est le plus negatif.
+  En premiere phrase du reasoning d'un achat, ecris les quatre chiffres du signal.
+  Vends des que rsi repasse au-dessus de 50 ou que close atteint ema_fast, meme si le gain est petit : tu encaisses un rebond, tu ne joues pas un retournement.
+  Vends sans condition au premier cycle ou la position a au moins 70 heures (18 bougies) : compare ouverte_le a horodatage_utc. Un rebond absent apres trois jours ne viendra pas.
+  Ne fais jamais : acheter un rsi a 35 ou un roc_5_pct a -2 (faiblesse ordinaire) ; racheter un symbole dont un trade de tes_trades_clotures_recents a motif_cloture stop_loss et fermee a moins de 4 heures de horodatage_utc.
+  Sans signal, reste en cash et dis-le en une phrase, sans achat de remplacement : des semaines sans trade sont normales ici, et un marche qui monte te laissera en cash. C'est prevu.
+  Chaque aller-retour coute environ 0,3 % (frais et glissement) : un rebond de 2 % n'en laisse que 1,7.
+  Donne un bias a 24 h (up, down ou flat) pour chacune des trois paires a chaque cycle, meme en hold.
+  Aucune news : la capitulation se lit dans les indicateurs et les 12 bougies fournies.
+univers:
+- BTC/USDT
+- ETH/USDT
+- SOL/USDT
+horizon_bougies: 3 a 18 bougies (12 heures a 3 jours), estimation ; la sortie a 18 bougies (au moins 70
+  h entre ouverte_le et horodatage_utc) est une consigne du brief, pas un garde-fou
+ouvertures_par_semaine_attendues: 'Estimation calibree sur 311 bougies d''un regime haussier : aucun signal
+  complet dans la base. rsi sous 30 n''y apparait que 5 fois, toutes sur SOL, jamais en meme temps que
+  roc_5_pct sous -4 ; BTC et ETH n''y passent jamais sous 30. Attendre 0 ouverture par semaine dans un
+  regime comme celui-la, 0 a 1 dans un regime nerveux, jusqu''au budget de 3 dans une baisse installee.
+  Le verdict exige 20 trades clos : le seuil allege a 15 suppose moins de 60 % du budget utilise, soit
+  au plus 14 ouvertures sur 24, donc il est hors de portee ici, et 20 trades clos demandent 2,5 ouvertures
+  par semaine pendant huit semaines de baisse. D''ou un verdict probable : non.'
+risque:
+  max_position_pct: 0.2
+  stop_loss_pct: 0.06
+  take_profit_pct: 0.08
+  max_round_trips_per_week: 3
+quand_ca_marche: |-
+  Marche nerveux qui alterne chutes brutales et rebonds techniques : chaque capitulation offre un rebond de 4 a 8 % en un ou deux jours, encaisse avant que la tendance ne reprenne, et l'objectif automatique a 8 % ramasse les meilleurs. La position unique de 20 % et le stop a 6 % limitent chaque erreur a 1,2 % du book, et le mandat protege le capital dans une baisse simplement en restant en cash entre deux signaux : il peut alors battre le panier passif non en gagnant beaucoup, mais en perdant beaucoup moins. Avec plusieurs capitulations par semaine, le budget de 3 ouvertures est consomme ; les 20 trades clos du verdict ne deviennent atteignables que si ce rythme tient huit semaines, mais le journal montre en tout cas des trades courts, faciles a juger un par un.
+quand_ca_casse: |-
+  Trois facons. Le krach qui continue : la bougie verte etait un piege, le stop a 6 % tombe en une bougie, le suivant aussi ; trois stops dans la semaine font environ 3,6 % du book, plus 0,3 % de friction par aller-retour, et rien n'empeche Claude de recommencer la semaine suivante si les signaux se repetent. La hausse continue : aucun signal pendant huit semaines, Claude reste en cash, perd contre le panier passif toute la hausse, et la fenetre se termine sans verdict financier : il faudrait 20 trades clos, et le seuil allege a 15 ne s'applique qu'a moins de 60 % du budget utilise, soit au plus 14 ouvertures, donc jamais ici. Dans une fenetre haussiere comme les 311 bougies qui ont servi a calibrer cette fiche, ou les quatre conditions ne se sont jamais reunies, c'est le resultat le plus probable, et il faut le savoir avant de choisir ce mandat. La desobeissance, enfin : la position unique et la sortie a 70 heures (18 bougies) sont des consignes que la couche de risque n'applique pas (elle autorise deux positions, soit 40 % du book, et ne ferme rien sur la duree) ; si Claude les oublie, l'exposition double et une position perdante peut trainer jusqu'au stop. Ce non-respect se lit dans positions_ouvertes et dans les motifs de cloture du journal, et compte comme un echec du mandat, meme si le trade finit gagnant.
+pour_qui:
+- prudent
+- patient
+- curieux
+axes:
+  horizon: court (1 a 3 jours)
+  mouvement: acheter la faiblesse
+  temperament: prudent
+  exposition: faible
+  verdict_probable: non

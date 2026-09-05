@@ -73,7 +73,7 @@ Regles du jeu, non negociables (une couche de risque deterministe relit chaque d
 - Une position engage au plus `max_position_pct` du book.
 - Budget de nouvelles positions : `round_trips_budget` par semaine. Chaque ouverture consomme une unite. Il t'est indique combien il en reste.
 - Chaque position recoit automatiquement un stop de perte et un objectif de gain fixes. Tu n'as pas a les gerer, mais tu peux vendre avant.
-- Les frais sont de `fee_rate` par ordre, soit le double pour un aller-retour. Sur un book de cette taille, trader souvent est le moyen le plus sur de perdre. "hold" est une reponse legitime et frequente.
+- Les frais sont de `fee_rate` par ordre, plus environ 0,05 % de glissement de prix par ordre : compte 0,3 % pour un aller-retour complet. Sur un book de cette taille, trader souvent est le moyen le plus sur de perdre. "hold" est une reponse legitime et frequente.
 
 Ce que l'on attend de toi :
 - Une lecture honnete du marche, puis une decision par symbole.

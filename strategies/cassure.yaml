@@ -1,0 +1,59 @@
+# Mandat « Cassure confirmee ». Fiche = documentation ET configuration : le brief est injecte tel quel
+# dans le prompt systeme de Claude. Se choisit avant t0 (config.yaml, experiment.mandate).
+id: cassure
+nom: Cassure confirmee
+famille: Rupture
+accroche: Acheter le nouveau plus haut quand le volume le confirme, et lacher vite si la cassure echoue.
+philosophie: |-
+  Quand un prix depasse son plus haut des vingt dernieres bougies avec un volume nettement superieur a la normale, des acheteurs sont prets a payer plus cher que tout le monde depuis trois jours. Claude achete ce moment precis, pas avant, pas trois bougies apres, et note le niveau franchi comme ligne d'echec. Beaucoup de cassures echouent : la regle est alors de sortir sans discuter des qu'une bougie cloture sous ce niveau, bien avant le stop automatique. Le pari est de perdre souvent un peu pour gagner parfois beaucoup ; huit semaines peuvent ne contenir que la premiere moitie. C'est, avec Vingt-quatre heures, le mandat le plus actif du catalogue, celui qui achete par construction le prix le plus haut du moment, et sa sortie rapide est une consigne dont le respect se lit dans le journal, pas une contrainte de la couche de risque.
+ce_que_claude_regarde:
+- 'dist_hh20_pct superieur a -0,5 : le close est a moins de 0,5 % du plus haut 20 bougies (cet indicateur
+  est toujours inferieur ou egal a 0)'
+- 'La derniere bougie de dernieres_bougies_4h cloture au-dessus du plus haut (h) des onze bougies qui
+  la precedent : un nouveau plus haut visible dans le dossier'
+- 'vol_ratio superieur a 1,3 sur cette derniere bougie cloturee : le volume confirme'
+- 'close au-dessus de ema_slow et roc_20_pct positif : pas de cassure achetee dans une baisse'
+- 'Le niveau franchi, ecrit en premiere phrase du reasoning d''achat et recopie a chaque cycle : la premiere
+  bougie qui cloture dessous declenche la vente'
+brief: |-
+  Tu achetes les cassures confirmees par le volume, rien d'autre.
+  Une cassure est valide au cycle present si les quatre conditions sont reunies : dist_hh20_pct superieur a -0,5 ; la derniere bougie de dernieres_bougies_4h cloture au-dessus du plus haut (h) des onze bougies qui la precedent ; vol_ratio superieur a 1,3 ; close au-dessus de ema_slow. Trois sur quatre, c'est hold.
+  N'achete pas si roc_20_pct est negatif, ni si close depasse de plus de 3 % le plus haut des onze bougies precedentes : c'est trop tard, attends la suivante.
+  Taille : max_position_pct du book, ou tout le cash_disponible s'il est plus petit. Une seule ouverture par cycle : si deux symboles cassent ensemble, prends celui dont vol_ratio est le plus eleve.
+  Ecris en premiere phrase de ton reasoning d'achat le niveau franchi, en prix : le plus haut des onze bougies precedentes. C'est ton seuil d'echec, il ne bouge plus. Tant que la position est ouverte, recopie ce seuil en premiere phrase de chaque reasoning sur ce symbole, pour le retrouver dans tes_decisions_recentes.
+  Vends si la derniere bougie cloturee ferme sous ce seuil, quel que soit ton pnl_pct : la cassure a echoue, ne negocie pas avec elle.
+  Sinon, laisse courir jusqu'a l'objectif automatique : ne vends pas parce que le gain te parait suffisant, ni parce que rsi depasse 70, c'est normal dans une cassure qui tient.
+  Ne fais pas : acheter un rebond depuis un plus bas, acheter une tendance sans cassure fraiche, deplacer ton seuil pour rester en position.
+  Chaque aller-retour coute environ 0,3 %. Les cassures avec volume sont rares : certaines semaines n'en offrent aucune.
+  Donne ton bias a 24 h pour chaque paire a chaque cycle, meme en hold. Tu ne vois ni news ni carnet d'ordres : une cassure se lit dans le prix et le volume fournis.
+univers:
+- BTC/USDT
+- ETH/USDT
+- SOL/USDT
+horizon_bougies: 1 a 6 bougies (4 a 24 h) pour les echecs, qui sont la majorite ; 12 a 60 bougies (2 a
+  10 jours) pour les cassures qui tiennent ; mediane sous 24 h ; estimation calibree sur 311 bougies d'un
+  regime haussier
+ouvertures_par_semaine_attendues: 'Environ 2 sur un budget de 4 ; estimation calibree sur 311 bougies
+  d''un regime haussier : la simulation des regles du brief sur les bougies en base donne 1,9 ouverture
+  par semaine (petit echantillon, 2,7 semaines d''ema_slow valide), 2 a 3 si le marche accelere. Soit
+  15 a 24 trades clos en 8 semaines : le seuil du verdict financier (20, ou 15 si moins de 60 % du budget
+  de 32 ouvertures est consomme) est atteignable, avec une marge mince dans le bas de la fourchette.'
+risque:
+  max_position_pct: 0.35
+  stop_loss_pct: 0.06
+  take_profit_pct: 0.12
+  max_round_trips_per_week: 4
+quand_ca_marche: |-
+  Marche qui accelere apres une phase calme : les nouveaux plus hauts s'enchainent, le volume suit, et si deux ou trois cassures sur dix vont chercher l'objectif de 12 % en quelques jours (hypothese, non calibree), un seul vrai depart de SOL ou d'ETH paie plusieurs fausses cassures. La sortie sur le seuil franchi limite le plus souvent chaque echec a 1 a 3 % de la position, davantage si la bougie qui casse le seuil est grande, et jamais plus que le stop a 6 % ; le mode de sortie dominant est alors le signal, pas la cage. Le mandat est naturellement en cash pendant les phases mortes, ce qui le protege quand le marche se retourne sans cassure prealable, et son journal est lisible : a chaque cycle en position, le seuil est ecrit et le prix se compare a lui.
+quand_ca_casse: |-
+  Marche en range large : le prix touche le haut de la fourchette, casse d'un cheveu avec du volume, puis retombe. Six ou huit fausses cassures de suite coutent chacune 1 a 3 % de la position, jusqu'a 6 % si le stop parle avant le seuil, plus 0,3 % de friction, soit 3 a 9 % du book en un mois sans qu'aucune regle n'ait ete violee : c'est le mandat ou les frais pesent le plus lourd apres Vingt-quatre heures, et le candidat naturel au verdict J du protocole, trade trop pour la taille du book. Il souffre aussi quand la cassure tient puis replonge d'un cheveu sous le seuil avant de repartir : la regle l'ejecte juste avant la vraie hausse. Par construction, il achete toujours le prix le plus haut du moment. Expose moins de 20 % du temps en moyenne (9 % dans la simulation sur les bougies en base), il fera loin derriere le panier dans une hausse continue, ou le repere gagne pendant qu'il attend la prochaine cassure. Enfin, la vente sous le seuil, l'interdiction de deplacer ce seuil et le relais du niveau franchi dans le reasoning sont des consignes : la couche de risque n'applique que le stop a 6 % et l'objectif a 12 %, et si Claude oublie de recopier le seuil, celui-ci disparait de tes_decisions_recentes au bout de trois cycles. Leur respect se lit dans le journal, pas dans les chiffres.
+pour_qui:
+- actif
+- equilibre
+- methodique
+axes:
+  horizon: court (1 a 3 jours)
+  mouvement: jouer la rupture
+  temperament: equilibre
+  exposition: faible
+  verdict_probable: oui

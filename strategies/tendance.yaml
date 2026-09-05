@@ -1,0 +1,65 @@
+# Mandat « Suiveur de tendance ». Fiche = documentation ET configuration : le brief est injecte tel quel
+# dans le prompt systeme de Claude. Se choisit avant t0 (config.yaml, experiment.mandate).
+id: tendance
+nom: Suiveur de tendance
+famille: suivi de tendance
+accroche: Acheter ce qui monte deja, rester tant que ca monte, sortir quand la pente casse.
+philosophie: |-
+  L'idee est vieille comme les marches : un mouvement qui dure depuis des semaines a plus de chances de continuer que de s'inverser au moment precis ou l'on regarde. Claude n'achete que la force deja visible : moyenne rapide (50 bougies de 4 h) au-dessus de la moyenne lente (200 bougies), prix nettement au-dessus de la moyenne rapide, elan positif sur 20 bougies et RSI au-dessus de 55, puis il garde tant que cet alignement tient. Il accepte de rater le debut et la fin de chaque mouvement ; le stop est large et l'objectif lointain pour ne pas etre sorti par une simple respiration. C'est le mandat le plus proche d'une detention passive equipee d'un frein. Ses regles de vente et son delai de 24 h avant de reprendre une paire sont des consignes : la couche de risque n'applique que le stop, l'objectif et les plafonds, et leur respect se lit dans le journal.
+ce_que_claude_regarde:
+- 'trend = up (ema_fast au-dessus de ema_slow) : la tendance de fond est la'
+- 'close au moins 2 % au-dessus de ema_fast, rsi au moins 55, roc_20_pct superieur a 0 : c''est la force
+  qu''il achete, pas un repli'
+- 'roc_5_pct sous +8 % : il n''achete pas une bougie geante, il attend le cycle suivant'
+- 'dist_hh20_pct : entre deux candidats, la paire la plus proche de son plus haut 20 bougies'
+- Les clotures (c) des deux dernieres bougies de dernieres_bougies_4h par rapport a ema_fast, et trend,
+  pour la sortie
+- tes_trades_clotures_recents (champ fermee) pour ne pas reprendre une paire sortie il y a moins de 24
+  h
+brief: |-
+  Tu es un suiveur de tendance : tu achetes la force deja visible, jamais un creux, et tu ne devines jamais un sommet.
+  Achete seulement si les quatre conditions sont reunies au meme cycle : trend vaut up, close depasse ema_fast d'au moins 2 % (close / ema_fast - 1 >= 0,02), roc_20_pct est superieur a 0 et rsi est au moins 55. Un prix colle a ema_fast avec un rsi sous 50 est un repli, pas ton mandat : hold.
+  Si roc_5_pct depasse +8 %, attends le cycle suivant : tu suis une pente, pas une bougie geante. Entre deux candidats, prefere celui dont dist_hh20_pct est le plus proche de zero.
+  Prends la taille maximale, max_position_pct : dans ce mandat, une conviction de tendance ne se dose pas.
+  Tiens la position tant que trend reste up. Ne vends pas sur une bougie rouge, ni parce que pnl_pct est deja beau, ni parce que rsi est haut : un rsi a 75 est normal dans une tendance.
+  Vends seulement si les deux dernieres bougies de dernieres_bougies_4h cloturent (c) toutes deux sous ema_fast, ou si trend passe a down. Sinon, laisse le stop et l'objectif automatiques travailler.
+  Ne reprends pas une paire si tes_trades_clotures_recents montre un trade dessus dont fermee date de moins de 24 h : le budget hebdomadaire ne sert pas a rentrer et sortir sur la meme paire.
+  Si aucun symbole ne remplit les conditions, reste en cash et dis-le : rester des semaines sans trade fait partie de la methode, pas un echec.
+  En premiere phrase de ton reasoning, nomme la condition qui tient et celle qui casserait ta these.
+  Donne un bias a 24 h pour chaque symbole a chaque cycle, meme en hold ; dans une tendance etablie, ton bias par defaut suit trend, et tu expliques quand tu t'en ecartes.
+  N'invoque jamais une news ou un evenement : tu ne vois que les prix et les indicateurs fournis.
+univers:
+- BTC/USDT
+- ETH/USDT
+- SOL/USDT
+horizon_bougies: 30 a 120 bougies (5 a 20 jours), mediane estimee vers 9 jours ; classe long parce que
+  les positions coupees a la cassure de ema_fast sont courtes et que celles qui suivent la tendance jusqu'a
+  sa cassure ou a l'objectif durent deux semaines et plus ; estimation calibree sur 311 bougies d'un regime
+  haussier
+ouvertures_par_semaine_attendues: 'Estimation : 1 a 1,5 par semaine (budget 3), calibree sur 311 bougies
+  d''un regime haussier, soit 8 a 12 trades clos sur 8 semaines. Le verdict financier exige 20 trades
+  clos ; le seuil reduit de 15 ne s''applique que si moins de 60 % du budget a ete utilise, soit au plus
+  14 ouvertures sur 24, ce qui ne permet pas 15 clotures : c''est donc 20, autrement dit 2,5 ouvertures
+  par semaine. Le verdict exige un rythme superieur a celui attendu ; il ne serait atteint que dans un
+  marche qui casse souvent ses tendances, celui ou le mandat paie le plus de frais. Verdict financier
+  incertain, pas exclu puisque le budget de 24 ouvertures le permet ; le mandat se juge d''abord sur le
+  bias, l''exces face a B2, l''exposition par regime et le respect du brief.'
+risque:
+  max_position_pct: 0.4
+  stop_loss_pct: 0.1
+  take_profit_pct: 0.3
+  max_round_trips_per_week: 3
+quand_ca_marche: |-
+  Marche qui monte par paliers pendant plusieurs semaines, avec des replis qui ne cassent pas la moyenne rapide : Claude est expose a 80 % presque en continu (deux positions de 40 %), son resultat ressemble a celui du panier passif moins les frais, et la qualite de ses sorties fait la difference. Avec une ou deux jambes de +15 a +30 % sur ETH ou SOL, une seule position peut rembourser plusieurs faux departs a -10 %. Il a aussi le merite d'etre en cash une fois que trend vaut down sur les trois paires, donc de ne plus perdre une fois la baisse installee, apres en avoir subi le debut : le passage de trend a down (ema_fast sous ema_slow, 50 bougies contre 200) arrive avec des semaines de retard, alors que le book est expose jusqu'a 80 %. Dans les 311 bougies en base, le stop a 10 % n'a jamais ete touche avant l'objectif sur un horizon de 14 jours, mais ce constat repose sur 2,7 semaines de ema_slow valide, en regime haussier, et ne vaut pas pour un autre regime.
+quand_ca_casse: |-
+  Marche en dents de scie autour des moyennes : chaque realignement declenche un achat a 40 % du book, chaque rechute sous ema_fast une vente, et l'on paie 0,3 % de frais et glissement par aller-retour pour rien, jusqu'a trois fois par semaine. Marche qui se retourne brutalement : le stop a 10 % sur une position de 40 % coute 4 % du book en une fois ; deux paires correlees qui chutent ensemble font 8 %, au-dela de la perte journaliere maximale de 6 %, et gelent les achats jusqu'au lendemain. Marche qui bascule lentement : trend ne passe a down que des semaines apres le sommet ; entre-temps les deux clotures sous ema_fast sortent les positions, mais chaque rebond de 2 % au-dessus de ema_fast avec rsi a 55 peut redeclencher un achat dans une baisse qui s'installe. Dans une hausse continue, le mandat perd contre le panier passif par construction : exposition plafonnee a 80 %, entrees en retard sur chaque jambe, sorties en retard sur chaque sommet. La phrase 'le stop n'a jamais ete touche avant l'objectif' repose sur 2,7 semaines de ema_slow valide (les 200 premieres bougies sur 311 ne servent qu'a la chauffe) dans un seul regime haussier : elle ne dit rien d'un marche baissier ou sans direction. Les regles de vente (deux clotures sous ema_fast, trend qui passe a down) et le delai de 24 h avant de reprendre une paire sont des consignes que la couche de risque n'applique pas ; si Claude les ignore, seul le journal le montrera. Enfin, avec 8 a 12 trades clos attendus contre 20 exiges, la fenetre risque de finir sans verdict financier : on apprendra comment Claude attend, pas combien il gagne.
+pour_qui:
+- patient
+- audacieux
+- methodique
+axes:
+  horizon: long (2 semaines et plus)
+  mouvement: suivre le mouvement
+  temperament: audacieux
+  exposition: forte
+  verdict_probable: incertain

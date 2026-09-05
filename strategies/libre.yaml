@@ -1,45 +1,61 @@
-# Mandat temoin : Claude choisit son propre style et doit l'expliquer.
-# C'est le mandat par defaut et la reference contre laquelle les autres se lisent.
+# Mandat « Carte blanche ». Fiche = documentation ET configuration : le brief est injecte tel quel
+# dans le prompt systeme de Claude. Se choisit avant t0 (config.yaml, experiment.mandate).
 id: libre
-nom: "Mandat libre"
-famille: "Temoin"
-accroche: "Claude decide de son propre style et doit dire lequel, et pourquoi."
-philosophie: >
-  Aucune consigne de style. Claude recoit le dossier et les regles du jeu, rien
-  de plus. Il doit lui-meme choisir quand agir, quand attendre, et expliquer sa
-  logique a chaque cycle. C'est le mandat qui repond le plus directement a la
-  question de depart : comment une IA s'organise-t-elle pour trader quand on la
-  laisse faire ? C'est aussi le temoin contre lequel les mandats diriges se lisent.
+nom: Carte blanche
+famille: temoin
+accroche: 'Personne ne dit a Claude comment trader : il choisit sa methode, la redit a chaque cycle et
+  doit s''y tenir, et il sert de point de comparaison aux autres.'
+philosophie: |-
+  Ici, personne ne dit a Claude quoi regarder ni quand agir : il recoit le dossier et les regles du jeu, choisit lui-meme une methode chiffree et doit la redire en une ligne a chaque cycle, parce que le dossier ne lui renvoie pas ses textes precedents. Ce mandat sert de temoin : ce que Claude fait spontanement est la ligne de base. Comme chaque mandat tourne dans sa propre fenetre, donc sur un marche different, la comparaison avec les mandats diriges reste indicative : elle porte sur le comportement (patience, budget, fidelite a une methode, bias) plus que sur le P&L. Les garde-fous sont ceux du protocole, sans modification : 40 % du book par position au plus, stop a 8 %, objectif a 15 %, quatre ouvertures par semaine. Tout le reste (fidelite a la methode annoncee, patience, gestion du budget sur la semaine, honnetete sur les stops) est une consigne dont le respect se lit dans le journal, pas une contrainte appliquee par la couche de risque.
 ce_que_claude_regarde:
-  - "Tout le dossier : tendance (EMA50 / EMA200), RSI, ATR, momentum 5 et 20 bougies, volume, extremes 20 bougies"
-  - "Ses propres decisions passees et leur resultat"
-  - "Le budget d'ouvertures restant dans la semaine"
-brief: >
-  Tu n'as pas de style impose. Choisis toi-meme ta facon de trader et nomme-la
-  dans ta lecture du marche a chaque cycle : suiveur de tendance, acheteur de
-  replis, attentiste, ou autre. Reste coherent d'un cycle a l'autre : si tu changes
-  d'approche, dis pourquoi, en citant ce qui t'a fait changer d'avis. Rappelle-toi
-  que chaque aller-retour coute 0,2 % et que ne rien faire est une decision
-  legitime. N'invente aucune information absente du dossier.
-univers: ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
-horizon_bougies: "au choix de Claude, typiquement 6 a 60 bougies (1 a 10 jours)"
-ouvertures_par_semaine_attendues: "0 a 4, selon ce que Claude decide"
+- Tout le dossier, a sa discretion, a condition de dire quels champs de indicateurs il suit et avec quels
+  seuils
+- 'La premiere phrase de ses raisons dans tes_decisions_recentes (8 dernieres decisions, raison tronquee
+  a 240 caracteres) : c''est la seule trace de sa methode d''un cycle a l''autre'
+- 'tes_trades_clotures_recents (6 derniers) : chaque stop doit etre nomme bruit de marche ou these fausse,
+  et seuls ces chiffres peuvent motiver un changement de methode'
+- 'round_trips_restants_cette_semaine et horodatage_utc : le budget de 4 se gere sur la semaine entiere'
+brief: |-
+  Tu choisis toi-meme ta methode : c'est ce que l'on observe. Elle tient en une ligne chiffree : quels champs de indicateurs tu suis, quel seuil declenche un achat, ce qui te fait vendre avant stop_loss ou take_profit, combien de bougies de 4 h tu tiens, quelle taille tu engages (au plus max_position_pct du book).
+  Le dossier ne garde que tes 8 dernieres decisions (raison tronquee a 240 caracteres) et tes 6 derniers trades clos. Ecris donc ta methode en PREMIERE phrase du reasoning de chaque decision, sous 200 caracteres, a chaque cycle, meme en hold.
+  Au cycle suivant, relis-la dans tes_decisions_recentes et applique-la : chaque achat et chaque vente se rattache a une regle qui y figure.
+  Pour changer de methode, annonce-le dans market_view (ancienne regle, nouvelle regle) et motive-le par des chiffres de tes_trades_clotures_recents : une perte isolee n'est pas un motif, une serie de stops que ta regle n'expliquait pas, si. Un changement silencieux est une faute, meme gagnant.
+  Ne trade pas pour trader : hold est une reponse complete. Si aucune regle n'est remplie, dis-le et reste en cash. Tiens le nombre de bougies annonce, sauf si ta regle de vente se declenche.
+  Un aller-retour coute 0,3 % de la position (0,2 % de frais plus environ 0,1 % de glissement) : quatre ouvertures par semaine, c'est pres de 4 % du book sur la fenetre. Gere round_trips_restants_cette_semaine sur la semaine entiere, garde une ouverture pour sa seconde moitie.
+  Pour chaque stop dans tes_trades_clotures_recents, dis en une phrase : bruit de marche ou these fausse.
+  Ne fais pas : acheter sans citer l'indicateur et le seuil qui declenchent ; decrire une methode et en pratiquer une autre ; inventer une news.
+  Donne ton bias a 24 h pour chacune des trois paires a chaque cycle, meme sans trade.
+univers:
+- BTC/USDT
+- ETH/USDT
+- SOL/USDT
+horizon_bougies: au choix de Claude, annonce dans sa methode ; estimation entre 6 et 60 bougies de 4 h
+  (1 a 10 jours), calibree sur 311 bougies d'un regime haussier
+ouvertures_par_semaine_attendues: 'estimation, sans regle du brief pour la soutenir : 2 a 3 sur un budget
+  de 4 selon le panel du protocole (fiche d''origine sceptique, calibree sur 311 bougies d''un regime
+  haussier), soit 16 a 24 trades clos en huit semaines. Le verdict financier exige 20 trades clos, ou
+  15 si moins de 60 % du budget a ete utilise (moins de 20 ouvertures sur 32). A 2 par semaine (16 ouvertures)
+  le seuil est 15 ; a 3 par semaine (24 ouvertures) il est 20 : atteignable dans les deux cas, mais pas
+  acquis. La zone delicate est autour de 20 ouvertures, ou le seuil remonte a 20 alors que des positions
+  peuvent encore etre ouvertes le jour du verdict. Verdict financier : oui si Claude ouvre 2 fois par
+  semaine ou plus, non s''il choisit le hold (cas E du protocole sous 8 trades clos) : ce choix est justement
+  ce que le temoin observe, d''ou un verdict probable incertain.'
 risque:
-  max_position_pct: 0.40
+  max_position_pct: 0.4
   stop_loss_pct: 0.08
   take_profit_pct: 0.15
   max_round_trips_per_week: 4
-quand_ca_marche: >
-  Quand on veut observer le comportement spontane du modele plutot que tester
-  une these. Le journal est le plus riche des mandats : Claude y expose et
-  justifie ses propres choix de style.
-quand_ca_casse: >
-  Un style qui change trop souvent produit un comportement incoherent, difficile
-  a lire et souvent perdant par friction. Sans consigne, Claude peut aussi
-  simplement rester en attente la plupart du temps, ce qui est un resultat en soi
-  mais donne peu de trades a mesurer.
-pour_qui: ["curieux", "observateur", "equilibre"]
+quand_ca_marche: |-
+  Claude se donne une methode simple et chiffree, la redit a l'identique en tete de ses raisons cycle apres cycle, et ses ventes sur signal precedent les stops. Le journal est alors le plus riche du banc d'essai : on voit ce qu'il regarde spontanement, combien de bougies il tient, s'il depense le budget ou le laisse dormir, si sa confiance est calibree et si ses previsions a 24 h depassent le hasard. Quand un changement de methode arrive, il est annonce dans market_view et appuye sur les chiffres de ses trades clos, et l'on peut le dater. C'est le seul mandat dont le resultat se compare directement au protocole tel qu'il a ete ecrit, et la base a laquelle chaque brief dirige pourra se comparer, fenetre apres fenetre, avec la prudence qu'impose un marche different.
+quand_ca_casse: |-
+  Claude change de logique d'un cycle a l'autre sans le dire : il achete une cassure le lundi, un repli le mercredi, et la ligne de methode en tete de ses raisons devient une formule creuse ou change de contenu sans passer par market_view. Le taux de refus par la couche de risque monte, les theses d'entree ne sont plus reprises aux cycles suivants et le P&L n'est plus attribuable a rien. Deuxieme panne, symetrique : sans consigne de patience, un modele qui recoit un dossier toutes les quatre heures a tendance a vouloir agir, brule les quatre ouvertures des le lundi et paie pres de 4 % du book en friction sur la fenetre ; ou au contraire il reste en hold presque en permanence et la fenetre finit en cas E du protocole, sans verdict financier. Rien de tout cela n'est empeche par la couche de risque : la fidelite a la methode, la gestion du budget sur la semaine et l'honnetete sur les stops sont des consignes, dont le respect se mesure a posteriori dans le journal. Enfin, c'est le mandat le moins reproductible : une deuxieme fenetre pourrait voir Claude choisir une autre methode, et son resultat financier depend d'abord de ce choix.
+pour_qui:
+- curieux
+- observateur
+- equilibre
 axes:
-  horizon: "variable"
-  style: "libre"
-  temperament: "equilibre"
+  horizon: variable
+  mouvement: au choix
+  temperament: equilibre
+  exposition: inconnue (temoin)
+  verdict_probable: incertain

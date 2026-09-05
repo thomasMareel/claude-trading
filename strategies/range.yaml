@@ -1,0 +1,64 @@
+# Mandat « Entre deux murs ». Fiche = documentation ET configuration : le brief est injecte tel quel
+# dans le prompt systeme de Claude. Se choisit avant t0 (config.yaml, experiment.mandate).
+id: range
+nom: Entre deux murs
+famille: retour a la moyenne
+accroche: 'N''agit que quand le marche n''a pas de tendance : achete pres du bas de la fourchette des
+  20 dernieres bougies, revend au milieu, et se tait des que le marche part.'
+philosophie: |-
+  Une bonne partie du temps les prix ne vont nulle part : ils rebondissent entre un plancher et un plafond, et ce mandat n'exploite que ces periodes : Claude verifie d'abord qu'il n'y a pas de tendance, puis achete quand le prix est colle au bas de la fourchette recente et revend quand il en a parcouru la moitie. Les gains vises sont petits, 2 a 4 %, donc la friction de 0,3 % par aller-retour pese lourd et il faut pres de six gagnants sur dix. Le danger propre a ce style est le jour ou le plancher cede : ce qui semblait bon marche devient encore moins cher, et la regle qui coupe la position ne s'applique qu'apres la perte ; les sorties au milieu, a -3 % et apres 70 h sont d'ailleurs des consignes lues par Claude, pas des automatismes de la couche de risque, qui ne pose que le stop a 6 % et l'objectif a 8 %. A ne pas confondre avec le Contrarien, qui achete la panique (rsi sous 30, chute de 4 % en cinq bougies) dans n'importe quel regime, en une seule position de 20 %, ni avec le Repli, qui exige une tendance haussiere : ici la condition premiere est l'absence de tendance, le seuil est plus doux (rsi sous 35, pas de chute exigee), la taille 30 % et deux positions. Range et Contrarien peuvent acheter la meme bougie ; le Contrarien achetera plus tard et plus bas, et lui seul achetera dans une tendance.
+ce_que_claude_regarde:
+- 'ema_fast et ema_slow a moins de 1,5 % l''une de l''autre (ema_fast / ema_slow entre 0.985 et 1.015)
+  et roc_20_pct entre -5 et +5 : l''absence de tendance, condition prealable a tout achat'
+- 'dist_ll20_pct sous 2 avec rsi sous 35 : le close colle au bas de la fourchette'
+- 'Les bornes de la fourchette, absentes du dossier, recalculees a chaque cycle : hh20 = close / (1 +
+  dist_hh20_pct/100), ll20 = close / (1 + dist_ll20_pct/100), milieu = (hh20 + ll20) / 2'
+- 'La largeur de la fourchette, dist_ll20_pct moins dist_hh20_pct, au moins 8 : en dessous, le milieu
+  est a moins de 2 % d''une entree faite jusqu''a 2 % au-dessus du plancher, et le gain ne paie ni la
+  coupe a -3 % ni la friction'
+- 'Un close plus de 3 % sous entree (positions_ouvertes) : le plancher a cede, sortie sans attendre le
+  stop'
+- ouverte_le pour la limite de 70 h (18 bougies), tes_trades_clotures_recents pour le taux de reussite
+  et les paires a ne pas racheter, round_trips_budget moins round_trips_restants_cette_semaine pour les
+  ouvertures deja faites dans la semaine
+brief: |-
+  Tu trades le retour a la moyenne, seulement sans tendance. Il y a tendance si ema_fast / ema_slow sort de 0.985 a 1.015 ou si roc_20_pct sort de -5 a +5 : alors ne fais rien sur la paire, quel que soit le rsi.
+  Sans tendance, achete quand dist_ll20_pct est sous 2 et rsi sous 35, avec 30 % du book (size_pct_of_equity 0.30), au plus deux positions.
+  Bornes, absentes du dossier : hh20 = close / (1 + dist_hh20_pct/100), ll20 = close / (1 + dist_ll20_pct/100), milieu = (hh20 + ll20) / 2. La largeur, dist_ll20_pct moins dist_hh20_pct (il est negatif ou nul, la difference est donc positive), doit valoir au moins 8, sinon le milieu est trop pres pour payer coupe et friction : n'achete pas. Note plancher et milieu en premiere phrase du reasoning d'achat.
+  Vends quand le close atteint le milieu recalcule ce cycle ou que rsi depasse 55 ; n'attends pas le haut, atteint une fois sur deux.
+  Vends si le close passe plus de 3 % sous entree (positions_ouvertes) : le plancher a cede, n'attends pas le stop.
+  Vends aussi au premier cycle ou ouverte_le date de plus de 70 h (18 bougies) sans que le milieu soit atteint.
+  Ne rachete pas une paire dont tes_trades_clotures_recents montre une perte close depuis moins de 80 h : elle t'a dit qu'elle cassait.
+  Friction : 0,3 % par aller-retour pour viser 2 a 4 % ; il te faut pres de six gagnants sur dix si tu coupes a -3 %, trois sur quatre si le stop te rattrape. Si moins de 4 de tes 6 derniers trades clos sont gagnants, n'ouvre qu'une position par semaine (deja ouvertes : round_trips_budget moins round_trips_restants_cette_semaine), sans reduire la taille.
+  La plupart des cycles tu ne fais rien ; des semaines sans trade en tendance sont normales.
+  Donne ton bias a 24 h pour chaque paire a chaque cycle, meme sans trade ; en fourchette il est souvent flat.
+univers:
+- BTC/USDT
+- ETH/USDT
+- SOL/USDT
+horizon_bougies: 6 a 18 bougies (1 a 3 jours), avec une sortie demandee au premier cycle apres 70 h de
+  detention, soit 18 bougies (estimation)
+ouvertures_par_semaine_attendues: 'estimation : zero dans les semaines de tendance, 1 a 3 par grappes
+  dans les semaines sans tendance ; sur la fenetre, de quelques unites si la tendance domine a 10 a 18
+  en longue consolidation, au plus 19 (60 % du budget de 32 = 19,2), ce qui ramene le seuil de verdict
+  a 15 trades clos ; sur les 2,7 semaines de regime haussier en base, le signal complet ne s''est jamais
+  declenche'
+risque:
+  max_position_pct: 0.3
+  stop_loss_pct: 0.06
+  take_profit_pct: 0.08
+  max_round_trips_per_week: 4
+quand_ca_marche: |-
+  Marche qui hesite pendant des semaines dans une bande de 8 a 12 %, comme les longues consolidations apres une hausse : chaque aller-retour rapporte 2 a 4 %, soit 1,7 a 3,7 % une fois la friction payee (estimation), et le mandat enchaine les petits gains pendant que le panier passif fait du surplace. C'est le seul mandat concu pour un marche sans direction, la ou les suiveurs de tendance s'epuisent en faux departs. Le filtre de tendance le tient a l'ecart des phases directionnelles, ou il ne perd rien parce qu'il ne fait rien : son exposition moyenne reste faible et son book ressemble a du cash la plupart du temps.
+quand_ca_casse: |-
+  Quand le plancher cede : l'achat au bas de la fourchette devient une position a -3 % puis -6 % en une ou deux bougies, et la regle de sortie a -3 % se declenche apres la perte, pas avant. Le rapport est defavorable par construction : un gain vise de 2 a 4 % contre une coupe a 3,3 % friction comprise, donc un seul faux plancher efface un ou deux gagnants, deux ou trois si c'est le stop a -6 % qui coupe, et il faut pres de six gagnants sur dix avec des sorties a -3 %, trois sur quatre si le stop rattrape souvent la position. Le filtre de tendance arrive toujours en retard d'une ou deux journees, ce qui fait acheter un bas de fourchette qui est en realite le debut d'une baisse. Les sorties au milieu, a -3 % et apres 70 h sont des consignes : la couche de risque ne pose que le stop et l'objectif, et leur respect se lit dans le journal, apres coup. La memoire du dossier est courte : les 8 dernieres decisions couvrent moins de 3 cycles sur trois paires, donc la note d'achat (plancher, milieu) disparait au bout d'une dizaine d'heures et le milieu est recalcule chaque cycle sur une fenetre de 20 bougies qui glisse : la cible bouge pendant la detention. C'est le style le plus penalise par les frais sur 4 h : a 15 trades dans la fenetre et 30 % de taille, la friction seule coute environ 1,4 % du book. Le verdict financier est incertain et penche vers l'absence de verdict si la tendance dure : il exige 15 trades clos si moins de 60 % du budget est utilise, soit environ deux par semaine pendant huit semaines, ce que seule une longue consolidation fournit ; sur les 2,7 semaines de regime haussier disponibles en base, la condition d'absence de tendance n'a tenu que 8 % du temps et le signal complet ne s'est jamais declenche. Une fenetre en tendance donne quelques trades ou aucun et pas de verdict, et elle se lira alors sur le bias, l'exces face a B2 et le respect du brief.
+pour_qui:
+- equilibre
+- methodique
+- patient
+axes:
+  horizon: court (1 a 3 jours)
+  mouvement: acheter la faiblesse
+  temperament: equilibre
+  exposition: faible
+  verdict_probable: incertain

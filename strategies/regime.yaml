@@ -1,0 +1,58 @@
+# Mandat « Sur ou sous la ligne ». Fiche = documentation ET configuration : le brief est injecte tel quel
+# dans le prompt systeme de Claude. Se choisit avant t0 (config.yaml, experiment.mandate).
+id: regime
+nom: Sur ou sous la ligne
+famille: Quasi-passif
+accroche: 'Investi tant que le prix tient nettement au-dessus de sa moyenne lente, en cash quand il passe
+  nettement dessous : une seule question, posee toutes les 4 heures.'
+philosophie: |-
+  Ce mandat part du constat que la detention passive est difficile a battre et qu'un trader lent ne peut ajouter qu'une chose : ne pas etre present pendant les grandes baisses. Claude detient donc BTC et ETH tant que leur prix reste nettement au-dessus de sa moyenne lente (ema_slow, 200 bougies de 4 heures dans la configuration) et passe en cash quand il est passe nettement dessous, avec une marge de 2 % et une confirmation sur deux bougies pour ne pas reagir a chaque frisson. SOL est garde dans le dossier pour la prevision a 24 h mais jamais achete : trop volatil, il traverserait la ligne trop souvent pour un filtre aussi lent. Claude ne cherche ni le meilleur point d'entree ni le meilleur point de sortie et accepte de rater le debut de chaque retournement. C'est le mandat qui trade le moins et qui ressemble le plus a la detention passive.
+ce_que_claude_regarde:
+- 'close par rapport a ema_slow (la moyenne lente, 200 bougies dans la configuration) : au moins 2 % au-dessus
+  pour acheter, au moins 2 % en dessous pour vendre'
+- 'Le c de l''avant-derniere bougie de dernieres_bougies_4h, compare a la meme ema_slow : c''est la confirmation
+  sur deux cycles'
+- Le champ trend (ema_fast au-dessus de ema_slow), exige a up pour acheter
+- motif_cloture dans tes_trades_clotures_recents, pour racheter au cycle suivant si un stop ou un objectif
+  a ferme une position alors que le regime tient
+- 'Rien d''autre : rsi, vol_ratio, roc_5_pct, roc_20_pct, atr_pct et les distances aux extremes sont ignores
+  par consigne'
+brief: |-
+  Tu appliques un filtre de regime, pas une gestion active. N'achete que BTC/USDT et ETH/USDT. SOL/USDT reste dans ton dossier pour le bias, mais ne l'achete jamais : trop volatil, il traverserait la ligne trop souvent pour un filtre aussi lent.
+  La ligne est ema_slow. Achete une paire, a max_position_pct, quand close est superieur ou egal a 1,02 fois ema_slow, que trend vaut up et que le c de l'avant-derniere bougie de dernieres_bougies_4h depasse aussi 1,02 fois ema_slow (la meme valeur : elle bouge trop peu en 4 h pour changer la conclusion). Si les deux paires sont eligibles, ouvre les deux au meme cycle si round_trips_restants_cette_semaine le permet.
+  Vends une paire seulement quand close est inferieur ou egal a 0,98 fois ema_slow et que le c de l'avant-derniere bougie l'est aussi. Une seule cloture sous la ligne, meme violente, n'est pas un signal.
+  Commence chaque reasoning par l'ecart en pourcentage entre close et ema_slow.
+  Ignore rsi, vol_ratio, roc_5_pct, roc_20_pct, atr_pct, dist_hh20_pct et dist_ll20_pct. Une position a -8 % au-dessus de la ligne se garde ; une position a +10 % passee sous la ligne se vend.
+  Si un stop ou un objectif automatique ferme une position (motif_cloture dans tes_trades_clotures_recents) alors que la condition d'achat tient encore, rachete au cycle suivant si le budget le permet.
+  N'anticipe jamais un franchissement : tu agis apres la ligne, jamais avant. Chaque aller-retour coute 0,3 % (0,2 % de frais plus environ 0,1 % de glissement). Ne vends pas pour encaisser un gain, ne change pas de seuil.
+  Attends-toi a passer des semaines sans rien faire : c'est le comportement normal de ce mandat, pas une anomalie a corriger.
+  A chaque cycle, meme sans trade, donne ton bias a 24 h pour chacune des trois paires, SOL/USDT compris.
+univers:
+- BTC/USDT
+- ETH/USDT
+- SOL/USDT
+horizon_bougies: 60 a 300 bougies et plus (plusieurs semaines), estimation ; une position peut durer toute
+  la fenetre de 8 semaines, soit 336 bougies
+ouvertures_par_semaine_attendues: 'estimation raisonnee : 0 a 0,5 par semaine, soit 2 a 4 ouvertures sur
+  les 8 semaines (les deux paires a l''entree en regime, puis une reprise par franchissement ou par sortie
+  automatique)'
+risque:
+  max_position_pct: 0.4
+  stop_loss_pct: 0.12
+  take_profit_pct: 0.3
+  max_round_trips_per_week: 2
+quand_ca_marche: |-
+  Marche qui installe une tendance longue dans un sens ou dans l'autre. En hausse durable, il capte l'essentiel du mouvement de BTC et ETH sur 80 % du book avec deux ou trois ordres en tout, et son ecart au panier vient alors de deux choses : les 20 % de cash, lisibles dans B1 moins B2, et l'absence de SOL, qui tombe dans Claude moins B2 avec le timing (un regime qui perd contre B2 pendant une hausse de SOL n'a pas mal lu la ligne, il a exclu la paire). En baisse durable, il sort quelques bougies apres le franchissement confirme et peut faire mieux que la detention passive, a condition que la baisse se prolonge apres sa sortie : c'est le seul scenario ou c'est possible. Dans les deux cas le journal est court et lisible, chaque decision se verifie avec deux nombres, close et ema_slow, et le bias sur les trois paires fournit quand meme 168 observations de lecture du marche.
+quand_ca_casse: |-
+  Marche qui oscille autour de sa moyenne lente : chaque traversee confirmee coute un aller-retour (0,2 % de frais plus environ 0,1 % de glissement, soit 0,3 %) et une sortie au pire moment, juste avant le rebond ; la marge de 2 % et la confirmation sur deux bougies filtrent une partie des faux signaux, pas tous, et deux ou trois d'entre eux dans la fenetre suffisent a faire pire que le panier. En hausse franche il perd aussi contre le panier : plafonne a 80 % d'exposition et sans SOL, il ne peut pas le suivre, et c'est structurel. Un stop a 12 % peut tomber sur une chute brutale alors que le prix reste au-dessus de la ligne, ou pendant les deux bougies de confirmation, et forcer une sortie puis un rachat que la logique n'avait pas prevus. L'exclusion de SOL, l'interdiction des autres indicateurs et l'interdiction de vendre hors signal sont des consignes : la couche de risque ne les fait pas respecter, leur respect se lit dans le journal. Enfin, avec 2 a 4 ouvertures et donc au plus 2 a 4 trades clos attendus en 8 semaines, le protocole ne prononcera pas de verdict financier (seuil : 20 trades clos, ou 15 si moins de 60 % du budget d'ouvertures a ete utilise) ; le cas E, moins de 8 trades clos, est le plus probable, et des positions seront sans doute encore ouvertes a la date du verdict, valorisees en liquidation. Ce mandat se juge sur l'exposition, l'ecart a B2, la discipline et le bias, pas sur le P&L.
+pour_qui:
+- patient
+- methodique
+- audacieux
+- observateur
+axes:
+  horizon: long (2 semaines et plus)
+  mouvement: suivre le mouvement
+  temperament: audacieux
+  exposition: forte
+  verdict_probable: non

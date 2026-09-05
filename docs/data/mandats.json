@@ -2,32 +2,333 @@
 "actif": "libre",
 "mandats": [
 {
-"id": "libre",
-"nom": "Mandat libre",
-"famille": "Temoin",
-"accroche": "Claude decide de son propre style et doit dire lequel, et pourquoi.",
-"philosophie": "Aucune consigne de style. Claude recoit le dossier et les regles du jeu, rien de plus. Il doit lui-meme choisir quand agir, quand attendre, et expliquer sa logique a chaque cycle. C'est le mandat qui repond le plus directement a la question de depart : comment une IA s'organise-t-elle pour trader quand on la laisse faire ? C'est aussi le temoin contre lequel les mandats diriges se lisent.\n",
+"id": "bougies_nues",
+"nom": "Le Lecteur de bougies",
+"famille": "Lecture brute",
+"accroche": "Pas d'indicateurs : il lit les douze dernieres bougies comme on lit un visage.",
+"philosophie": "Les moyennes mobiles, le RSI ou l'elan sont des resumes du prix : ils arrivent en retard et se contredisent souvent. Ce mandat demande a Claude de les ignorer et de ne regarder que les douze dernieres bougies de 4 heures de chaque paire : leur taille, leurs meches, la suite de plus bas qui montent ou descendent, le volume qui accompagne ou non le mouvement, comme le font beaucoup de traders humains devant un graphique. On veut savoir si Claude sait lire cette langue sans bequilles. Attention : les indicateurs restent affiches dans son dossier, et l'interdiction de s'en servir est une consigne, pas une contrainte technique ; son respect se lit dans le raisonnement ecrit a chaque cycle, ou Claude doit commencer par nommer les signaux qu'il voit. Il en va de meme pour la limite de 18 bougies par position : rien ne l'applique a sa place.",
 "ce_que_claude_regarde": [
-"Tout le dossier : tendance (EMA50 / EMA200), RSI, ATR, momentum 5 et 20 bougies, volume, extremes 20 bougies",
-"Ses propres decisions passees et leur resultat",
-"Le budget d'ouvertures restant dans la semaine"
+"Les douze bougies de dernieres_bougies_4h de chaque paire (o, h, l, c, v), et rien d'autre : les dix champs d'indicateurs sont affiches mais interdits",
+"La suite des plus bas (l) : trois plus bas consecutifs de plus en plus hauts dans les six dernieres bougies, c'est une pression acheteuse",
+"Une derniere bougie verte qui cloture au-dessus du plus haut (h) de la derniere bougie rouge parmi les douze, avec plus de volume (v) qu'elle : les acheteurs ont repris la main. Si les douze bougies sont vertes, il n'y a pas de rouge a depasser et le signal est absent",
+"Sur l'une des bougies 2, 3 ou 4 en partant de la fin, une meche basse (min(o, c) moins l) au moins deux fois plus longue que le corps, corps nul compris, suivie d'une bougie qui cloture plus haut qu'elle : les prix bas ont ete rejetes. La derniere bougie ne compte pas, sa suivante n'existe pas encore",
+"La taille de chaque bougie comparee au corps moyen des douze : une bougie rouge de plus de deux corps moyens est un signal de sortie, une verte de la meme taille veut dire qu'il arrive trop tard",
+"ouverte_le dans positions_ouvertes, compare a horodatage_utc, pour la limite de 18 bougies : le seuil est ecrit 70 heures parce que ouverte_le est horodate quelques secondes apres le cycle d'achat ; un seuil a 72 heures ne tomberait qu'a la dix-neuvieme bougie"
 ],
-"brief": "Tu n'as pas de style impose. Choisis toi-meme ta facon de trader et nomme-la dans ta lecture du marche a chaque cycle : suiveur de tendance, acheteur de replis, attentiste, ou autre. Reste coherent d'un cycle a l'autre : si tu changes d'approche, dis pourquoi, en citant ce qui t'a fait changer d'avis. Rappelle-toi que chaque aller-retour coute 0,2 % et que ne rien faire est une decision legitime. N'invente aucune information absente du dossier.\n",
+"brief": "Tu lis le prix brut : les douze bougies (o, h, l, c, v) de dernieres_bougies_4h. Indicateurs affiches mais interdits : ema_fast, ema_slow, rsi, atr_pct, roc_5_pct, roc_20_pct, vol_ratio, dist_hh20_pct, dist_ll20_pct, trend.\nVerte : c > o. Rouge : c < o. Corps : ecart entre o et c. Corps moyen : moyenne des douze corps. Meche basse : min(o, c) moins l.\nAchete seulement avec deux signaux sur trois : (a) trois l consecutifs de plus en plus hauts parmi les six dernieres ; (b) derniere bougie verte, c au-dessus du h de la derniere rouge des douze (aucune rouge : signal absent), v superieur au sien ; (c) une des bougies 2, 3 ou 4 depuis la fin a une meche basse d'au moins deux fois son corps (corps nul compris) et la suivante cloture plus haut qu'elle.\nTaille : max_position_pct avec trois signaux, 0,20 avec deux. Un signal flou ne vaut pas les 0,3 % de friction d'un aller-retour (0,2 % de frais, environ 0,1 % de glissement).\nVends des que tu le vois, sans attendre le stop, si la derniere bougie est rouge et son corps depasse deux corps moyens, ou si les deux dernieres ont chacune un l sous la precedente.\nPas plus de 18 bougies par position : compare ouverte_le a horodatage_utc ; au-dela de 70 heures, vends ou dis pourquoi ta lecture tient. Rien ne t'y force : on lit ta discipline.\nPatience : round_trips_budget vaut 3 par semaine, pas une cible ; des cycles sans achat sont normaux.\nNe fais PAS : deviner une figure sur des bougies ambigues ; acheter apres une verte de plus de deux corps moyens (trop tard) ; consulter un indicateur, meme pour confirmer.\nOuvre chaque reasoning par les signaux presents (a+c, ou aucun), puis dis qui pousse, qui lache, ou tu changerais d'avis.\nA chaque cycle, meme sans trade, donne ton bias a 24 h par paire, deduit des bougies seules.",
 "univers": [
 "BTC/USDT",
 "ETH/USDT",
 "SOL/USDT"
 ],
-"horizon_bougies": "au choix de Claude, typiquement 6 a 60 bougies (1 a 10 jours)",
-"ouvertures_par_semaine_attendues": "0 a 4, selon ce que Claude decide",
+"horizon_bougies": "6 a 18 bougies (1 a 3 jours), estimation raisonnee",
+"ouvertures_par_semaine_attendues": "2 a 3 (estimation raisonnee ; le budget plafonne a 3)",
+"risque": {
+"max_position_pct": 0.3,
+"stop_loss_pct": 0.06,
+"take_profit_pct": 0.1,
+"max_round_trips_per_week": 3
+},
+"quand_ca_marche": "Dans des marches nerveux mais lisibles, ou les retournements se voient sur les bougies avant que les moyennes ne bougent : il entre plus tot que les mandats a indicateurs et sort plus tot aussi, sur une bougie rouge geante ou deux plus bas qui cassent, sans attendre le stop a 6 %. Avec un objectif a 10 % et un stop a 6 %, friction de 0,3 % comprise, le point d'equilibre est vers 40 % de trades gagnants quand les sorties se font au stop ou a l'objectif ; les ventes anticipees a petite perte relevent ce seuil. C'est surtout le mandat qui teste une competence de lecture plutot qu'une recette : si Claude gagne ici, ce n'est pas parce qu'on lui a dit quoi faire. Sa mesure la plus solide est le bias a 24 h donne a chaque cycle pour les trois paires, soit 168 observations scorees sur la fenetre, deduit des bougies seules : c'est le test le plus direct du banc d'essai sur la question de savoir si les indicateurs aident Claude ou le genent.",
+"quand_ca_casse": "Le bruit d'une bougie 4h est de 0,75 a 1 % et beaucoup de figures sur douze bougies sont du pur hasard : Claude risque de voir des histoires partout, de trader au maximum du budget et de payer 0,3 % de friction sur des lectures qui n'etaient rien. Sur trois jours, une position bouge de 3 a 4 % au hasard : son stop a 6 % tombera parfois sur du bruit et ses sorties anticipees vendront des creux. Il n'a aucun filtre de tendance : il peut acheter de jolis rebonds au milieu d'une chute, parce que douze bougies ne disent pas ou est la moyenne a 200 periodes. A l'inverse, dans une hausse si franche que les douze bougies sont vertes, le signal (b) n'existe plus et il n'a que (a) et (c) pour entrer : il achetera peu au moment ou le panier monte le plus. Deux regles de la fiche ne sont que des consignes, l'interdiction des indicateurs et la limite de 18 bougies : la couche de risque n'applique ni l'une ni l'autre, et le prompt de base demande par ailleurs un raisonnement qui cite les indicateurs. Si Claude glisse un rsi ou un trend dans son reasoning, ou garde une position au-dela de 18 bougies (70 heures dans le brief) sans se justifier, c'est un echec du mandat qui se lit dans le journal, pas une erreur du programme. Les douze bougies couvrent 48 heures : sur une position ouverte depuis 60 heures, les bougies d'entree ont disparu du dossier et Claude juge la sortie sans revoir ce qui l'a fait entrer. Son exposition moyenne attendue est faible, autour de 15 a 25 % du book : la plupart du temps il ressemble a du cash, et dans un marche qui monte franchement il restera loin derriere le panier. Enfin, le verdict financier (20 trades clos en 8 semaines, ou 15 si moins de 60 % des 24 ouvertures possibles ont ete utilisees) n'est atteint que s'il ouvre au moins 2,5 fois par semaine, presque le budget entier : a 2 par semaine il finit vers 16 trades, trop peu pour le seuil de 20 et trop pour celui de 15. Le verdict probable est donc incertain ; le bias et l'ecart au panier restent mesurables dans tous les cas.",
+"pour_qui": [
+"curieux",
+"equilibre",
+"observateur"
+],
+"axes": {
+"horizon": "court (1 a 3 jours)",
+"mouvement": "lecture brute",
+"temperament": "equilibre",
+"exposition": "faible",
+"verdict_probable": "incertain"
+}
+},
+{
+"id": "cassure",
+"nom": "Cassure confirmee",
+"famille": "Rupture",
+"accroche": "Acheter le nouveau plus haut quand le volume le confirme, et lacher vite si la cassure echoue.",
+"philosophie": "Quand un prix depasse son plus haut des vingt dernieres bougies avec un volume nettement superieur a la normale, des acheteurs sont prets a payer plus cher que tout le monde depuis trois jours. Claude achete ce moment precis, pas avant, pas trois bougies apres, et note le niveau franchi comme ligne d'echec. Beaucoup de cassures echouent : la regle est alors de sortir sans discuter des qu'une bougie cloture sous ce niveau, bien avant le stop automatique. Le pari est de perdre souvent un peu pour gagner parfois beaucoup ; huit semaines peuvent ne contenir que la premiere moitie. C'est, avec Vingt-quatre heures, le mandat le plus actif du catalogue, celui qui achete par construction le prix le plus haut du moment, et sa sortie rapide est une consigne dont le respect se lit dans le journal, pas une contrainte de la couche de risque.",
+"ce_que_claude_regarde": [
+"dist_hh20_pct superieur a -0,5 : le close est a moins de 0,5 % du plus haut 20 bougies (cet indicateur est toujours inferieur ou egal a 0)",
+"La derniere bougie de dernieres_bougies_4h cloture au-dessus du plus haut (h) des onze bougies qui la precedent : un nouveau plus haut visible dans le dossier",
+"vol_ratio superieur a 1,3 sur cette derniere bougie cloturee : le volume confirme",
+"close au-dessus de ema_slow et roc_20_pct positif : pas de cassure achetee dans une baisse",
+"Le niveau franchi, ecrit en premiere phrase du reasoning d'achat et recopie a chaque cycle : la premiere bougie qui cloture dessous declenche la vente"
+],
+"brief": "Tu achetes les cassures confirmees par le volume, rien d'autre.\nUne cassure est valide au cycle present si les quatre conditions sont reunies : dist_hh20_pct superieur a -0,5 ; la derniere bougie de dernieres_bougies_4h cloture au-dessus du plus haut (h) des onze bougies qui la precedent ; vol_ratio superieur a 1,3 ; close au-dessus de ema_slow. Trois sur quatre, c'est hold.\nN'achete pas si roc_20_pct est negatif, ni si close depasse de plus de 3 % le plus haut des onze bougies precedentes : c'est trop tard, attends la suivante.\nTaille : max_position_pct du book, ou tout le cash_disponible s'il est plus petit. Une seule ouverture par cycle : si deux symboles cassent ensemble, prends celui dont vol_ratio est le plus eleve.\nEcris en premiere phrase de ton reasoning d'achat le niveau franchi, en prix : le plus haut des onze bougies precedentes. C'est ton seuil d'echec, il ne bouge plus. Tant que la position est ouverte, recopie ce seuil en premiere phrase de chaque reasoning sur ce symbole, pour le retrouver dans tes_decisions_recentes.\nVends si la derniere bougie cloturee ferme sous ce seuil, quel que soit ton pnl_pct : la cassure a echoue, ne negocie pas avec elle.\nSinon, laisse courir jusqu'a l'objectif automatique : ne vends pas parce que le gain te parait suffisant, ni parce que rsi depasse 70, c'est normal dans une cassure qui tient.\nNe fais pas : acheter un rebond depuis un plus bas, acheter une tendance sans cassure fraiche, deplacer ton seuil pour rester en position.\nChaque aller-retour coute environ 0,3 %. Les cassures avec volume sont rares : certaines semaines n'en offrent aucune.\nDonne ton bias a 24 h pour chaque paire a chaque cycle, meme en hold. Tu ne vois ni news ni carnet d'ordres : une cassure se lit dans le prix et le volume fournis.",
+"univers": [
+"BTC/USDT",
+"ETH/USDT",
+"SOL/USDT"
+],
+"horizon_bougies": "1 a 6 bougies (4 a 24 h) pour les echecs, qui sont la majorite ; 12 a 60 bougies (2 a 10 jours) pour les cassures qui tiennent ; mediane sous 24 h ; estimation calibree sur 311 bougies d'un regime haussier",
+"ouvertures_par_semaine_attendues": "Environ 2 sur un budget de 4 ; estimation calibree sur 311 bougies d'un regime haussier : la simulation des regles du brief sur les bougies en base donne 1,9 ouverture par semaine (petit echantillon, 2,7 semaines d'ema_slow valide), 2 a 3 si le marche accelere. Soit 15 a 24 trades clos en 8 semaines : le seuil du verdict financier (20, ou 15 si moins de 60 % du budget de 32 ouvertures est consomme) est atteignable, avec une marge mince dans le bas de la fourchette.",
+"risque": {
+"max_position_pct": 0.35,
+"stop_loss_pct": 0.06,
+"take_profit_pct": 0.12,
+"max_round_trips_per_week": 4
+},
+"quand_ca_marche": "Marche qui accelere apres une phase calme : les nouveaux plus hauts s'enchainent, le volume suit, et si deux ou trois cassures sur dix vont chercher l'objectif de 12 % en quelques jours (hypothese, non calibree), un seul vrai depart de SOL ou d'ETH paie plusieurs fausses cassures. La sortie sur le seuil franchi limite le plus souvent chaque echec a 1 a 3 % de la position, davantage si la bougie qui casse le seuil est grande, et jamais plus que le stop a 6 % ; le mode de sortie dominant est alors le signal, pas la cage. Le mandat est naturellement en cash pendant les phases mortes, ce qui le protege quand le marche se retourne sans cassure prealable, et son journal est lisible : a chaque cycle en position, le seuil est ecrit et le prix se compare a lui.",
+"quand_ca_casse": "Marche en range large : le prix touche le haut de la fourchette, casse d'un cheveu avec du volume, puis retombe. Six ou huit fausses cassures de suite coutent chacune 1 a 3 % de la position, jusqu'a 6 % si le stop parle avant le seuil, plus 0,3 % de friction, soit 3 a 9 % du book en un mois sans qu'aucune regle n'ait ete violee : c'est le mandat ou les frais pesent le plus lourd apres Vingt-quatre heures, et le candidat naturel au verdict J du protocole, trade trop pour la taille du book. Il souffre aussi quand la cassure tient puis replonge d'un cheveu sous le seuil avant de repartir : la regle l'ejecte juste avant la vraie hausse. Par construction, il achete toujours le prix le plus haut du moment. Expose moins de 20 % du temps en moyenne (9 % dans la simulation sur les bougies en base), il fera loin derriere le panier dans une hausse continue, ou le repere gagne pendant qu'il attend la prochaine cassure. Enfin, la vente sous le seuil, l'interdiction de deplacer ce seuil et le relais du niveau franchi dans le reasoning sont des consignes : la couche de risque n'applique que le stop a 6 % et l'objectif a 12 %, et si Claude oublie de recopier le seuil, celui-ci disparait de tes_decisions_recentes au bout de trois cycles. Leur respect se lit dans le journal, pas dans les chiffres.",
+"pour_qui": [
+"actif",
+"equilibre",
+"methodique"
+],
+"axes": {
+"horizon": "court (1 a 3 jours)",
+"mouvement": "jouer la rupture",
+"temperament": "equilibre",
+"exposition": "faible",
+"verdict_probable": "oui"
+}
+},
+{
+"id": "compression",
+"nom": "Compression puis detente",
+"famille": "Volatilite",
+"accroche": "Acheter quand le prix se tasse au-dessus de sa moyenne longue, vendre la premiere grande bougie, qu'elle soit verte ou rouge.",
+"philosophie": "Les marches alternent des phases ou le prix ne bouge presque plus et des phases ou il part d'un coup. Quand les douze dernieres bougies de 4 heures tiennent dans une fourchette etroite, moins de trois fois l'amplitude habituelle (atr_pct), et que le prix reste au-dessus de sa moyenne longue (ema_slow), Claude achete pendant le calme, avant la cassure : c'est le seul mandat du banc qui achete avant le mouvement, a l'inverse du mandat Cassure confirmee qui attend qu'il soit visible. Ce calme est relatif, pas rare : sur les bougies en base, un cycle sur huit environ remplit toutes les conditions, et le budget de trois ouvertures par semaine sera souvent atteint. Claude vend a la premiere bougie de grande amplitude, dans un sens ou dans l'autre, meme a perte, ou apres cinq jours sans detente ; ces deux sorties, comme la taille et le seuil de trois ATR, sont des consignes du brief que Claude applique lui-meme, la couche de risque ne connaissant que le stop a 6 % et l'objectif a 10 %. Le seuil de trois ATR est une convention posee avant de voir la fenetre, calibree sur 311 bougies d'un regime haussier ou la detente a ete rouge au moins aussi souvent que verte.",
+"ce_que_claude_regarde": [
+"dernieres_bougies_4h : H, le plus haut des 12 h, et L, le plus bas des 12 l ; fourchette_pct = 100 x (H - L) / close",
+"atr_pct : le ratio fourchette_pct / atr_pct doit etre inferieur a 3 pour acheter",
+"close et ema_slow : close au-dessus de ema_slow, et close au moins au milieu de la fourchette, soit (H + L) / 2",
+"L'amplitude de la derniere bougie, 100 x (h - l) / c : au-dessus de 2 fois atr_pct, c'est trop tard pour acheter, et c'est le signal de vente une fois en position",
+"ouverte_le compare a horodatage_utc : sortie au premier cycle ou la position a au moins 118 heures (30 bougies) sans detente",
+"round_trips_restants_cette_semaine : a 0, plus aucun achat, hold et bias seulement",
+"Rien d'autre : rsi, roc_5_pct, roc_20_pct, vol_ratio et trend sont ignores par consigne"
+],
+"brief": "Tu achetes la compression de volatilite, avant la detente, jamais apres.\nA chaque cycle, pour chaque symbole, calcule sur les 12 bougies de dernieres_bougies_4h : H = le plus haut des h, L = le plus bas des l, fourchette_pct = 100 x (H - L) / close, puis ratio = fourchette_pct / atr_pct. Ecris ce ratio en premiere phrase de ton reasoning, meme en hold.\nAchete si ratio < 3, si close est superieur a ema_slow, et si close est superieur ou egal a (H + L) / 2. Les trois conditions, sinon hold. Si ema_slow ou atr_pct vaut null, hold.\nN'achete pas si la derniere bougie a deja une amplitude 100 x (h - l) / c superieure a 2 fois atr_pct : la detente a commence sans toi, laisse passer.\nTaille : toujours max_position_pct. Une seule nouvelle position par cycle : si deux symboles sont comprimes, prends celui dont le ratio est le plus bas. Si round_trips_restants_cette_semaine vaut 0, aucun achat.\nVends des que la derniere bougie cloturee, ou toute bougie de dernieres_bougies_4h posterieure a ouverte_le, a une amplitude 100 x (h - l) / c superieure a 2 fois atr_pct, que le prix soit monte ou descendu : la detente a eu lieu, le pari est solde. Ne garde pas parce que ca monte encore.\nVends aussi au premier cycle ou la position a au moins 118 heures (30 bougies, compare ouverte_le a horodatage_utc) sans detente : rien ne s'est detendu, libere la place.\nN'ajoute aucune condition sur rsi, roc_5_pct, roc_20_pct, vol_ratio ou trend : ton signal est l'amplitude, pas la direction.\nUn cycle sur huit environ remplit toutes les conditions : la plupart des cycles restent des hold, et le budget de la semaine sera souvent epuise avant la fin. Chaque aller-retour coute 0,3 % : ne force aucun achat pour le depenser.\nDonne un bias a 24 h pour chaque symbole a chaque cycle, meme en hold.",
+"univers": [
+"BTC/USDT",
+"ETH/USDT",
+"SOL/USDT"
+],
+"horizon_bougies": "3 a 30 bougies (12 h a 5 jours), le plus souvent 1 a 3 jours ; estimation calibree sur 311 bougies d'un regime haussier, ou la duree mediane d'un trade rejoue va de 12 h a 2 jours selon la fenetre et ou un trade sur quatre environ sort par la limite des 30 bougies",
+"ouvertures_par_semaine_attendues": "2 a 3 (budget 3) : estimation calibree sur 311 bougies d'un regime haussier, ou 12 % des cycles remplissent toutes les conditions et ou les regles rejouees (une ouverture par cycle, deux places, budget 3, sortie a 2 ATR ou 118 h) donnent 2,4 a 3,0 ouvertures par semaine, budget sature certaines semaines. Soit 17 a 24 trades clos en 8 semaines : le seuil de 20 exige 2,5 ouvertures par semaine, au milieu de la fourchette, tenu tant que le prix reste au-dessus de ema_slow et perdu des qu'il passe dessous (plus aucun signal). Le seuil reduit de 15 est hors de portee par arithmetique (moins de 60 % du budget de 24, c'est 14 ouvertures au plus, donc moins de 15 trades clos).",
+"risque": {
+"max_position_pct": 0.35,
+"stop_loss_pct": 0.06,
+"take_profit_pct": 0.1,
+"max_round_trips_per_week": 3
+},
+"quand_ca_marche": "Marche haussier qui progresse par paliers : chaque palier est une compression de quelques jours, chaque detente une bougie de 3 a 5 % vers le haut. Claude achete pendant l'attente, a un prix calme, et vend dans la bougie qui bouge, sans avoir eu a deviner la direction ; le prix reste au-dessus de ema_slow, donc le signal revient chaque semaine et le budget de trois ouvertures sert. Le stop a 6 % est rarement approche parce que la fourchette de depart etait etroite : une position qui tourne mal sort le plus souvent par la regle des 2 ATR, vers -2 ou -3 %, avant le stop. Sur les 311 bougies de calibrage, les regles rejouees sur la periode ou ema_slow est calculable donnent 4 trades gagnants sur 7 et +4 % du book en 2,7 semaines, portes par un seul trade sorti a l'objectif de 10 % : c'est le scenario favorable, pas une esperance etablie, car la detente n'a ete verte que deux fois sur quatre.",
+"quand_ca_casse": "La detente vers le bas : la grande bougie est rouge, Claude vend a -2 ou -4 % comme la regle l'exige, plusieurs fois de suite dans un marche qui distribue avant de chuter ; trois sorties de ce type coutent 6 a 12 % du capital engage, soit 2 a 4 % du book, sans qu'aucune regle n'ait ete violee. Sur les 311 bougies de calibrage, la detente qui suit une compression a ete rouge plus souvent que verte (4 vertes sur 12 en rejouant les regles sur toute la base, ema_slow approchee la ou elle n'est pas encore calculable), pour 6 trades gagnants sur 17 et -1,5 % du book : l'esperance du mandat n'est pas demontree. Le calme qui dure : positions tenues cinq jours pour rien, soldees a plat moins 0,3 % de friction, capital immobilise pendant que le panier monte. Le seuil de 3 ATR est une convention : il retient le cinquieme a tiers le plus calme des cycles (ratio median 3,5 a 3,7), pas un evenement rare ; et atr_pct est calcule sur 14 bougies, presque la meme fenetre que les 12 mesurees, donc l'ATR baisse en meme temps que la fourchette et le ratio discrimine moins qu'il n'y parait. La sortie a 30 bougies, la vente sur grande bougie et la taille sont des consignes : la couche de risque n'applique que le stop a 6 % et l'objectif a 10 %, leur respect se lit dans le journal apres coup. Enfin, un book expose 25 a 30 % en moyenne ne suit le marche qu'au quart : sur la periode de calibrage le panier detenu a fait +30 % quand les regles rejouees donnaient +4 % ; dans une fenetre franchement haussiere, ce mandat fera moins bien que le repere meme avec une majorite de trades gagnants.",
+"pour_qui": [
+"curieux",
+"equilibre",
+"methodique",
+"actif"
+],
+"axes": {
+"horizon": "court (1 a 3 jours)",
+"mouvement": "anticiper la rupture",
+"temperament": "equilibre",
+"exposition": "moyenne",
+"verdict_probable": "incertain"
+}
+},
+{
+"id": "contrarien",
+"nom": "Contrarien de capitulation",
+"famille": "retour a la moyenne",
+"accroche": "N'acheter que la panique, en petit, et rendre la monnaie vite.",
+"philosophie": "Quand un actif a perdu plusieurs pour cent en quelques bougies, qu'il touche son plus bas de trois jours et que le RSI est ecrase, une partie des vendeurs sont des gens forces de vendre, et le rebond qui suit est souvent rapide mais court. Ce mandat n'achete que ces moments, seulement apres une premiere bougie verte, avec une seule position de 20 % du book, et revend des que le prix a retrouve un niveau normal ou apres trois jours quoi qu'il arrive. Il ne cherche pas le fond, il cherche le rebond technique. Dans un marche qui monte, il n'a rien a faire et reste en cash : c'est prevu, et c'est ecrit ici. La position unique et la sortie a trois jours sont des consignes donnees a Claude, pas des garde-fous de la couche de risque, qui autorise deux positions et ne ferme rien sur la duree : leur respect se verifie dans le journal.",
+"ce_que_claude_regarde": [
+"rsi sous 30 : la baisse est extreme",
+"dist_ll20_pct sous 2 : le prix est a moins de 2 % de son plus bas de 20 bougies (cette valeur est toujours positive ou nulle) ; le seuil est a 2 et non a 1 parce qu'une bougie verte apres une chute cloture presque toujours plus de 1 % au-dessus du plus bas",
+"roc_5_pct inferieur ou egal a -4 : la chute est recente et violente",
+"La derniere bougie de dernieres_bougies_4h cloture au-dessus de son ouverture (c superieur a o) : premier signe de stabilisation",
+"Pour la sortie : rsi au-dessus de 50, ou close revenu au niveau de ema_fast",
+"ouverte_le compare a horodatage_utc : vente au premier cycle ou la position a au moins 70 heures, soit 18 bougies (ouverte_le est date quelques secondes apres l'horodatage du cycle d'achat, d'ou 70 et non 72)",
+"tes_trades_clotures_recents : un trade dont motif_cloture vaut stop_loss et dont fermee est a moins de 4 heures de horodatage_utc interdit de racheter ce symbole a ce cycle"
+],
+"brief": "Tu es un contrarien de capitulation : tu n'achetes que la panique, jamais la faiblesse ordinaire, et tu rends la monnaie vite.\nAchete seulement si les quatre conditions sont reunies au meme cycle : rsi sous 30 ; dist_ll20_pct sous 2 (pres du plus bas de 20 bougies) ; roc_5_pct inferieur ou egal a -4 ; derniere bougie de dernieres_bougies_4h avec c superieur a o.\nSans bougie verte, n'achete pas, meme si tout le reste crie l'achat : la chute peut continuer. Tu acceptes de rater le point bas exact.\nTaille : 20 % du book. Une seule position ouverte a la fois, meme si la couche de risque en autorise deux : si deux symboles capitulent, prends celui dont roc_5_pct est le plus negatif.\nEn premiere phrase du reasoning d'un achat, ecris les quatre chiffres du signal.\nVends des que rsi repasse au-dessus de 50 ou que close atteint ema_fast, meme si le gain est petit : tu encaisses un rebond, tu ne joues pas un retournement.\nVends sans condition au premier cycle ou la position a au moins 70 heures (18 bougies) : compare ouverte_le a horodatage_utc. Un rebond absent apres trois jours ne viendra pas.\nNe fais jamais : acheter un rsi a 35 ou un roc_5_pct a -2 (faiblesse ordinaire) ; racheter un symbole dont un trade de tes_trades_clotures_recents a motif_cloture stop_loss et fermee a moins de 4 heures de horodatage_utc.\nSans signal, reste en cash et dis-le en une phrase, sans achat de remplacement : des semaines sans trade sont normales ici, et un marche qui monte te laissera en cash. C'est prevu.\nChaque aller-retour coute environ 0,3 % (frais et glissement) : un rebond de 2 % n'en laisse que 1,7.\nDonne un bias a 24 h (up, down ou flat) pour chacune des trois paires a chaque cycle, meme en hold.\nAucune news : la capitulation se lit dans les indicateurs et les 12 bougies fournies.",
+"univers": [
+"BTC/USDT",
+"ETH/USDT",
+"SOL/USDT"
+],
+"horizon_bougies": "3 a 18 bougies (12 heures a 3 jours), estimation ; la sortie a 18 bougies (au moins 70 h entre ouverte_le et horodatage_utc) est une consigne du brief, pas un garde-fou",
+"ouvertures_par_semaine_attendues": "Estimation calibree sur 311 bougies d'un regime haussier : aucun signal complet dans la base. rsi sous 30 n'y apparait que 5 fois, toutes sur SOL, jamais en meme temps que roc_5_pct sous -4 ; BTC et ETH n'y passent jamais sous 30. Attendre 0 ouverture par semaine dans un regime comme celui-la, 0 a 1 dans un regime nerveux, jusqu'au budget de 3 dans une baisse installee. Le verdict exige 20 trades clos : le seuil allege a 15 suppose moins de 60 % du budget utilise, soit au plus 14 ouvertures sur 24, donc il est hors de portee ici, et 20 trades clos demandent 2,5 ouvertures par semaine pendant huit semaines de baisse. D'ou un verdict probable : non.",
+"risque": {
+"max_position_pct": 0.2,
+"stop_loss_pct": 0.06,
+"take_profit_pct": 0.08,
+"max_round_trips_per_week": 3
+},
+"quand_ca_marche": "Marche nerveux qui alterne chutes brutales et rebonds techniques : chaque capitulation offre un rebond de 4 a 8 % en un ou deux jours, encaisse avant que la tendance ne reprenne, et l'objectif automatique a 8 % ramasse les meilleurs. La position unique de 20 % et le stop a 6 % limitent chaque erreur a 1,2 % du book, et le mandat protege le capital dans une baisse simplement en restant en cash entre deux signaux : il peut alors battre le panier passif non en gagnant beaucoup, mais en perdant beaucoup moins. Avec plusieurs capitulations par semaine, le budget de 3 ouvertures est consomme ; les 20 trades clos du verdict ne deviennent atteignables que si ce rythme tient huit semaines, mais le journal montre en tout cas des trades courts, faciles a juger un par un.",
+"quand_ca_casse": "Trois facons. Le krach qui continue : la bougie verte etait un piege, le stop a 6 % tombe en une bougie, le suivant aussi ; trois stops dans la semaine font environ 3,6 % du book, plus 0,3 % de friction par aller-retour, et rien n'empeche Claude de recommencer la semaine suivante si les signaux se repetent. La hausse continue : aucun signal pendant huit semaines, Claude reste en cash, perd contre le panier passif toute la hausse, et la fenetre se termine sans verdict financier : il faudrait 20 trades clos, et le seuil allege a 15 ne s'applique qu'a moins de 60 % du budget utilise, soit au plus 14 ouvertures, donc jamais ici. Dans une fenetre haussiere comme les 311 bougies qui ont servi a calibrer cette fiche, ou les quatre conditions ne se sont jamais reunies, c'est le resultat le plus probable, et il faut le savoir avant de choisir ce mandat. La desobeissance, enfin : la position unique et la sortie a 70 heures (18 bougies) sont des consignes que la couche de risque n'applique pas (elle autorise deux positions, soit 40 % du book, et ne ferme rien sur la duree) ; si Claude les oublie, l'exposition double et une position perdante peut trainer jusqu'au stop. Ce non-respect se lit dans positions_ouvertes et dans les motifs de cloture du journal, et compte comme un echec du mandat, meme si le trade finit gagnant.",
+"pour_qui": [
+"prudent",
+"patient",
+"curieux"
+],
+"axes": {
+"horizon": "court (1 a 3 jours)",
+"mouvement": "acheter la faiblesse",
+"temperament": "prudent",
+"exposition": "faible",
+"verdict_probable": "non"
+}
+},
+{
+"id": "convexe",
+"nom": "La cage decide",
+"famille": "asymetrie de gains",
+"accroche": "Claude ne choisit que l'entree : il lui est interdit de vendre, et c'est le stop a 6 % ou l'objectif a 30 % qui ferme chaque position.",
+"philosophie": "Beaucoup de traders perdent moins a l'entree qu'a la sortie : ils encaissent trop tot leurs gains et laissent filer leurs pertes. Ce mandat retire a Claude le droit de vendre pour supprimer le probleme a la racine : chaque position part avec une cage fixe, un stop 6 % sous le prix d'achat et un objectif 30 % au-dessus, et se termine forcement par l'un ou l'autre. Comme une position pese 25 % du book, un objectif atteint rapporte 7.5 % du book et un stop en coute 1.5 %, cinq fois moins : l'equilibre, frais compris, est autour d'une reussite sur six, ce que le hasard seul fournit deja ; a une reussite sur quatre le mandat est gagnant, mais huit semaines et 6 a 10 trades ne suffisent pas a distinguer les deux, et la fenetre ressemblera surtout a une longue suite de petites pertes en attendant le grand mouvement. Ses conditions d'entree recoupent largement celles du Suiveur de tendance (environ deux cycles eligibles sur trois en commun sur les bougies en base) et l'objectif a +30 % est le meme : la comparaison des deux fiches mesure ce que valent les ventes sur signal de Claude, a entrees presque egales, la cage engageant en plus une taille (25 contre 40 %) et un stop (6 contre 10 %) plus petits. L'interdiction de vendre est une consigne du brief, pas une regle de la couche de risque : si Claude vend quand meme, le journal le montrera, et ce sera un resultat en soi.",
+"ce_que_claude_regarde": [
+"trend a up, roc_5_pct positif et dist_hh20_pct entre -4 et 0 : le prix accelere a moins de 4 % de son plus haut de 20 bougies, la ou un mouvement de +30 % est plausible",
+"atr_pct sous 2.5 % : au-dela, le bruit de deux journees suffit a toucher un stop de 6 % avant que la these ait eu le temps de jouer",
+"motif_cloture de ses six derniers trades clos (tes_trades_clotures_recents) : combien de stops, combien d'objectifs, et si le ratio tient l'equilibre d'une reussite sur six ; le champ fermee compare a horodatage_utc pour respecter les 24 h avant de revenir sur une paire stoppee",
+"positions_ouvertes, max_open_positions et round_trips_restants_cette_semaine : deux places au plus, et une position qui attend la cage bloque la sienne pendant des semaines"
+],
+"brief": "Ton seul travail est l'entree : tu ne vends jamais toi-meme, quelles que soient les circonstances. Seuls le stop automatique a -6 % et l'objectif automatique a +30 % ferment une position ; un sell de ta part viole le mandat, meme s'il te semble judicieux.\nAchete quand un mouvement de +30 % est plausible dans les deux a quatre semaines : trend a up, roc_5_pct positif, dist_hh20_pct entre -4 et 0 (a moins de 4 % du plus haut de 20 bougies) et atr_pct inferieur a 2.5 %, sinon le bruit de deux journees suffit a toucher ton stop.\nN'achete jamais une paire dont trend est down : un rebond de 30 % y est rare et un stop a 6 % ne survit pas aux secousses. Apres un stop sur une paire, attends au moins 6 bougies (24 h : compare fermee dans tes_trades_clotures_recents a horodatage_utc) avant d'y revenir.\nChaque position engage 25 % du book (size_pct_of_equity 0.25), ni plus ni moins. Un objectif rapporte 7.5 % du book, un stop coute 1.5 %, un aller-retour environ 0.3 % de friction (frais plus glissement) : l'equilibre est autour d'une reussite sur six.\nAu plus 2 positions ouvertes (max_open_positions) et 3 entrees par semaine. Une position attend la cage, parfois plusieurs semaines : ne cherche pas a la remplacer par une idee plus seduisante, tu ne peux pas vendre ; places prises, ton cycle se limite a hold et au bias.\nUne serie de quatre stops est le fonctionnement normal, pas une raison de changer de methode. Ne serre pas tes criteres apres une perte, ne les relache pas apres un gain.\nA chaque cycle, compte dans ton raisonnement les stops et les objectifs parmi tes six derniers trades clos (motif_cloture) et dis honnetement si le ratio tient une reussite sur six.\nDonne ton bias a 24 h pour chaque paire, a chaque cycle, meme quand tu ne trades pas.",
+"univers": [
+"BTC/USDT",
+"ETH/USDT",
+"SOL/USDT"
+],
+"horizon_bougies": "variable par construction (estimation) : au stop, 6 a 30 bougies (1 a 5 jours) ; a l'objectif, 40 a 150 bougies (1 a 4 semaines) ; aucune sortie intermediaire",
+"ouvertures_par_semaine_attendues": "estimation : environ 1 par semaine en moyenne, soit 6 a 10 trades clos sur les 8 semaines ; des semaines a zero quand les deux places attendent la cage, des semaines a 2 ou 3 apres une serie de stops rapides",
+"risque": {
+"max_position_pct": 0.25,
+"stop_loss_pct": 0.06,
+"take_profit_pct": 0.3,
+"max_round_trips_per_week": 3
+},
+"quand_ca_marche": "Un marche haussier qui accelere, ou l'une des trois paires fait +30 % en deux a quatre semaines sans repasser par -6 % sous le prix d'entree : un seul objectif atteint (+7.5 % du book) rembourse cinq stops (-1.5 % chacun), et deux objectifs dans la fenetre donnent un resultat positif, de +2 a +5 % du book, meme entoures de six ou huit stops. Le mandat supprime la tentation de couper un gagnant a +12 % ou de sortir par lassitude, l'erreur la plus documentee des traders humains, et le journal dira si Claude, prive du bouton vendre, garde une lecture calme ou s'agace de ne rien pouvoir faire. Il est economique en friction (environ 0.075 % du book par trade, 6 a 10 trades) et tres lisible : chaque trade clos porte un motif unique, stop ou objectif, sans discussion possible sur le timing de sortie. Il se lit face au Suiveur de tendance, qui achete a peu pres les memes jours mais vend lui-meme, avec 40 % du book et un stop a 10 % : si la cage finit devant lui a entrees presque egales, c'est que les ventes sur signal de Claude ont coute plus qu'elles n'ont rapporte.",
+"quand_ca_casse": "Un marche sans grand mouvement, ou des hausses de +12 a +18 % qui refluent : Claude a raison sur la direction, la position monte, puis revient toucher le stop, et le journal aligne des trades perdants nes de bonnes lectures ; c'est aussi le scenario ou le Suiveur de tendance, entre les memes jours, sort sur signal avec une partie du gain, et ou la comparaison tourne contre la cage. Sur bougies 4h, avec un atr_pct de 1.5 a 2 %, le bruit seul touche un stop a 6 % en une a deux semaines dans une large part des cas ; pour une marche au hasard, la chance d'atteindre +30 % avant -6 % est d'environ une sur six, exactement le point d'equilibre avant frais, donc sans avantage reel a l'entree le mandat perd sa friction, et avec un peu de malchance 8 a 12 % du book par petites marches de 1.5 %. Le verdict financier du protocole exige 20 trades clos, ou 15 si moins de 60 % du budget d'ouvertures est utilise : avec deux places, un objectif a +30 % et l'interdiction de vendre, 6 a 10 trades clos sont attendus, le verdict financier ne sera donc probablement pas prononce et le mandat se jugera sur le bias a 24 h, l'ecart au repere et le respect du brief. La metrique mode de sortie du protocole vaudra 100 % cage par construction et ne mesure rien ici. Des positions seront probablement encore ouvertes a la date du verdict, comptees en valeur de liquidation, ce qui est prevu. Enfin, l'interdiction de vendre et le delai de 24 h apres un stop ne sont que des consignes : la couche de risque accepte un sell licite, et leur respect se lit dans le journal des decisions, pas dans un refus.",
+"pour_qui": [
+"prudent",
+"patient",
+"methodique",
+"curieux"
+],
+"axes": {
+"horizon": "variable",
+"mouvement": "entree seule",
+"temperament": "prudent",
+"exposition": "moyenne",
+"verdict_probable": "non"
+}
+},
+{
+"id": "gardien",
+"nom": "Le Gardien",
+"famille": "Preservation du capital",
+"accroche": "Petites positions, jamais par marche agite, vente au premier doute : le mandat de celui qui prefere rater un gain que subir une perte.",
+"philosophie": "Certaines personnes preferent finir la fenetre a 99 plutot que risquer 90 pour esperer 115 ; ce mandat est fait pour elles. Claude n'achete que BTC ou ETH, seulement quand la tendance est haussiere, le prix en repli modere et la volatilite pas anormale (atr_pct sous 1.5 %, ce qui est le cas la plupart du temps sur BTC : le filtre ecarte les phases agitees, il ne selectionne pas le calme), avec une position de 20 % du book et un stop a 5 %, soit au pire 1 % du capital par trade. Il vend au premier doute, meme si la position est gagnante, et n'ouvre au plus qu'une position par semaine. Le resultat attendu ressemble a du cash : ce mandat mesure surtout si Claude sait ne rien faire quand les conditions ne sont pas reunies, et s'il coupe vraiment au premier doute. Il se distingue de repli, qui achete aussi la faiblesse, par la taille (20 % contre 35 %), une seule position a la fois, BTC et ETH seulement, et des sorties au premier doute plutot qu'a l'objectif ; ces sorties et cette limite sont des consignes que la couche de risque n'applique pas, leur respect se lit dans le journal.",
+"ce_que_claude_regarde": [
+"trend up et close au moins 3 % au-dessus de ema_slow : une tendance installee, pas naissante",
+"atr_pct sous 1.5 % pour acheter : pas de marche agite (c'est la normale sur BTC, le filtre ecarte les phases nerveuses, il ne choisit pas le calme) ; au-dessus de 3 % en position, c'est un signal de vente",
+"rsi entre 38 et 50 et close sous ema_fast de 0 a 2 % : un repli modere a l'interieur de la tendance",
+"pnl_du_jour_pct negatif, ou un stop_loss de moins de 7 jours dans tes_trades_clotures_recents : aucun achat",
+"En position : close sous ema_fast de plus de 3 %, trend down, bougie rouge de plus de deux atr_pct, ou 30 bougies (118 h) entre ouverte_le et horodatage_utc sans gain : il vend, meme gagnant"
+],
+"brief": "Tu gardes ce book comme un capital que tu n'as pas le droit d'entamer. La reponse par defaut est hold. N'achete que BTC/USDT et ETH/USDT ; SOL/USDT reste en hold mais recoit son bias.\nUn achat exige quatre conditions a la fois : trend vaut up et close depasse ema_slow d'au moins 3 % ; atr_pct est sous 1.5 % (pas de marche agite) ; rsi est entre 38 et 50 ; close est sous ema_fast, de 0 a 2 %. S'il en manque une, n'achete pas et nomme-la.\nTaille : 20 % du book, une seule position a la fois. Si BTC et ETH sont eligibles le meme cycle, prends celle dont atr_pct est le plus bas.\nN'achete pas si pnl_du_jour_pct est negatif, ni dans les 7 jours qui suivent un trade clos avec motif_cloture stop_loss (lis fermee dans tes_trades_clotures_recents).\nVends au premier doute, une seule condition suffit : close sous ema_fast de plus de 3 % ; trend passe a down ; atr_pct depasse 3 % ; derniere bougie cloturee rouge avec un corps (o moins c, en % de c) de plus de deux atr_pct ; au moins 118 h (30 bougies, 5 jours) entre ouverte_le et horodatage_utc avec pnl_pct nul ou negatif. Vends meme si la position est gagnante.\nPrends les gains modestes : si pnl_pct depasse +6 % et que rsi passe au-dessus de 65, vends sans attendre l'objectif de +10 %.\nBudget : 1 ouverture par semaine. Une semaine sans trade est une bonne semaine si les conditions n'etaient pas reunies. Ne te fabrique pas un signal pour consommer le budget.\nNe fais pas : acheter parce que cela a rebondi ; garder une position gagnante alors qu'un signal de sortie a parle ; monter la taille pour rattraper le repere. Chaque aller-retour coute 0.3 %.\nA chaque cycle, meme sans trade, donne ton bias a 24 h pour chacune des trois paires, et ecris en premiere phrase du reasoning la condition qui manque ou la sortie qui a parle.",
+"univers": [
+"BTC/USDT",
+"ETH/USDT",
+"SOL/USDT"
+],
+"horizon_bougies": "estimation : 6 a 60 bougies (1 a 10 jours) ; sans gain apres 30 bougies (118 h, 5 jours entre ouverte_le et horodatage_utc), la position est vendue ; gagnante, elle court jusqu'a un signal de doute, +6 % avec rsi au-dessus de 65, ou l'objectif a +10 %",
+"ouvertures_par_semaine_attendues": "estimation : 0 a 1 (budget de 1) ; sans doute 3 a 6 ouvertures sur les 8 semaines, zero en marche baissier ou agite, 8 au maximum par construction ; sur les 19 jours de bougies en base (regime haussier), 13 bougies 4h remplissaient les quatre conditions sur BTC et ETH, groupees en un seul episode par paire : une fenetre eligible vaut une occasion d'achat, pas treize",
+"risque": {
+"max_position_pct": 0.2,
+"stop_loss_pct": 0.05,
+"take_profit_pct": 0.1,
+"max_round_trips_per_week": 1
+},
+"quand_ca_marche": "Hausse calme et reguliere, avec des replis modestes vers ema_fast : quelques trades a +4 a +10 % sur 20 % du book, soit +0.8 a +2 % de capital chacun apres 0.3 % de friction, sans secousse. En marche baissier, il n'achete rien et finit a 100 moins presque rien : le protocole ecrira qu'il a protege le capital en restant peu expose (cas G), sans parler de talent, et ce sera exact ; en marche agite mais sans baisse (atr_pct au-dessus de 1.5 %), il reste simplement en cash. Sa perte maximale par position, 1 % du book (20 % fois un stop a 5 %), est la plus faible du catalogue. Ce que la fenetre enseigne de mieux ici : si Claude sait rester en hold des semaines sans se fabriquer un signal, s'il nomme a chaque cycle la condition qui manque, et s'il vend vraiment au premier doute quand la position est encore gagnante.",
+"quand_ca_casse": "Il ne casse pas par une grosse perte : le pire realiste est 4 ou 5 stops a 1 % du book chacun, soit environ -5 % plus la friction, si chaque repli se transforme en cassure. Ce qui casse, c'est la mesure : avec 1 ouverture par semaine, donc 8 trades au plus en 8 semaines, le seuil de 20 trades clos (15 si moins de 60 % du budget est utilise) est hors de portee par construction ; avec les 3 a 6 trades attendus, le protocole classera la fenetre en prudence extreme (cas E, moins de 8 trades clos) : aucun verdict financier, seulement un constat comportemental. En hausse forte il fera 10 a 20 points de moins que le panier passif (cas F si son timing bat celui du jumeau B2, simple ecart au panier sinon), et c'est le prix assume. Le filtre atr_pct sous 1.5 % ne selectionne pas le calme : sur les bougies en base, c'est la normale de BTC (mediane 0.9 %) et la majorite d'ETH ; il ecarte seulement les phases agitees, et la plupart des bougies eligibles ici le sont aussi pour repli. Un stop a 5 % reste a portee du bruit d'une semaine, meme calme : il encaissera aussi des petites pertes pour rien, et la vente au premier doute coupera des positions qui seraient reparties. Enfin, la vente a 30 bougies sans gain, la vente au premier doute, la limite d'une position a la fois et l'interdiction d'acheter SOL sont des consignes : la couche de risque n'applique que le stop, l'objectif, la taille et le budget ; leur respect se lit dans le journal, pas dans les refus. La mesure exploitable restera le bias a 24 h sur les trois paires (168 observations) et le respect des quatre conditions d'entree.",
+"pour_qui": [
+"prudent",
+"patient",
+"methodique"
+],
+"axes": {
+"horizon": "moyen (3 a 10 jours)",
+"mouvement": "s'abriter",
+"temperament": "prudent",
+"exposition": "faible",
+"verdict_probable": "non"
+}
+},
+{
+"id": "horizon24",
+"nom": "Vingt-quatre heures",
+"famille": "Prevision a court terme",
+"accroche": "Ne trader que sa prevision a 24 heures, et la solder un jour plus tard, quoi qu'il arrive.",
+"philosophie": "La mesure la plus solide de tout le protocole est la justesse de la prevision de direction a 24 heures que Claude donne a chaque cycle, pour chaque paire, meme quand il ne trade pas. Ce mandat prend cette prevision au mot : quand Claude annonce une hausse avec une confiance elevee, il achete, et il revend au sixieme cycle apres l'achat, soit 23 a 24 heures plus tard, gagnant ou perdant, sans these a defendre ni tendance a suivre, avec un stop serre et un objectif proche parce que la duree est courte. C'est le mandat qui produit le plus de trades et paie le plus de frais : avec 0,3 % de friction par aller-retour et un mouvement moyen de 1,4 a 2 % en 24 heures selon la paire, il faut avoir raison a peu pres 58 fois sur 100 pour ne rien perdre, et davantage sur BTC, qui bouge le moins. Deux mesures ne doivent pas etre confondues : le protocole note le bias une seule fois par jour, au cycle de 00:00 UTC, sur les trois paires (168 observations en 8 semaines), alors que le taux de reussite des trades de ce mandat ne compte que les paris up a forte confiance, a n'importe quelle heure, et se rapporte separement. Enfin la vente au sixieme cycle est une consigne et non une regle de la couche de risque, qui n'applique que le stop et l'objectif : son respect se lit dans le journal, a la duree entre ouverte et fermee et au motif de cloture.",
+"ce_que_claude_regarde": [
+"Sa propre prevision bias a 24 h et la confiance (champ confidence) qu'il lui attache : il n'achete que sur up avec une confidence d'au moins 0,65",
+"Deux indicateurs nommes qui soutiennent la hausse : roc_5_pct, rsi, close face a ema_fast, vol_ratio, ou la derniere bougie de dernieres_bougies_4h",
+"ouverte_le des positions_ouvertes compare a horodatage_utc : la vente tombe au sixieme cycle apres l'achat, des que l'ecart atteint 23 heures",
+"tes_trades_clotures_recents : chaque trade etait un pari up, le signe de pnl_pct dit si la prevision etait juste, et le nombre de trades positifs sur six regle l'exigence de confidence",
+"round_trips_restants_cette_semaine et le jour de la semaine, pour garder une unite du vendredi au dimanche"
+],
+"brief": "Tu es un previsionniste a 24 heures : chaque achat parie sur ta prevision et se solde un jour plus tard, gagnant ou perdant.\nN'achete un symbole que si ton bias est up avec une confiance (champ confidence) d'au moins 0,65, et si tu nommes dans reasoning deux indicateurs qui soutiennent la hausse : roc_5_pct, rsi, close face a ema_fast, vol_ratio ou dernieres_bougies_4h. Une confidence de 0,65 doit rester rare.\nEcris ta prevision chiffree en PREMIERE phrase du reasoning d'achat (Prevision 24 h : +1,8 %, confidence 0,70).\nEngage max_position_pct en entier. Une seule ouverture par cycle : si deux symboles se qualifient, prends la confidence la plus haute.\nVends chaque position, gagnante ou perdante, au premier cycle ou elle a au moins 23 heures (ecart entre ouverte_le et horodatage_utc : c'est le sixieme cycle apres l'achat, le remplissage etant date quelques minutes apres le dossier). Ne prolonge jamais.\nVends avant seulement si ton bias sur ce symbole passe a down ; sinon laisse agir stop et objectif automatiques.\nDans tes_trades_clotures_recents, chaque trade etait un pari up : pnl_pct positif vaut prevision juste. Si moins de quatre des six derniers sont positifs, exige 0,75 de confidence au prochain achat.\nIl faut environ 58 previsions justes sur 100 pour couvrir 0,3 % de friction par aller-retour. Rythme attendu : un pari tous les deux ou trois jours, la plupart des cycles en hold ; n'achete jamais pour occuper le budget ni sur bias flat ou down.\nGarde une unite de round_trips_restants_cette_semaine du vendredi au dimanche.\nDonne un bias a 24 h pour chaque symbole a chaque cycle, meme en hold. N'utilise flat que si tu attends moins de 0,3 % de variation ; en base c'est une fois sur cinq sur BTC et ETH, une fois sur huit sur SOL : ni refuge ni quota.",
+"univers": [
+"BTC/USDT",
+"ETH/USDT",
+"SOL/USDT"
+],
+"horizon_bougies": "6 bougies (le sixieme cycle apres l'achat, 23 a 24 h) par construction, 7 si un cycle saute ; estimation : toute detention plus longue serait un manquement a la consigne de vente, que la couche de risque n'applique pas",
+"ouvertures_par_semaine_attendues": "2 a 4 par semaine (estimation calibree sur 311 bougies d'un regime haussier ; budget de 4), soit 16 a 32 trades clos en 8 semaines : a 2 par semaine le seuil du verdict financier est 15 (moins de 60 % du budget utilise), a 3 ou plus il est 20 ; atteignable sur toute la fourchette, a une marge etroite pres autour de 2,4 par semaine, si les positions sont bien soldees au sixieme cycle",
+"risque": {
+"max_position_pct": 0.3,
+"stop_loss_pct": 0.04,
+"take_profit_pct": 0.06,
+"max_round_trips_per_week": 4
+},
+"quand_ca_marche": "Claude lit la direction a 24 h nettement mieux que le hasard, autour de 60 % ou plus sur ses paris up a forte confiance : les gains de 1 a 3 % par trade juste depassent les pertes symetriques et les 0,3 % de friction par aller-retour. Sur les 311 bougies en base, prises dans un regime haussier, le stop a 4 % n'est touche en 24 heures que dans 4 % des cas en moyenne (moins de 1 % sur BTC, 8 % sur SOL) et l'objectif de 6 % dans 7 % (5 % sur BTC et ETH, 11 % sur SOL) : la plupart des sorties se font a l'heure, sur decision, ce qui est exactement ce que le mandat veut mesurer. Le journal est alors le plus lisible de tous : chaque achat commence par une prevision chiffree, chaque trade clos lui repond un jour plus tard par un pnl_pct positif ou negatif, et le taux de reussite se lit sur 16 a 32 trades sans attendre la fin de la fenetre. C'est aussi le mandat qui a le plus de chances de franchir le seuil de trades clos, donc de recevoir un verdict financier.",
+"quand_ca_casse": "Les frais, d'abord. L'ecart-type d'une variation a 24 h est de 2 a 3 % sur les bougies en base, et le mouvement moyen en valeur absolue va de 1,4 % sur BTC a 2 % sur SOL : un pari juste rapporte ce mouvement, un pari faux le coute, et chaque aller-retour paie 0,3 %. L'esperance vaut (2p - 1) x mouvement - 0,3 %, nulle pour p = 57,5 % avec un mouvement de 2 %, et pour p = 61 % avec 1,4 % ; le stop a 4 % et l'objectif a 6 % interviennent trop rarement en 24 heures pour changer ce chiffre, retenir 58 %. Avec 55 % de previsions justes, le mandat perd lentement ; a 50 %, il perd 0,3 % du capital engage a chaque trade, soit environ 0,1 % du book, 16 a 32 fois. C'est le candidat naturel au verdict H du protocole (lit le marche mieux que le hasard mais conversion en P&L cassee) ou J (frais superieurs a 50 % du P&L brut). Il sous-performe le panier passif dans toute hausse : exposition au plus 60 % (deux positions de 30 %), le plus souvent 0 a 30 %, et jamais plus de 48 heures d'affilee. Ses deux positions portent souvent sur des paires qui bougent ensemble : une journee rouge sur BTC est presque toujours rouge sur ETH et SOL, et deux stops le meme jour coutent 2,6 % du book. La vente au sixieme cycle et la limite d'un achat par cycle sont des consignes que la couche de risque n'applique pas : si Claude attend 24 heures pleines au lieu de 23, la vente glisse au septieme cycle et le mandat mesure une prevision a 28 heures ; s'il garde une position plus de 7 bougies, cela se lit dans le journal a la duree entre ouverte et fermee, et le mandat n'est alors plus ce qu'il pretend mesurer. Enfin, tes_decisions_recentes ne montre que 8 decisions, soit deux cycles a trois paires : la prevision ecrite a l'achat n'est plus sous les yeux de Claude quand il solde six cycles plus tard ; seul le lecteur du journal peut la comparer au resultat, et Claude ne juge sa propre justesse que par le signe de pnl_pct de ses six derniers trades clos.",
+"pour_qui": [
+"actif",
+"curieux",
+"prudent"
+],
+"axes": {
+"horizon": "eclair (24 h)",
+"mouvement": "prevoir a 24 h",
+"temperament": "prudent",
+"exposition": "faible",
+"verdict_probable": "oui"
+}
+},
+{
+"id": "libre",
+"nom": "Carte blanche",
+"famille": "temoin",
+"accroche": "Personne ne dit a Claude comment trader : il choisit sa methode, la redit a chaque cycle et doit s'y tenir, et il sert de point de comparaison aux autres.",
+"philosophie": "Ici, personne ne dit a Claude quoi regarder ni quand agir : il recoit le dossier et les regles du jeu, choisit lui-meme une methode chiffree et doit la redire en une ligne a chaque cycle, parce que le dossier ne lui renvoie pas ses textes precedents. Ce mandat sert de temoin : ce que Claude fait spontanement est la ligne de base. Comme chaque mandat tourne dans sa propre fenetre, donc sur un marche different, la comparaison avec les mandats diriges reste indicative : elle porte sur le comportement (patience, budget, fidelite a une methode, bias) plus que sur le P&L. Les garde-fous sont ceux du protocole, sans modification : 40 % du book par position au plus, stop a 8 %, objectif a 15 %, quatre ouvertures par semaine. Tout le reste (fidelite a la methode annoncee, patience, gestion du budget sur la semaine, honnetete sur les stops) est une consigne dont le respect se lit dans le journal, pas une contrainte appliquee par la couche de risque.",
+"ce_que_claude_regarde": [
+"Tout le dossier, a sa discretion, a condition de dire quels champs de indicateurs il suit et avec quels seuils",
+"La premiere phrase de ses raisons dans tes_decisions_recentes (8 dernieres decisions, raison tronquee a 240 caracteres) : c'est la seule trace de sa methode d'un cycle a l'autre",
+"tes_trades_clotures_recents (6 derniers) : chaque stop doit etre nomme bruit de marche ou these fausse, et seuls ces chiffres peuvent motiver un changement de methode",
+"round_trips_restants_cette_semaine et horodatage_utc : le budget de 4 se gere sur la semaine entiere"
+],
+"brief": "Tu choisis toi-meme ta methode : c'est ce que l'on observe. Elle tient en une ligne chiffree : quels champs de indicateurs tu suis, quel seuil declenche un achat, ce qui te fait vendre avant stop_loss ou take_profit, combien de bougies de 4 h tu tiens, quelle taille tu engages (au plus max_position_pct du book).\nLe dossier ne garde que tes 8 dernieres decisions (raison tronquee a 240 caracteres) et tes 6 derniers trades clos. Ecris donc ta methode en PREMIERE phrase du reasoning de chaque decision, sous 200 caracteres, a chaque cycle, meme en hold.\nAu cycle suivant, relis-la dans tes_decisions_recentes et applique-la : chaque achat et chaque vente se rattache a une regle qui y figure.\nPour changer de methode, annonce-le dans market_view (ancienne regle, nouvelle regle) et motive-le par des chiffres de tes_trades_clotures_recents : une perte isolee n'est pas un motif, une serie de stops que ta regle n'expliquait pas, si. Un changement silencieux est une faute, meme gagnant.\nNe trade pas pour trader : hold est une reponse complete. Si aucune regle n'est remplie, dis-le et reste en cash. Tiens le nombre de bougies annonce, sauf si ta regle de vente se declenche.\nUn aller-retour coute 0,3 % de la position (0,2 % de frais plus environ 0,1 % de glissement) : quatre ouvertures par semaine, c'est pres de 4 % du book sur la fenetre. Gere round_trips_restants_cette_semaine sur la semaine entiere, garde une ouverture pour sa seconde moitie.\nPour chaque stop dans tes_trades_clotures_recents, dis en une phrase : bruit de marche ou these fausse.\nNe fais pas : acheter sans citer l'indicateur et le seuil qui declenchent ; decrire une methode et en pratiquer une autre ; inventer une news.\nDonne ton bias a 24 h pour chacune des trois paires a chaque cycle, meme sans trade.",
+"univers": [
+"BTC/USDT",
+"ETH/USDT",
+"SOL/USDT"
+],
+"horizon_bougies": "au choix de Claude, annonce dans sa methode ; estimation entre 6 et 60 bougies de 4 h (1 a 10 jours), calibree sur 311 bougies d'un regime haussier",
+"ouvertures_par_semaine_attendues": "estimation, sans regle du brief pour la soutenir : 2 a 3 sur un budget de 4 selon le panel du protocole (fiche d'origine sceptique, calibree sur 311 bougies d'un regime haussier), soit 16 a 24 trades clos en huit semaines. Le verdict financier exige 20 trades clos, ou 15 si moins de 60 % du budget a ete utilise (moins de 20 ouvertures sur 32). A 2 par semaine (16 ouvertures) le seuil est 15 ; a 3 par semaine (24 ouvertures) il est 20 : atteignable dans les deux cas, mais pas acquis. La zone delicate est autour de 20 ouvertures, ou le seuil remonte a 20 alors que des positions peuvent encore etre ouvertes le jour du verdict. Verdict financier : oui si Claude ouvre 2 fois par semaine ou plus, non s'il choisit le hold (cas E du protocole sous 8 trades clos) : ce choix est justement ce que le temoin observe, d'ou un verdict probable incertain.",
 "risque": {
 "max_position_pct": 0.4,
 "stop_loss_pct": 0.08,
 "take_profit_pct": 0.15,
 "max_round_trips_per_week": 4
 },
-"quand_ca_marche": "Quand on veut observer le comportement spontane du modele plutot que tester une these. Le journal est le plus riche des mandats : Claude y expose et justifie ses propres choix de style.\n",
-"quand_ca_casse": "Un style qui change trop souvent produit un comportement incoherent, difficile a lire et souvent perdant par friction. Sans consigne, Claude peut aussi simplement rester en attente la plupart du temps, ce qui est un resultat en soi mais donne peu de trades a mesurer.\n",
+"quand_ca_marche": "Claude se donne une methode simple et chiffree, la redit a l'identique en tete de ses raisons cycle apres cycle, et ses ventes sur signal precedent les stops. Le journal est alors le plus riche du banc d'essai : on voit ce qu'il regarde spontanement, combien de bougies il tient, s'il depense le budget ou le laisse dormir, si sa confiance est calibree et si ses previsions a 24 h depassent le hasard. Quand un changement de methode arrive, il est annonce dans market_view et appuye sur les chiffres de ses trades clos, et l'on peut le dater. C'est le seul mandat dont le resultat se compare directement au protocole tel qu'il a ete ecrit, et la base a laquelle chaque brief dirige pourra se comparer, fenetre apres fenetre, avec la prudence qu'impose un marche different.",
+"quand_ca_casse": "Claude change de logique d'un cycle a l'autre sans le dire : il achete une cassure le lundi, un repli le mercredi, et la ligne de methode en tete de ses raisons devient une formule creuse ou change de contenu sans passer par market_view. Le taux de refus par la couche de risque monte, les theses d'entree ne sont plus reprises aux cycles suivants et le P&L n'est plus attribuable a rien. Deuxieme panne, symetrique : sans consigne de patience, un modele qui recoit un dossier toutes les quatre heures a tendance a vouloir agir, brule les quatre ouvertures des le lundi et paie pres de 4 % du book en friction sur la fenetre ; ou au contraire il reste en hold presque en permanence et la fenetre finit en cas E du protocole, sans verdict financier. Rien de tout cela n'est empeche par la couche de risque : la fidelite a la methode, la gestion du budget sur la semaine et l'honnetete sur les stops sont des consignes, dont le respect se mesure a posteriori dans le journal. Enfin, c'est le mandat le moins reproductible : une deuxieme fenetre pourrait voir Claude choisir une autre methode, et son resultat financier depend d'abord de ce choix.",
 "pour_qui": [
 "curieux",
 "observateur",
@@ -35,8 +336,224 @@
 ],
 "axes": {
 "horizon": "variable",
-"style": "libre",
-"temperament": "equilibre"
+"mouvement": "au choix",
+"temperament": "equilibre",
+"exposition": "inconnue (temoin)",
+"verdict_probable": "incertain"
+}
+},
+{
+"id": "range",
+"nom": "Entre deux murs",
+"famille": "retour a la moyenne",
+"accroche": "N'agit que quand le marche n'a pas de tendance : achete pres du bas de la fourchette des 20 dernieres bougies, revend au milieu, et se tait des que le marche part.",
+"philosophie": "Une bonne partie du temps les prix ne vont nulle part : ils rebondissent entre un plancher et un plafond, et ce mandat n'exploite que ces periodes : Claude verifie d'abord qu'il n'y a pas de tendance, puis achete quand le prix est colle au bas de la fourchette recente et revend quand il en a parcouru la moitie. Les gains vises sont petits, 2 a 4 %, donc la friction de 0,3 % par aller-retour pese lourd et il faut pres de six gagnants sur dix. Le danger propre a ce style est le jour ou le plancher cede : ce qui semblait bon marche devient encore moins cher, et la regle qui coupe la position ne s'applique qu'apres la perte ; les sorties au milieu, a -3 % et apres 70 h sont d'ailleurs des consignes lues par Claude, pas des automatismes de la couche de risque, qui ne pose que le stop a 6 % et l'objectif a 8 %. A ne pas confondre avec le Contrarien, qui achete la panique (rsi sous 30, chute de 4 % en cinq bougies) dans n'importe quel regime, en une seule position de 20 %, ni avec le Repli, qui exige une tendance haussiere : ici la condition premiere est l'absence de tendance, le seuil est plus doux (rsi sous 35, pas de chute exigee), la taille 30 % et deux positions. Range et Contrarien peuvent acheter la meme bougie ; le Contrarien achetera plus tard et plus bas, et lui seul achetera dans une tendance.",
+"ce_que_claude_regarde": [
+"ema_fast et ema_slow a moins de 1,5 % l'une de l'autre (ema_fast / ema_slow entre 0.985 et 1.015) et roc_20_pct entre -5 et +5 : l'absence de tendance, condition prealable a tout achat",
+"dist_ll20_pct sous 2 avec rsi sous 35 : le close colle au bas de la fourchette",
+"Les bornes de la fourchette, absentes du dossier, recalculees a chaque cycle : hh20 = close / (1 + dist_hh20_pct/100), ll20 = close / (1 + dist_ll20_pct/100), milieu = (hh20 + ll20) / 2",
+"La largeur de la fourchette, dist_ll20_pct moins dist_hh20_pct, au moins 8 : en dessous, le milieu est a moins de 2 % d'une entree faite jusqu'a 2 % au-dessus du plancher, et le gain ne paie ni la coupe a -3 % ni la friction",
+"Un close plus de 3 % sous entree (positions_ouvertes) : le plancher a cede, sortie sans attendre le stop",
+"ouverte_le pour la limite de 70 h (18 bougies), tes_trades_clotures_recents pour le taux de reussite et les paires a ne pas racheter, round_trips_budget moins round_trips_restants_cette_semaine pour les ouvertures deja faites dans la semaine"
+],
+"brief": "Tu trades le retour a la moyenne, seulement sans tendance. Il y a tendance si ema_fast / ema_slow sort de 0.985 a 1.015 ou si roc_20_pct sort de -5 a +5 : alors ne fais rien sur la paire, quel que soit le rsi.\nSans tendance, achete quand dist_ll20_pct est sous 2 et rsi sous 35, avec 30 % du book (size_pct_of_equity 0.30), au plus deux positions.\nBornes, absentes du dossier : hh20 = close / (1 + dist_hh20_pct/100), ll20 = close / (1 + dist_ll20_pct/100), milieu = (hh20 + ll20) / 2. La largeur, dist_ll20_pct moins dist_hh20_pct (il est negatif ou nul, la difference est donc positive), doit valoir au moins 8, sinon le milieu est trop pres pour payer coupe et friction : n'achete pas. Note plancher et milieu en premiere phrase du reasoning d'achat.\nVends quand le close atteint le milieu recalcule ce cycle ou que rsi depasse 55 ; n'attends pas le haut, atteint une fois sur deux.\nVends si le close passe plus de 3 % sous entree (positions_ouvertes) : le plancher a cede, n'attends pas le stop.\nVends aussi au premier cycle ou ouverte_le date de plus de 70 h (18 bougies) sans que le milieu soit atteint.\nNe rachete pas une paire dont tes_trades_clotures_recents montre une perte close depuis moins de 80 h : elle t'a dit qu'elle cassait.\nFriction : 0,3 % par aller-retour pour viser 2 a 4 % ; il te faut pres de six gagnants sur dix si tu coupes a -3 %, trois sur quatre si le stop te rattrape. Si moins de 4 de tes 6 derniers trades clos sont gagnants, n'ouvre qu'une position par semaine (deja ouvertes : round_trips_budget moins round_trips_restants_cette_semaine), sans reduire la taille.\nLa plupart des cycles tu ne fais rien ; des semaines sans trade en tendance sont normales.\nDonne ton bias a 24 h pour chaque paire a chaque cycle, meme sans trade ; en fourchette il est souvent flat.",
+"univers": [
+"BTC/USDT",
+"ETH/USDT",
+"SOL/USDT"
+],
+"horizon_bougies": "6 a 18 bougies (1 a 3 jours), avec une sortie demandee au premier cycle apres 70 h de detention, soit 18 bougies (estimation)",
+"ouvertures_par_semaine_attendues": "estimation : zero dans les semaines de tendance, 1 a 3 par grappes dans les semaines sans tendance ; sur la fenetre, de quelques unites si la tendance domine a 10 a 18 en longue consolidation, au plus 19 (60 % du budget de 32 = 19,2), ce qui ramene le seuil de verdict a 15 trades clos ; sur les 2,7 semaines de regime haussier en base, le signal complet ne s'est jamais declenche",
+"risque": {
+"max_position_pct": 0.3,
+"stop_loss_pct": 0.06,
+"take_profit_pct": 0.08,
+"max_round_trips_per_week": 4
+},
+"quand_ca_marche": "Marche qui hesite pendant des semaines dans une bande de 8 a 12 %, comme les longues consolidations apres une hausse : chaque aller-retour rapporte 2 a 4 %, soit 1,7 a 3,7 % une fois la friction payee (estimation), et le mandat enchaine les petits gains pendant que le panier passif fait du surplace. C'est le seul mandat concu pour un marche sans direction, la ou les suiveurs de tendance s'epuisent en faux departs. Le filtre de tendance le tient a l'ecart des phases directionnelles, ou il ne perd rien parce qu'il ne fait rien : son exposition moyenne reste faible et son book ressemble a du cash la plupart du temps.",
+"quand_ca_casse": "Quand le plancher cede : l'achat au bas de la fourchette devient une position a -3 % puis -6 % en une ou deux bougies, et la regle de sortie a -3 % se declenche apres la perte, pas avant. Le rapport est defavorable par construction : un gain vise de 2 a 4 % contre une coupe a 3,3 % friction comprise, donc un seul faux plancher efface un ou deux gagnants, deux ou trois si c'est le stop a -6 % qui coupe, et il faut pres de six gagnants sur dix avec des sorties a -3 %, trois sur quatre si le stop rattrape souvent la position. Le filtre de tendance arrive toujours en retard d'une ou deux journees, ce qui fait acheter un bas de fourchette qui est en realite le debut d'une baisse. Les sorties au milieu, a -3 % et apres 70 h sont des consignes : la couche de risque ne pose que le stop et l'objectif, et leur respect se lit dans le journal, apres coup. La memoire du dossier est courte : les 8 dernieres decisions couvrent moins de 3 cycles sur trois paires, donc la note d'achat (plancher, milieu) disparait au bout d'une dizaine d'heures et le milieu est recalcule chaque cycle sur une fenetre de 20 bougies qui glisse : la cible bouge pendant la detention. C'est le style le plus penalise par les frais sur 4 h : a 15 trades dans la fenetre et 30 % de taille, la friction seule coute environ 1,4 % du book. Le verdict financier est incertain et penche vers l'absence de verdict si la tendance dure : il exige 15 trades clos si moins de 60 % du budget est utilise, soit environ deux par semaine pendant huit semaines, ce que seule une longue consolidation fournit ; sur les 2,7 semaines de regime haussier disponibles en base, la condition d'absence de tendance n'a tenu que 8 % du temps et le signal complet ne s'est jamais declenche. Une fenetre en tendance donne quelques trades ou aucun et pas de verdict, et elle se lira alors sur le bias, l'exces face a B2 et le respect du brief.",
+"pour_qui": [
+"equilibre",
+"methodique",
+"patient"
+],
+"axes": {
+"horizon": "court (1 a 3 jours)",
+"mouvement": "acheter la faiblesse",
+"temperament": "equilibre",
+"exposition": "faible",
+"verdict_probable": "incertain"
+}
+},
+{
+"id": "regime",
+"nom": "Sur ou sous la ligne",
+"famille": "Quasi-passif",
+"accroche": "Investi tant que le prix tient nettement au-dessus de sa moyenne lente, en cash quand il passe nettement dessous : une seule question, posee toutes les 4 heures.",
+"philosophie": "Ce mandat part du constat que la detention passive est difficile a battre et qu'un trader lent ne peut ajouter qu'une chose : ne pas etre present pendant les grandes baisses. Claude detient donc BTC et ETH tant que leur prix reste nettement au-dessus de sa moyenne lente (ema_slow, 200 bougies de 4 heures dans la configuration) et passe en cash quand il est passe nettement dessous, avec une marge de 2 % et une confirmation sur deux bougies pour ne pas reagir a chaque frisson. SOL est garde dans le dossier pour la prevision a 24 h mais jamais achete : trop volatil, il traverserait la ligne trop souvent pour un filtre aussi lent. Claude ne cherche ni le meilleur point d'entree ni le meilleur point de sortie et accepte de rater le debut de chaque retournement. C'est le mandat qui trade le moins et qui ressemble le plus a la detention passive.",
+"ce_que_claude_regarde": [
+"close par rapport a ema_slow (la moyenne lente, 200 bougies dans la configuration) : au moins 2 % au-dessus pour acheter, au moins 2 % en dessous pour vendre",
+"Le c de l'avant-derniere bougie de dernieres_bougies_4h, compare a la meme ema_slow : c'est la confirmation sur deux cycles",
+"Le champ trend (ema_fast au-dessus de ema_slow), exige a up pour acheter",
+"motif_cloture dans tes_trades_clotures_recents, pour racheter au cycle suivant si un stop ou un objectif a ferme une position alors que le regime tient",
+"Rien d'autre : rsi, vol_ratio, roc_5_pct, roc_20_pct, atr_pct et les distances aux extremes sont ignores par consigne"
+],
+"brief": "Tu appliques un filtre de regime, pas une gestion active. N'achete que BTC/USDT et ETH/USDT. SOL/USDT reste dans ton dossier pour le bias, mais ne l'achete jamais : trop volatil, il traverserait la ligne trop souvent pour un filtre aussi lent.\nLa ligne est ema_slow. Achete une paire, a max_position_pct, quand close est superieur ou egal a 1,02 fois ema_slow, que trend vaut up et que le c de l'avant-derniere bougie de dernieres_bougies_4h depasse aussi 1,02 fois ema_slow (la meme valeur : elle bouge trop peu en 4 h pour changer la conclusion). Si les deux paires sont eligibles, ouvre les deux au meme cycle si round_trips_restants_cette_semaine le permet.\nVends une paire seulement quand close est inferieur ou egal a 0,98 fois ema_slow et que le c de l'avant-derniere bougie l'est aussi. Une seule cloture sous la ligne, meme violente, n'est pas un signal.\nCommence chaque reasoning par l'ecart en pourcentage entre close et ema_slow.\nIgnore rsi, vol_ratio, roc_5_pct, roc_20_pct, atr_pct, dist_hh20_pct et dist_ll20_pct. Une position a -8 % au-dessus de la ligne se garde ; une position a +10 % passee sous la ligne se vend.\nSi un stop ou un objectif automatique ferme une position (motif_cloture dans tes_trades_clotures_recents) alors que la condition d'achat tient encore, rachete au cycle suivant si le budget le permet.\nN'anticipe jamais un franchissement : tu agis apres la ligne, jamais avant. Chaque aller-retour coute 0,3 % (0,2 % de frais plus environ 0,1 % de glissement). Ne vends pas pour encaisser un gain, ne change pas de seuil.\nAttends-toi a passer des semaines sans rien faire : c'est le comportement normal de ce mandat, pas une anomalie a corriger.\nA chaque cycle, meme sans trade, donne ton bias a 24 h pour chacune des trois paires, SOL/USDT compris.",
+"univers": [
+"BTC/USDT",
+"ETH/USDT",
+"SOL/USDT"
+],
+"horizon_bougies": "60 a 300 bougies et plus (plusieurs semaines), estimation ; une position peut durer toute la fenetre de 8 semaines, soit 336 bougies",
+"ouvertures_par_semaine_attendues": "estimation raisonnee : 0 a 0,5 par semaine, soit 2 a 4 ouvertures sur les 8 semaines (les deux paires a l'entree en regime, puis une reprise par franchissement ou par sortie automatique)",
+"risque": {
+"max_position_pct": 0.4,
+"stop_loss_pct": 0.12,
+"take_profit_pct": 0.3,
+"max_round_trips_per_week": 2
+},
+"quand_ca_marche": "Marche qui installe une tendance longue dans un sens ou dans l'autre. En hausse durable, il capte l'essentiel du mouvement de BTC et ETH sur 80 % du book avec deux ou trois ordres en tout, et son ecart au panier vient alors de deux choses : les 20 % de cash, lisibles dans B1 moins B2, et l'absence de SOL, qui tombe dans Claude moins B2 avec le timing (un regime qui perd contre B2 pendant une hausse de SOL n'a pas mal lu la ligne, il a exclu la paire). En baisse durable, il sort quelques bougies apres le franchissement confirme et peut faire mieux que la detention passive, a condition que la baisse se prolonge apres sa sortie : c'est le seul scenario ou c'est possible. Dans les deux cas le journal est court et lisible, chaque decision se verifie avec deux nombres, close et ema_slow, et le bias sur les trois paires fournit quand meme 168 observations de lecture du marche.",
+"quand_ca_casse": "Marche qui oscille autour de sa moyenne lente : chaque traversee confirmee coute un aller-retour (0,2 % de frais plus environ 0,1 % de glissement, soit 0,3 %) et une sortie au pire moment, juste avant le rebond ; la marge de 2 % et la confirmation sur deux bougies filtrent une partie des faux signaux, pas tous, et deux ou trois d'entre eux dans la fenetre suffisent a faire pire que le panier. En hausse franche il perd aussi contre le panier : plafonne a 80 % d'exposition et sans SOL, il ne peut pas le suivre, et c'est structurel. Un stop a 12 % peut tomber sur une chute brutale alors que le prix reste au-dessus de la ligne, ou pendant les deux bougies de confirmation, et forcer une sortie puis un rachat que la logique n'avait pas prevus. L'exclusion de SOL, l'interdiction des autres indicateurs et l'interdiction de vendre hors signal sont des consignes : la couche de risque ne les fait pas respecter, leur respect se lit dans le journal. Enfin, avec 2 a 4 ouvertures et donc au plus 2 a 4 trades clos attendus en 8 semaines, le protocole ne prononcera pas de verdict financier (seuil : 20 trades clos, ou 15 si moins de 60 % du budget d'ouvertures a ete utilise) ; le cas E, moins de 8 trades clos, est le plus probable, et des positions seront sans doute encore ouvertes a la date du verdict, valorisees en liquidation. Ce mandat se juge sur l'exposition, l'ecart a B2, la discipline et le bias, pas sur le P&L.",
+"pour_qui": [
+"patient",
+"methodique",
+"audacieux",
+"observateur"
+],
+"axes": {
+"horizon": "long (2 semaines et plus)",
+"mouvement": "suivre le mouvement",
+"temperament": "audacieux",
+"exposition": "forte",
+"verdict_probable": "non"
+}
+},
+{
+"id": "repli",
+"nom": "Repli dans la tendance",
+"famille": "achat de repli",
+"accroche": "Attendre que ce qui monte respire, acheter la respiration, vendre le retour au plus haut.",
+"philosophie": "Dans une hausse, le prix ne monte pas en ligne droite : il revient regulierement vers sa moyenne courte (ema_fast) avant de repartir. Claude attend ce retour, exige un premier signe de rebond, achete plus bas que le suiveur de tendance et revend quand le prix a rejoint son plus haut recent ou quand le rsi devient tendu, sans attendre l'objectif. Il ne faut pas le confondre avec le mandat contrarien, qui achete la panique (rsi sous 30, prix sur son plus bas de 20 bougies, aucune tendance exigee), ni avec le mandat gardien, plus petit, plus rare et qui exige un marche calme : ici la tendance intacte est la condition premiere, la volatilite n'est pas filtree, les trois paires sont ouvertes et la taille est franche, 35 % du book. Si le repli traverse la moyenne longue (ema_slow), ce n'etait pas un repli mais un retournement, et il sort sans discuter. La machine applique le stop a 6 %, l'objectif a 10 %, la taille, le plafond de deux positions et le budget d'ouvertures ; la vente au plus haut, la sortie sous ema_slow et le delai de 24 h avant de revenir sur une paire sont des consignes dont le respect se lit dans le journal.",
+"ce_que_claude_regarde": [
+"trend = up et close au-dessus de ema_slow : la tendance de fond doit etre intacte",
+"L'ecart close / ema_fast - 1 entre -2 % et +2 % : le prix est revenu sur sa moyenne courte, au-dessus ou en dessous",
+"rsi entre 35 et 48 : la respiration a eu lieu sans etre une chute ; sous 30, ou roc_5_pct sous -5, c'est une capitulation et il n'achete pas",
+"La derniere bougie de dernieres_bougies_4h cloture au-dessus de la cloture precedente : le rebond a commence",
+"dist_hh20_pct au-dessus de -0,5 ou rsi au-dessus de 65 pour vendre ; close sous ema_slow pour l'invalidation",
+"fermee dans tes_trades_clotures_recents, compare a horodatage_utc, pour le delai de 24 h avant de revenir sur une paire"
+],
+"brief": "Tu achetes les replis d'une tendance haussiere intacte, jamais les chutes : un repli est un retour du prix vers ema_fast tant que trend reste up.\nConditions d'achat, toutes au meme cycle : trend vaut up ; close est au-dessus de ema_slow ; l'ecart close / ema_fast - 1 est entre -2 % et +2 % ; rsi est entre 35 et 48 ; la derniere bougie de dernieres_bougies_4h cloture au-dessus de la cloture precedente.\nSans cette bougie haussiere, n'achete pas, meme si tout le reste est parfait : tu acceptes de rater des rebonds pour ne jamais acheter en pleine chute.\nUn rsi sous 30 ou un roc_5_pct sous -5 est une capitulation, pas un repli : hold, et ecris-le.\nTaille : 35 % du book par achat, une position par paire, deux ouvertes au plus ; si plusieurs paires sont eligibles, prends celle dont le close est le plus proche de ema_fast.\nVends quand dist_hh20_pct remonte au-dessus de -0,5 (plus haut 20 bougies rejoint) ou quand rsi depasse 65, meme si le gain est modeste : tu encaisses des rebonds de quelques pour cent, a 0,3 % l'aller-retour, sans courir les tendances.\nVends sans attendre si close passe sous ema_slow, quel que soit pnl_pct : la tendance n'est plus intacte.\nApres une sortie sur une paire, attends six bougies (24 h) avant d'y revenir : compare fermee dans tes_trades_clotures_recents a horodatage_utc.\nUn a deux achats par semaine sont la norme, des semaines a zero aussi : le budget est un plafond, pas un objectif. Ne te fabrique pas un repli pour l'utiliser.\nEn premiere phrase du reasoning d'un achat, ecris rsi, l'ecart a ema_fast et les deux dernieres clotures : c'est ce qui restera lisible dans tes_decisions_recentes.\nDonne un bias a 24 h pour chaque paire a chaque cycle, meme en hold.\nPas de news : le repli se lit dans rsi, ema_fast, ema_slow et les bougies fournies.",
+"univers": [
+"BTC/USDT",
+"ETH/USDT",
+"SOL/USDT"
+],
+"horizon_bougies": "6 a 42 bougies (1 a 7 jours), le plus souvent 2 a 5 jours ; estimation calibree sur 311 bougies d'un regime haussier, ou les deux trades rejoues ont dure 34 bougies chacun",
+"ouvertures_par_semaine_attendues": "1 a 2 (plafond 4). Estimation calibree sur 311 bougies d'un regime haussier, dont 2,7 semaines seulement avec ema_slow calculable : les regles rejouees sur ces bougies donnent 1,1 ouverture par semaine (3 ouvertures, 2 trades clos), soit 9 a 16 trades clos sur 8 semaines selon que la fenetre ressemble au bas ou au haut de la fourchette. Le verdict financier exige 20 trades clos, ou 15 si moins de 60 % du budget a ete utilise, soit au plus 19 ouvertures sur 32 : le haut de la fourchette y arrive, le bas non. Le plafond est fixe a 4 plutot qu'a 3 pour que le seuil reduit de 15 reste atteignable : avec 3, moins de 60 % du budget serait 14 ouvertures au plus, donc jamais 15 trades clos.",
+"risque": {
+"max_position_pct": 0.35,
+"stop_loss_pct": 0.06,
+"take_profit_pct": 0.1,
+"max_round_trips_per_week": 4
+},
+"quand_ca_marche": "Tendance haussiere reguliere avec des replis de 3 a 6 % toutes les une a deux semaines : Claude achete pres de ema_fast, revend 3 a 6 % plus haut deux a six jours apres, et le stop a 6 % est rarement approche parce que l'entree est deja basse dans le mouvement. Dans ce scenario favorable, et seulement dans celui-la, une dizaine de rebonds encaisses a +3 a +6 % sur 35 % du book font chacun +1 a +2 % de capital, frais de 0,3 % deduits, avec une exposition moyenne de 15 a 30 %, autour d'un quart du book, a la frontiere entre faible et moyenne ; rien ne dit que la fenetre en contiendra autant, et les bougies en base, rejouees, n'en ont produit que deux clos en 2,7 semaines. C'est aussi le regime ou le journal est le plus lisible : chaque achat s'explique par quatre chiffres ecrits en premiere phrase du raisonnement, et chaque vente par un seul.",
+"quand_ca_casse": "Le repli qui n'en est pas un : le prix revient sur ema_fast, rebondit d'une bougie, Claude achete, puis close traverse ema_slow ; il vend sous ema_slow ou prend le stop a 6 %, soit 2,1 % du book, et recommence sur la paire suivante. Trois fois de suite dans un retournement de marche, c'est 5 a 6 % du book en deux semaines : moins que le panier passif, mais une perte quand meme, faite de plusieurs petites. Le rebond mou : le prix ne rejoint jamais son plus haut 20 bougies, le rsi stagne entre 50 et 60, la position vit des jours sans signal de sortie et finit sur le stop ou sur une vente a peine positive dont les 0,3 % de frais mangent le gain ; sur les bougies en base, la sortie au plus haut 20 bougies a demande 5,7 jours, pas deux. Le marche plat ou baissier : trend n'est pas up, il n'a rien a acheter, reste en cash des semaines, et la fenetre ne produit pas les 15 trades clos qu'exige un verdict. Enfin, la vente au plus haut, la sortie sous ema_slow et le delai de 24 h avant de revenir sur une paire sont des consignes que la couche de risque n'applique pas ; elle n'applique que le stop, l'objectif, la taille, le plafond de deux positions et le budget, le reste se verifie dans le journal apres coup.",
+"pour_qui": [
+"equilibre",
+"patient",
+"methodique"
+],
+"axes": {
+"horizon": "moyen (3 a 10 jours)",
+"mouvement": "acheter la faiblesse",
+"temperament": "equilibre",
+"exposition": "faible",
+"verdict_probable": "incertain"
+}
+},
+{
+"id": "rotation",
+"nom": "Le meneur du peloton",
+"famille": "force relative",
+"accroche": "Toujours investi sur la seule paire qui a le plus monte sur 20 bougies, et en cash uniquement quand les trois baissent.",
+"philosophie": "Les trois paires montent et baissent souvent ensemble, mais pas a la meme vitesse, et l'hypothese de ce mandat est que celle qui mene depuis trois jours (20 bougies de 4 heures) a des chances de garder la tete quelques jours de plus. Ce mandat ne cherche donc pas le bon moment pour entrer mais la bonne paire a detenir : Claude compare la hausse des trois sur 20 bougies (roc_20_pct), achete la meilleure a 40 % du book et ne change de monture que si une autre la devance nettement deux cycles de suite. Il est presque toujours investi, sur une seule position concentree, et ne passe en cash que quand les trois paires baissent. La regle d'une seule position et celle des deux cycles sont des consignes lues dans le journal, pas des garde-fous de la couche de risque : seuls le stop a 10 % et l'objectif a 25 % sont appliques automatiquement. C'est le mandat qui isole le mieux la valeur du choix de la paire, exactement ce que mesure l'ecart au panier equipondere.",
+"ce_que_claude_regarde": [
+"roc_20_pct des trois paires, classes du plus haut au plus bas : le classement decide de tout",
+"L'ecart en points de roc_20_pct entre la paire detenue et son meilleur challenger, ecrit en premiere phrase du reasoning pour etre relu au cycle suivant dans tes_decisions_recentes (raison)",
+"Le signe de roc_20_pct sur les trois paires : tous negatifs, c'est le seul cas ou l'on passe en cash",
+"round_trips_restants_cette_semaine, pour savoir si la rotation se fait en un cycle ou en deux",
+"rsi, vol_ratio, atr_pct et les 12 bougies : lus pour commenter, jamais pour decider"
+],
+"brief": "Rotation par force relative : tu detiens la seule paire qui a le plus monte sur 20 bougies. A chaque cycle, classe les trois paires par roc_20_pct decroissant et ecris ce classement dans market_view.\nEntree : sans position, si la paire en tete a un roc_20_pct positif, achete-la a la taille maximale (size_pct_of_equity = max_position_pct), sans attendre de repli : la paire compte plus que le prix d'entree.\nUne seule position, toujours : jamais de deuxieme paire, pas de renforcement.\nMemoire : tu ne vois que tes 8 dernieres decisions, raison tronquee a 240 caracteres. Tant que tu detiens une paire, ecris en PREMIERE phrase de chaque reasoning : \"Ecart : <challenger> devance <detenue> de <x> points de roc_20_pct\", ou \"Ecart : aucun challenger\".\nRotation : change de paire seulement si le meme challenger devance la paire detenue d'au moins 5 points sur deux cycles consecutifs : l'ecart de ce cycle, calcule dans le dossier, et celui du cycle precedent, relu dans tes_decisions_recentes. Un seul cycle ou 3 points : du bruit, ne bouge pas.\nRotation justifiee : vends l'ancienne et achete la nouvelle au meme cycle quand round_trips_restants_cette_semaine le permet, sinon achete au cycle suivant.\nCash : vends quand les trois roc_20_pct sont negatifs ; rachete la paire en tete des qu'un roc_20_pct redevient positif.\nPatience : une paire se garde plusieurs jours a deux semaines. Ne vends ni sur une baisse du prix ni sur un rsi haut : seul le classement decide. rsi, vol_ratio, atr_pct et bougies ne servent qu'a commenter.\nUne rotation, c'est une vente plus un achat : 0,3 % de frais et glissement, une unite de budget. Justifie-la toujours en une phrase chiffree.\nN'invente rien d'absent du dossier. Donne ton bias a 24 h pour chaque paire, a chaque cycle, meme sans trade.",
+"univers": [
+"BTC/USDT",
+"ETH/USDT",
+"SOL/USDT"
+],
+"horizon_bougies": "18 a 60 bougies (3 a 10 jours par paire detenue, jusqu'a deux semaines quand le leader ne change pas), estimation raisonnee : un leader stable allonge la detention, une rotation confirmee ou le stop a 10 % la raccourcit",
+"ouvertures_par_semaine_attendues": "0,5 a 1 (estimation raisonnee, budget 2) : un achat initial, puis une rotation ou un rachat apres cash toutes les une a deux semaines, plus les rachats forces par un stop ou un objectif atteint, soit 4 a 8 trades clos en 8 semaines. Le verdict financier est hors de portee par construction, quel que soit le regime : le budget de 2 par semaine plafonne la fenetre a 16 ouvertures (18 si elle chevauche neuf semaines calendaires), donc a moins de 20 trades clos ; et le seuil reduit a 15 ne s'applique que sous 60 % du budget, soit au plus 9 ouvertures, donc au plus 9 trades clos. Ce mandat se juge sur le bias, l'ecart au panier et le respect du brief.",
+"risque": {
+"max_position_pct": 0.4,
+"stop_loss_pct": 0.1,
+"take_profit_pct": 0.25,
+"max_round_trips_per_week": 2
+},
+"quand_ca_marche": "Quand une paire prend la tete et la garde plusieurs semaines, typiquement SOL dans une phase de prise de risque ou BTC quand le reste s'essouffle : Claude est investi a 40 % dans la meilleure des trois, capte sa surperformance sans avoir a deviner les points bas, et le seul ecart au panier equipondere vient du choix de la paire, ce qui rend le resultat facile a interpreter. Dans une baisse generalisee ou les trois roc_20_pct passent negatifs, il est en cash et ne perd que ce qui a ete perdu avant la sortie. Le filtre des deux cycles ecarte la plupart des changements de tete d'un seul cycle, qui sont frequents sur des bougies de 4 heures.",
+"quand_ca_casse": "Quand le classement tourne toutes les semaines sans direction : Claude vend le leader qui vient de s'essouffler pour acheter celui qui vient de monter, juste avant qu'ils s'inversent, et chaque rotation coute environ 0,3 % de frais et de glissement en achetant systematiquement apres la hausse. En marche baissier, il rachete des le premier roc_20_pct positif et peut se faire pieger plusieurs fois de suite, chaque piege coutant jusqu'a 4 % du book (40 % de position, stop a 10 %). Concentre sur une seule paire, souvent la plus volatile, il subit chaque secousse de plein fouet : le stop a 10 % et l'objectif a 25 % sont ses seules protections automatiques, et l'objectif peut couper le leader en pleine course et forcer un rachat plus haut, qui consomme une unite de budget. La regle d'une seule position, celle des deux cycles et l'interdiction de vendre sur le prix ou le rsi sont des consignes : la couche de risque ne les applique pas, leur respect se lit dans le journal, et la regle des deux cycles ne tient que si Claude ecrit bien l'ecart en premiere phrase de son reasoning. Enfin, le verdict financier est hors de portee par arithmetique (16 ouvertures au plus pour un seuil de 20, ou 9 au plus pour un seuil de 15) : le mandat se juge surtout sur le bias, l'ecart au panier et le respect du brief.",
+"pour_qui": [
+"audacieux",
+"patient",
+"methodique"
+],
+"axes": {
+"horizon": "moyen (3 a 10 jours)",
+"mouvement": "suivre le mouvement",
+"temperament": "audacieux",
+"exposition": "moyenne",
+"verdict_probable": "non"
+}
+},
+{
+"id": "tendance",
+"nom": "Suiveur de tendance",
+"famille": "suivi de tendance",
+"accroche": "Acheter ce qui monte deja, rester tant que ca monte, sortir quand la pente casse.",
+"philosophie": "L'idee est vieille comme les marches : un mouvement qui dure depuis des semaines a plus de chances de continuer que de s'inverser au moment precis ou l'on regarde. Claude n'achete que la force deja visible : moyenne rapide (50 bougies de 4 h) au-dessus de la moyenne lente (200 bougies), prix nettement au-dessus de la moyenne rapide, elan positif sur 20 bougies et RSI au-dessus de 55, puis il garde tant que cet alignement tient. Il accepte de rater le debut et la fin de chaque mouvement ; le stop est large et l'objectif lointain pour ne pas etre sorti par une simple respiration. C'est le mandat le plus proche d'une detention passive equipee d'un frein. Ses regles de vente et son delai de 24 h avant de reprendre une paire sont des consignes : la couche de risque n'applique que le stop, l'objectif et les plafonds, et leur respect se lit dans le journal.",
+"ce_que_claude_regarde": [
+"trend = up (ema_fast au-dessus de ema_slow) : la tendance de fond est la",
+"close au moins 2 % au-dessus de ema_fast, rsi au moins 55, roc_20_pct superieur a 0 : c'est la force qu'il achete, pas un repli",
+"roc_5_pct sous +8 % : il n'achete pas une bougie geante, il attend le cycle suivant",
+"dist_hh20_pct : entre deux candidats, la paire la plus proche de son plus haut 20 bougies",
+"Les clotures (c) des deux dernieres bougies de dernieres_bougies_4h par rapport a ema_fast, et trend, pour la sortie",
+"tes_trades_clotures_recents (champ fermee) pour ne pas reprendre une paire sortie il y a moins de 24 h"
+],
+"brief": "Tu es un suiveur de tendance : tu achetes la force deja visible, jamais un creux, et tu ne devines jamais un sommet.\nAchete seulement si les quatre conditions sont reunies au meme cycle : trend vaut up, close depasse ema_fast d'au moins 2 % (close / ema_fast - 1 >= 0,02), roc_20_pct est superieur a 0 et rsi est au moins 55. Un prix colle a ema_fast avec un rsi sous 50 est un repli, pas ton mandat : hold.\nSi roc_5_pct depasse +8 %, attends le cycle suivant : tu suis une pente, pas une bougie geante. Entre deux candidats, prefere celui dont dist_hh20_pct est le plus proche de zero.\nPrends la taille maximale, max_position_pct : dans ce mandat, une conviction de tendance ne se dose pas.\nTiens la position tant que trend reste up. Ne vends pas sur une bougie rouge, ni parce que pnl_pct est deja beau, ni parce que rsi est haut : un rsi a 75 est normal dans une tendance.\nVends seulement si les deux dernieres bougies de dernieres_bougies_4h cloturent (c) toutes deux sous ema_fast, ou si trend passe a down. Sinon, laisse le stop et l'objectif automatiques travailler.\nNe reprends pas une paire si tes_trades_clotures_recents montre un trade dessus dont fermee date de moins de 24 h : le budget hebdomadaire ne sert pas a rentrer et sortir sur la meme paire.\nSi aucun symbole ne remplit les conditions, reste en cash et dis-le : rester des semaines sans trade fait partie de la methode, pas un echec.\nEn premiere phrase de ton reasoning, nomme la condition qui tient et celle qui casserait ta these.\nDonne un bias a 24 h pour chaque symbole a chaque cycle, meme en hold ; dans une tendance etablie, ton bias par defaut suit trend, et tu expliques quand tu t'en ecartes.\nN'invoque jamais une news ou un evenement : tu ne vois que les prix et les indicateurs fournis.",
+"univers": [
+"BTC/USDT",
+"ETH/USDT",
+"SOL/USDT"
+],
+"horizon_bougies": "30 a 120 bougies (5 a 20 jours), mediane estimee vers 9 jours ; classe long parce que les positions coupees a la cassure de ema_fast sont courtes et que celles qui suivent la tendance jusqu'a sa cassure ou a l'objectif durent deux semaines et plus ; estimation calibree sur 311 bougies d'un regime haussier",
+"ouvertures_par_semaine_attendues": "Estimation : 1 a 1,5 par semaine (budget 3), calibree sur 311 bougies d'un regime haussier, soit 8 a 12 trades clos sur 8 semaines. Le verdict financier exige 20 trades clos ; le seuil reduit de 15 ne s'applique que si moins de 60 % du budget a ete utilise, soit au plus 14 ouvertures sur 24, ce qui ne permet pas 15 clotures : c'est donc 20, autrement dit 2,5 ouvertures par semaine. Le verdict exige un rythme superieur a celui attendu ; il ne serait atteint que dans un marche qui casse souvent ses tendances, celui ou le mandat paie le plus de frais. Verdict financier incertain, pas exclu puisque le budget de 24 ouvertures le permet ; le mandat se juge d'abord sur le bias, l'exces face a B2, l'exposition par regime et le respect du brief.",
+"risque": {
+"max_position_pct": 0.4,
+"stop_loss_pct": 0.1,
+"take_profit_pct": 0.3,
+"max_round_trips_per_week": 3
+},
+"quand_ca_marche": "Marche qui monte par paliers pendant plusieurs semaines, avec des replis qui ne cassent pas la moyenne rapide : Claude est expose a 80 % presque en continu (deux positions de 40 %), son resultat ressemble a celui du panier passif moins les frais, et la qualite de ses sorties fait la difference. Avec une ou deux jambes de +15 a +30 % sur ETH ou SOL, une seule position peut rembourser plusieurs faux departs a -10 %. Il a aussi le merite d'etre en cash une fois que trend vaut down sur les trois paires, donc de ne plus perdre une fois la baisse installee, apres en avoir subi le debut : le passage de trend a down (ema_fast sous ema_slow, 50 bougies contre 200) arrive avec des semaines de retard, alors que le book est expose jusqu'a 80 %. Dans les 311 bougies en base, le stop a 10 % n'a jamais ete touche avant l'objectif sur un horizon de 14 jours, mais ce constat repose sur 2,7 semaines de ema_slow valide, en regime haussier, et ne vaut pas pour un autre regime.",
+"quand_ca_casse": "Marche en dents de scie autour des moyennes : chaque realignement declenche un achat a 40 % du book, chaque rechute sous ema_fast une vente, et l'on paie 0,3 % de frais et glissement par aller-retour pour rien, jusqu'a trois fois par semaine. Marche qui se retourne brutalement : le stop a 10 % sur une position de 40 % coute 4 % du book en une fois ; deux paires correlees qui chutent ensemble font 8 %, au-dela de la perte journaliere maximale de 6 %, et gelent les achats jusqu'au lendemain. Marche qui bascule lentement : trend ne passe a down que des semaines apres le sommet ; entre-temps les deux clotures sous ema_fast sortent les positions, mais chaque rebond de 2 % au-dessus de ema_fast avec rsi a 55 peut redeclencher un achat dans une baisse qui s'installe. Dans une hausse continue, le mandat perd contre le panier passif par construction : exposition plafonnee a 80 %, entrees en retard sur chaque jambe, sorties en retard sur chaque sommet. La phrase 'le stop n'a jamais ete touche avant l'objectif' repose sur 2,7 semaines de ema_slow valide (les 200 premieres bougies sur 311 ne servent qu'a la chauffe) dans un seul regime haussier : elle ne dit rien d'un marche baissier ou sans direction. Les regles de vente (deux clotures sous ema_fast, trend qui passe a down) et le delai de 24 h avant de reprendre une paire sont des consignes que la couche de risque n'applique pas ; si Claude les ignore, seul le journal le montrera. Enfin, avec 8 a 12 trades clos attendus contre 20 exiges, la fenetre risque de finir sans verdict financier : on apprendra comment Claude attend, pas combien il gagne.",
+"pour_qui": [
+"patient",
+"audacieux",
+"methodique"
+],
+"axes": {
+"horizon": "long (2 semaines et plus)",
+"mouvement": "suivre le mouvement",
+"temperament": "audacieux",
+"exposition": "forte",
+"verdict_probable": "incertain"
 }
 }
 ]

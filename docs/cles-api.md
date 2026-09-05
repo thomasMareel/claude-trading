@@ -10,6 +10,7 @@ viennent après.
 | 2 | `NTFY_TOPIC` | recevoir les alertes sur le téléphone | 5 min |
 | 3 | `BINANCE_API_KEY` / `SECRET` | le passage en réel, plus tard | 15 min |
 | 4 | `BINANCE_TESTNET_*` | roder les ordres réels sans argent, avant le 3 | 5 min |
+| 5 | connexion `claude` | que le bouton « Demander à Claude » soit traité | 2 min |
 
 Après chaque étape, une commande vérifie tout sans afficher les clés :
 
@@ -182,3 +183,52 @@ le chemin des ordres réels avant d'y mettre les 100 €.
 
 Le passage en réel proprement dit, avec le fichier `LIVE_ARMED`, est décrit
 dans le `README.md`. Il ne doit pas être abrégé.
+
+---
+
+## 5. Le pont : que Claude traite vos demandes GitHub
+
+Le bouton **Demander à Claude** de la page ouvre une demande sur GitHub. Pour
+qu'elle soit traitée, Claude Code doit pouvoir tourner sur ce PC sans vous.
+Ce n'est pas une clé à créer, seulement une connexion à rafraîchir.
+
+1. Ouvrir un terminal dans `C:\Claude\Crypto` et lancer :
+
+   ```bash
+   claude
+   ```
+
+   Si Claude demande de se connecter, suivre le lien affiché avec votre compte
+   Claude habituel, puis quitter avec `/exit`. La connexion reste valable
+   plusieurs semaines. Quand elle expire, le pont l'écrit dans `logs\pont.log`
+   et il suffit de refaire cette étape.
+2. Vérifier que GitHub est connecté aussi :
+
+   ```bash
+   gh auth status
+   ```
+
+3. Lancer le pont une fois à la main pour voir :
+
+   ```bash
+   scripts\pont.bat
+   ```
+
+   Sans demande ouverte, il écrit « aucune demande » et s'arrête. Avec une
+   demande, Claude répond dans le fil GitHub et ouvre au besoin une pull
+   request que vous validez d'un clic.
+4. Pour qu'il tourne seul, une tâche planifiée Windows toutes les heures
+   suffit : Planificateur de tâches, **Créer une tâche de base**, déclencheur
+   quotidien répété toutes les heures, action **Démarrer un programme** avec
+   `C:\Claude\Crypto\scripts\pont.bat`. Le pont ne fait rien quand il n'y a
+   rien à traiter.
+
+Le pont travaille dans une copie de travail séparée : il ne peut pas gêner le
+bot. Il ne passe jamais d'ordre, ne lit jamais `.env`, et toute modification
+de configuration ou de mandat est proposée pour la fenêtre suivante, jamais
+appliquée à la fenêtre en cours.
+
+**Alternative sans PC allumé** : une routine Claude dans le cloud peut faire
+le même travail toutes les heures. Elle exige d'installer l'application GitHub
+de Claude sur le dépôt, depuis https://claude.ai/code/onboarding?magic=github-app-setup.
+Une fois fait, demandez dans Claude Code de créer la routine.

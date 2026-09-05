@@ -1,0 +1,57 @@
+# Mandat « La cage decide ». Fiche = documentation ET configuration : le brief est injecte tel quel
+# dans le prompt systeme de Claude. Se choisit avant t0 (config.yaml, experiment.mandate).
+id: convexe
+nom: La cage decide
+famille: asymetrie de gains
+accroche: 'Claude ne choisit que l''entree : il lui est interdit de vendre, et c''est le stop a 6 % ou
+  l''objectif a 30 % qui ferme chaque position.'
+philosophie: |-
+  Beaucoup de traders perdent moins a l'entree qu'a la sortie : ils encaissent trop tot leurs gains et laissent filer leurs pertes. Ce mandat retire a Claude le droit de vendre pour supprimer le probleme a la racine : chaque position part avec une cage fixe, un stop 6 % sous le prix d'achat et un objectif 30 % au-dessus, et se termine forcement par l'un ou l'autre. Comme une position pese 25 % du book, un objectif atteint rapporte 7.5 % du book et un stop en coute 1.5 %, cinq fois moins : l'equilibre, frais compris, est autour d'une reussite sur six, ce que le hasard seul fournit deja ; a une reussite sur quatre le mandat est gagnant, mais huit semaines et 6 a 10 trades ne suffisent pas a distinguer les deux, et la fenetre ressemblera surtout a une longue suite de petites pertes en attendant le grand mouvement. Ses conditions d'entree recoupent largement celles du Suiveur de tendance (environ deux cycles eligibles sur trois en commun sur les bougies en base) et l'objectif a +30 % est le meme : la comparaison des deux fiches mesure ce que valent les ventes sur signal de Claude, a entrees presque egales, la cage engageant en plus une taille (25 contre 40 %) et un stop (6 contre 10 %) plus petits. L'interdiction de vendre est une consigne du brief, pas une regle de la couche de risque : si Claude vend quand meme, le journal le montrera, et ce sera un resultat en soi.
+ce_que_claude_regarde:
+- 'trend a up, roc_5_pct positif et dist_hh20_pct entre -4 et 0 : le prix accelere a moins de 4 % de son
+  plus haut de 20 bougies, la ou un mouvement de +30 % est plausible'
+- 'atr_pct sous 2.5 % : au-dela, le bruit de deux journees suffit a toucher un stop de 6 % avant que la
+  these ait eu le temps de jouer'
+- 'motif_cloture de ses six derniers trades clos (tes_trades_clotures_recents) : combien de stops, combien
+  d''objectifs, et si le ratio tient l''equilibre d''une reussite sur six ; le champ fermee compare a
+  horodatage_utc pour respecter les 24 h avant de revenir sur une paire stoppee'
+- 'positions_ouvertes, max_open_positions et round_trips_restants_cette_semaine : deux places au plus,
+  et une position qui attend la cage bloque la sienne pendant des semaines'
+brief: |-
+  Ton seul travail est l'entree : tu ne vends jamais toi-meme, quelles que soient les circonstances. Seuls le stop automatique a -6 % et l'objectif automatique a +30 % ferment une position ; un sell de ta part viole le mandat, meme s'il te semble judicieux.
+  Achete quand un mouvement de +30 % est plausible dans les deux a quatre semaines : trend a up, roc_5_pct positif, dist_hh20_pct entre -4 et 0 (a moins de 4 % du plus haut de 20 bougies) et atr_pct inferieur a 2.5 %, sinon le bruit de deux journees suffit a toucher ton stop.
+  N'achete jamais une paire dont trend est down : un rebond de 30 % y est rare et un stop a 6 % ne survit pas aux secousses. Apres un stop sur une paire, attends au moins 6 bougies (24 h : compare fermee dans tes_trades_clotures_recents a horodatage_utc) avant d'y revenir.
+  Chaque position engage 25 % du book (size_pct_of_equity 0.25), ni plus ni moins. Un objectif rapporte 7.5 % du book, un stop coute 1.5 %, un aller-retour environ 0.3 % de friction (frais plus glissement) : l'equilibre est autour d'une reussite sur six.
+  Au plus 2 positions ouvertes (max_open_positions) et 3 entrees par semaine. Une position attend la cage, parfois plusieurs semaines : ne cherche pas a la remplacer par une idee plus seduisante, tu ne peux pas vendre ; places prises, ton cycle se limite a hold et au bias.
+  Une serie de quatre stops est le fonctionnement normal, pas une raison de changer de methode. Ne serre pas tes criteres apres une perte, ne les relache pas apres un gain.
+  A chaque cycle, compte dans ton raisonnement les stops et les objectifs parmi tes six derniers trades clos (motif_cloture) et dis honnetement si le ratio tient une reussite sur six.
+  Donne ton bias a 24 h pour chaque paire, a chaque cycle, meme quand tu ne trades pas.
+univers:
+- BTC/USDT
+- ETH/USDT
+- SOL/USDT
+horizon_bougies: 'variable par construction (estimation) : au stop, 6 a 30 bougies (1 a 5 jours) ; a l''objectif,
+  40 a 150 bougies (1 a 4 semaines) ; aucune sortie intermediaire'
+ouvertures_par_semaine_attendues: 'estimation : environ 1 par semaine en moyenne, soit 6 a 10 trades clos
+  sur les 8 semaines ; des semaines a zero quand les deux places attendent la cage, des semaines a 2 ou
+  3 apres une serie de stops rapides'
+risque:
+  max_position_pct: 0.25
+  stop_loss_pct: 0.06
+  take_profit_pct: 0.3
+  max_round_trips_per_week: 3
+quand_ca_marche: |-
+  Un marche haussier qui accelere, ou l'une des trois paires fait +30 % en deux a quatre semaines sans repasser par -6 % sous le prix d'entree : un seul objectif atteint (+7.5 % du book) rembourse cinq stops (-1.5 % chacun), et deux objectifs dans la fenetre donnent un resultat positif, de +2 a +5 % du book, meme entoures de six ou huit stops. Le mandat supprime la tentation de couper un gagnant a +12 % ou de sortir par lassitude, l'erreur la plus documentee des traders humains, et le journal dira si Claude, prive du bouton vendre, garde une lecture calme ou s'agace de ne rien pouvoir faire. Il est economique en friction (environ 0.075 % du book par trade, 6 a 10 trades) et tres lisible : chaque trade clos porte un motif unique, stop ou objectif, sans discussion possible sur le timing de sortie. Il se lit face au Suiveur de tendance, qui achete a peu pres les memes jours mais vend lui-meme, avec 40 % du book et un stop a 10 % : si la cage finit devant lui a entrees presque egales, c'est que les ventes sur signal de Claude ont coute plus qu'elles n'ont rapporte.
+quand_ca_casse: |-
+  Un marche sans grand mouvement, ou des hausses de +12 a +18 % qui refluent : Claude a raison sur la direction, la position monte, puis revient toucher le stop, et le journal aligne des trades perdants nes de bonnes lectures ; c'est aussi le scenario ou le Suiveur de tendance, entre les memes jours, sort sur signal avec une partie du gain, et ou la comparaison tourne contre la cage. Sur bougies 4h, avec un atr_pct de 1.5 a 2 %, le bruit seul touche un stop a 6 % en une a deux semaines dans une large part des cas ; pour une marche au hasard, la chance d'atteindre +30 % avant -6 % est d'environ une sur six, exactement le point d'equilibre avant frais, donc sans avantage reel a l'entree le mandat perd sa friction, et avec un peu de malchance 8 a 12 % du book par petites marches de 1.5 %. Le verdict financier du protocole exige 20 trades clos, ou 15 si moins de 60 % du budget d'ouvertures est utilise : avec deux places, un objectif a +30 % et l'interdiction de vendre, 6 a 10 trades clos sont attendus, le verdict financier ne sera donc probablement pas prononce et le mandat se jugera sur le bias a 24 h, l'ecart au repere et le respect du brief. La metrique mode de sortie du protocole vaudra 100 % cage par construction et ne mesure rien ici. Des positions seront probablement encore ouvertes a la date du verdict, comptees en valeur de liquidation, ce qui est prevu. Enfin, l'interdiction de vendre et le delai de 24 h apres un stop ne sont que des consignes : la couche de risque accepte un sell licite, et leur respect se lit dans le journal des decisions, pas dans un refus.
+pour_qui:
+- prudent
+- patient
+- methodique
+- curieux
+axes:
+  horizon: variable
+  mouvement: entree seule
+  temperament: prudent
+  exposition: moyenne
+  verdict_probable: non

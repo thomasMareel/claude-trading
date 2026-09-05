@@ -1,0 +1,59 @@
+# Mandat « Le Gardien ». Fiche = documentation ET configuration : le brief est injecte tel quel
+# dans le prompt systeme de Claude. Se choisit avant t0 (config.yaml, experiment.mandate).
+id: gardien
+nom: Le Gardien
+famille: Preservation du capital
+accroche: 'Petites positions, jamais par marche agite, vente au premier doute : le mandat de celui qui
+  prefere rater un gain que subir une perte.'
+philosophie: |-
+  Certaines personnes preferent finir la fenetre a 99 plutot que risquer 90 pour esperer 115 ; ce mandat est fait pour elles. Claude n'achete que BTC ou ETH, seulement quand la tendance est haussiere, le prix en repli modere et la volatilite pas anormale (atr_pct sous 1.5 %, ce qui est le cas la plupart du temps sur BTC : le filtre ecarte les phases agitees, il ne selectionne pas le calme), avec une position de 20 % du book et un stop a 5 %, soit au pire 1 % du capital par trade. Il vend au premier doute, meme si la position est gagnante, et n'ouvre au plus qu'une position par semaine. Le resultat attendu ressemble a du cash : ce mandat mesure surtout si Claude sait ne rien faire quand les conditions ne sont pas reunies, et s'il coupe vraiment au premier doute. Il se distingue de repli, qui achete aussi la faiblesse, par la taille (20 % contre 35 %), une seule position a la fois, BTC et ETH seulement, et des sorties au premier doute plutot qu'a l'objectif ; ces sorties et cette limite sont des consignes que la couche de risque n'applique pas, leur respect se lit dans le journal.
+ce_que_claude_regarde:
+- 'trend up et close au moins 3 % au-dessus de ema_slow : une tendance installee, pas naissante'
+- 'atr_pct sous 1.5 % pour acheter : pas de marche agite (c''est la normale sur BTC, le filtre ecarte
+  les phases nerveuses, il ne choisit pas le calme) ; au-dessus de 3 % en position, c''est un signal de
+  vente'
+- 'rsi entre 38 et 50 et close sous ema_fast de 0 a 2 % : un repli modere a l''interieur de la tendance'
+- 'pnl_du_jour_pct negatif, ou un stop_loss de moins de 7 jours dans tes_trades_clotures_recents : aucun
+  achat'
+- 'En position : close sous ema_fast de plus de 3 %, trend down, bougie rouge de plus de deux atr_pct,
+  ou 30 bougies (118 h) entre ouverte_le et horodatage_utc sans gain : il vend, meme gagnant'
+brief: |-
+  Tu gardes ce book comme un capital que tu n'as pas le droit d'entamer. La reponse par defaut est hold. N'achete que BTC/USDT et ETH/USDT ; SOL/USDT reste en hold mais recoit son bias.
+  Un achat exige quatre conditions a la fois : trend vaut up et close depasse ema_slow d'au moins 3 % ; atr_pct est sous 1.5 % (pas de marche agite) ; rsi est entre 38 et 50 ; close est sous ema_fast, de 0 a 2 %. S'il en manque une, n'achete pas et nomme-la.
+  Taille : 20 % du book, une seule position a la fois. Si BTC et ETH sont eligibles le meme cycle, prends celle dont atr_pct est le plus bas.
+  N'achete pas si pnl_du_jour_pct est negatif, ni dans les 7 jours qui suivent un trade clos avec motif_cloture stop_loss (lis fermee dans tes_trades_clotures_recents).
+  Vends au premier doute, une seule condition suffit : close sous ema_fast de plus de 3 % ; trend passe a down ; atr_pct depasse 3 % ; derniere bougie cloturee rouge avec un corps (o moins c, en % de c) de plus de deux atr_pct ; au moins 118 h (30 bougies, 5 jours) entre ouverte_le et horodatage_utc avec pnl_pct nul ou negatif. Vends meme si la position est gagnante.
+  Prends les gains modestes : si pnl_pct depasse +6 % et que rsi passe au-dessus de 65, vends sans attendre l'objectif de +10 %.
+  Budget : 1 ouverture par semaine. Une semaine sans trade est une bonne semaine si les conditions n'etaient pas reunies. Ne te fabrique pas un signal pour consommer le budget.
+  Ne fais pas : acheter parce que cela a rebondi ; garder une position gagnante alors qu'un signal de sortie a parle ; monter la taille pour rattraper le repere. Chaque aller-retour coute 0.3 %.
+  A chaque cycle, meme sans trade, donne ton bias a 24 h pour chacune des trois paires, et ecris en premiere phrase du reasoning la condition qui manque ou la sortie qui a parle.
+univers:
+- BTC/USDT
+- ETH/USDT
+- SOL/USDT
+horizon_bougies: 'estimation : 6 a 60 bougies (1 a 10 jours) ; sans gain apres 30 bougies (118 h, 5 jours
+  entre ouverte_le et horodatage_utc), la position est vendue ; gagnante, elle court jusqu''a un signal
+  de doute, +6 % avec rsi au-dessus de 65, ou l''objectif a +10 %'
+ouvertures_par_semaine_attendues: 'estimation : 0 a 1 (budget de 1) ; sans doute 3 a 6 ouvertures sur
+  les 8 semaines, zero en marche baissier ou agite, 8 au maximum par construction ; sur les 19 jours de
+  bougies en base (regime haussier), 13 bougies 4h remplissaient les quatre conditions sur BTC et ETH,
+  groupees en un seul episode par paire : une fenetre eligible vaut une occasion d''achat, pas treize'
+risque:
+  max_position_pct: 0.2
+  stop_loss_pct: 0.05
+  take_profit_pct: 0.1
+  max_round_trips_per_week: 1
+quand_ca_marche: |-
+  Hausse calme et reguliere, avec des replis modestes vers ema_fast : quelques trades a +4 a +10 % sur 20 % du book, soit +0.8 a +2 % de capital chacun apres 0.3 % de friction, sans secousse. En marche baissier, il n'achete rien et finit a 100 moins presque rien : le protocole ecrira qu'il a protege le capital en restant peu expose (cas G), sans parler de talent, et ce sera exact ; en marche agite mais sans baisse (atr_pct au-dessus de 1.5 %), il reste simplement en cash. Sa perte maximale par position, 1 % du book (20 % fois un stop a 5 %), est la plus faible du catalogue. Ce que la fenetre enseigne de mieux ici : si Claude sait rester en hold des semaines sans se fabriquer un signal, s'il nomme a chaque cycle la condition qui manque, et s'il vend vraiment au premier doute quand la position est encore gagnante.
+quand_ca_casse: |-
+  Il ne casse pas par une grosse perte : le pire realiste est 4 ou 5 stops a 1 % du book chacun, soit environ -5 % plus la friction, si chaque repli se transforme en cassure. Ce qui casse, c'est la mesure : avec 1 ouverture par semaine, donc 8 trades au plus en 8 semaines, le seuil de 20 trades clos (15 si moins de 60 % du budget est utilise) est hors de portee par construction ; avec les 3 a 6 trades attendus, le protocole classera la fenetre en prudence extreme (cas E, moins de 8 trades clos) : aucun verdict financier, seulement un constat comportemental. En hausse forte il fera 10 a 20 points de moins que le panier passif (cas F si son timing bat celui du jumeau B2, simple ecart au panier sinon), et c'est le prix assume. Le filtre atr_pct sous 1.5 % ne selectionne pas le calme : sur les bougies en base, c'est la normale de BTC (mediane 0.9 %) et la majorite d'ETH ; il ecarte seulement les phases agitees, et la plupart des bougies eligibles ici le sont aussi pour repli. Un stop a 5 % reste a portee du bruit d'une semaine, meme calme : il encaissera aussi des petites pertes pour rien, et la vente au premier doute coupera des positions qui seraient reparties. Enfin, la vente a 30 bougies sans gain, la vente au premier doute, la limite d'une position a la fois et l'interdiction d'acheter SOL sont des consignes : la couche de risque n'applique que le stop, l'objectif, la taille et le budget ; leur respect se lit dans le journal, pas dans les refus. La mesure exploitable restera le bias a 24 h sur les trois paires (168 observations) et le respect des quatre conditions d'entree.
+pour_qui:
+- prudent
+- patient
+- methodique
+axes:
+  horizon: moyen (3 a 10 jours)
+  mouvement: s'abriter
+  temperament: prudent
+  exposition: faible
+  verdict_probable: non

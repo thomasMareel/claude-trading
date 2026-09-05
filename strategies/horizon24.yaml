@@ -1,0 +1,60 @@
+# Mandat « Vingt-quatre heures ». Fiche = documentation ET configuration : le brief est injecte tel quel
+# dans le prompt systeme de Claude. Se choisit avant t0 (config.yaml, experiment.mandate).
+id: horizon24
+nom: Vingt-quatre heures
+famille: Prevision a court terme
+accroche: Ne trader que sa prevision a 24 heures, et la solder un jour plus tard, quoi qu'il arrive.
+philosophie: |-
+  La mesure la plus solide de tout le protocole est la justesse de la prevision de direction a 24 heures que Claude donne a chaque cycle, pour chaque paire, meme quand il ne trade pas. Ce mandat prend cette prevision au mot : quand Claude annonce une hausse avec une confiance elevee, il achete, et il revend au sixieme cycle apres l'achat, soit 23 a 24 heures plus tard, gagnant ou perdant, sans these a defendre ni tendance a suivre, avec un stop serre et un objectif proche parce que la duree est courte. C'est le mandat qui produit le plus de trades et paie le plus de frais : avec 0,3 % de friction par aller-retour et un mouvement moyen de 1,4 a 2 % en 24 heures selon la paire, il faut avoir raison a peu pres 58 fois sur 100 pour ne rien perdre, et davantage sur BTC, qui bouge le moins. Deux mesures ne doivent pas etre confondues : le protocole note le bias une seule fois par jour, au cycle de 00:00 UTC, sur les trois paires (168 observations en 8 semaines), alors que le taux de reussite des trades de ce mandat ne compte que les paris up a forte confiance, a n'importe quelle heure, et se rapporte separement. Enfin la vente au sixieme cycle est une consigne et non une regle de la couche de risque, qui n'applique que le stop et l'objectif : son respect se lit dans le journal, a la duree entre ouverte et fermee et au motif de cloture.
+ce_que_claude_regarde:
+- 'Sa propre prevision bias a 24 h et la confiance (champ confidence) qu''il lui attache : il n''achete
+  que sur up avec une confidence d''au moins 0,65'
+- 'Deux indicateurs nommes qui soutiennent la hausse : roc_5_pct, rsi, close face a ema_fast, vol_ratio,
+  ou la derniere bougie de dernieres_bougies_4h'
+- 'ouverte_le des positions_ouvertes compare a horodatage_utc : la vente tombe au sixieme cycle apres
+  l''achat, des que l''ecart atteint 23 heures'
+- 'tes_trades_clotures_recents : chaque trade etait un pari up, le signe de pnl_pct dit si la prevision
+  etait juste, et le nombre de trades positifs sur six regle l''exigence de confidence'
+- round_trips_restants_cette_semaine et le jour de la semaine, pour garder une unite du vendredi au dimanche
+brief: |-
+  Tu es un previsionniste a 24 heures : chaque achat parie sur ta prevision et se solde un jour plus tard, gagnant ou perdant.
+  N'achete un symbole que si ton bias est up avec une confiance (champ confidence) d'au moins 0,65, et si tu nommes dans reasoning deux indicateurs qui soutiennent la hausse : roc_5_pct, rsi, close face a ema_fast, vol_ratio ou dernieres_bougies_4h. Une confidence de 0,65 doit rester rare.
+  Ecris ta prevision chiffree en PREMIERE phrase du reasoning d'achat (Prevision 24 h : +1,8 %, confidence 0,70).
+  Engage max_position_pct en entier. Une seule ouverture par cycle : si deux symboles se qualifient, prends la confidence la plus haute.
+  Vends chaque position, gagnante ou perdante, au premier cycle ou elle a au moins 23 heures (ecart entre ouverte_le et horodatage_utc : c'est le sixieme cycle apres l'achat, le remplissage etant date quelques minutes apres le dossier). Ne prolonge jamais.
+  Vends avant seulement si ton bias sur ce symbole passe a down ; sinon laisse agir stop et objectif automatiques.
+  Dans tes_trades_clotures_recents, chaque trade etait un pari up : pnl_pct positif vaut prevision juste. Si moins de quatre des six derniers sont positifs, exige 0,75 de confidence au prochain achat.
+  Il faut environ 58 previsions justes sur 100 pour couvrir 0,3 % de friction par aller-retour. Rythme attendu : un pari tous les deux ou trois jours, la plupart des cycles en hold ; n'achete jamais pour occuper le budget ni sur bias flat ou down.
+  Garde une unite de round_trips_restants_cette_semaine du vendredi au dimanche.
+  Donne un bias a 24 h pour chaque symbole a chaque cycle, meme en hold. N'utilise flat que si tu attends moins de 0,3 % de variation ; en base c'est une fois sur cinq sur BTC et ETH, une fois sur huit sur SOL : ni refuge ni quota.
+univers:
+- BTC/USDT
+- ETH/USDT
+- SOL/USDT
+horizon_bougies: '6 bougies (le sixieme cycle apres l''achat, 23 a 24 h) par construction, 7 si un cycle
+  saute ; estimation : toute detention plus longue serait un manquement a la consigne de vente, que la
+  couche de risque n''applique pas'
+ouvertures_par_semaine_attendues: '2 a 4 par semaine (estimation calibree sur 311 bougies d''un regime
+  haussier ; budget de 4), soit 16 a 32 trades clos en 8 semaines : a 2 par semaine le seuil du verdict
+  financier est 15 (moins de 60 % du budget utilise), a 3 ou plus il est 20 ; atteignable sur toute la
+  fourchette, a une marge etroite pres autour de 2,4 par semaine, si les positions sont bien soldees au
+  sixieme cycle'
+risque:
+  max_position_pct: 0.3
+  stop_loss_pct: 0.04
+  take_profit_pct: 0.06
+  max_round_trips_per_week: 4
+quand_ca_marche: |-
+  Claude lit la direction a 24 h nettement mieux que le hasard, autour de 60 % ou plus sur ses paris up a forte confiance : les gains de 1 a 3 % par trade juste depassent les pertes symetriques et les 0,3 % de friction par aller-retour. Sur les 311 bougies en base, prises dans un regime haussier, le stop a 4 % n'est touche en 24 heures que dans 4 % des cas en moyenne (moins de 1 % sur BTC, 8 % sur SOL) et l'objectif de 6 % dans 7 % (5 % sur BTC et ETH, 11 % sur SOL) : la plupart des sorties se font a l'heure, sur decision, ce qui est exactement ce que le mandat veut mesurer. Le journal est alors le plus lisible de tous : chaque achat commence par une prevision chiffree, chaque trade clos lui repond un jour plus tard par un pnl_pct positif ou negatif, et le taux de reussite se lit sur 16 a 32 trades sans attendre la fin de la fenetre. C'est aussi le mandat qui a le plus de chances de franchir le seuil de trades clos, donc de recevoir un verdict financier.
+quand_ca_casse: |-
+  Les frais, d'abord. L'ecart-type d'une variation a 24 h est de 2 a 3 % sur les bougies en base, et le mouvement moyen en valeur absolue va de 1,4 % sur BTC a 2 % sur SOL : un pari juste rapporte ce mouvement, un pari faux le coute, et chaque aller-retour paie 0,3 %. L'esperance vaut (2p - 1) x mouvement - 0,3 %, nulle pour p = 57,5 % avec un mouvement de 2 %, et pour p = 61 % avec 1,4 % ; le stop a 4 % et l'objectif a 6 % interviennent trop rarement en 24 heures pour changer ce chiffre, retenir 58 %. Avec 55 % de previsions justes, le mandat perd lentement ; a 50 %, il perd 0,3 % du capital engage a chaque trade, soit environ 0,1 % du book, 16 a 32 fois. C'est le candidat naturel au verdict H du protocole (lit le marche mieux que le hasard mais conversion en P&L cassee) ou J (frais superieurs a 50 % du P&L brut). Il sous-performe le panier passif dans toute hausse : exposition au plus 60 % (deux positions de 30 %), le plus souvent 0 a 30 %, et jamais plus de 48 heures d'affilee. Ses deux positions portent souvent sur des paires qui bougent ensemble : une journee rouge sur BTC est presque toujours rouge sur ETH et SOL, et deux stops le meme jour coutent 2,6 % du book. La vente au sixieme cycle et la limite d'un achat par cycle sont des consignes que la couche de risque n'applique pas : si Claude attend 24 heures pleines au lieu de 23, la vente glisse au septieme cycle et le mandat mesure une prevision a 28 heures ; s'il garde une position plus de 7 bougies, cela se lit dans le journal a la duree entre ouverte et fermee, et le mandat n'est alors plus ce qu'il pretend mesurer. Enfin, tes_decisions_recentes ne montre que 8 decisions, soit deux cycles a trois paires : la prevision ecrite a l'achat n'est plus sous les yeux de Claude quand il solde six cycles plus tard ; seul le lecteur du journal peut la comparer au resultat, et Claude ne juge sa propre justesse que par le signe de pnl_pct de ses six derniers trades clos.
+pour_qui:
+- actif
+- curieux
+- prudent
+axes:
+  horizon: eclair (24 h)
+  mouvement: prevoir a 24 h
+  temperament: prudent
+  exposition: faible
+  verdict_probable: oui

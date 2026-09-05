@@ -1,0 +1,65 @@
+# Mandat « Repli dans la tendance ». Fiche = documentation ET configuration : le brief est injecte tel quel
+# dans le prompt systeme de Claude. Se choisit avant t0 (config.yaml, experiment.mandate).
+id: repli
+nom: Repli dans la tendance
+famille: achat de repli
+accroche: Attendre que ce qui monte respire, acheter la respiration, vendre le retour au plus haut.
+philosophie: |-
+  Dans une hausse, le prix ne monte pas en ligne droite : il revient regulierement vers sa moyenne courte (ema_fast) avant de repartir. Claude attend ce retour, exige un premier signe de rebond, achete plus bas que le suiveur de tendance et revend quand le prix a rejoint son plus haut recent ou quand le rsi devient tendu, sans attendre l'objectif. Il ne faut pas le confondre avec le mandat contrarien, qui achete la panique (rsi sous 30, prix sur son plus bas de 20 bougies, aucune tendance exigee), ni avec le mandat gardien, plus petit, plus rare et qui exige un marche calme : ici la tendance intacte est la condition premiere, la volatilite n'est pas filtree, les trois paires sont ouvertes et la taille est franche, 35 % du book. Si le repli traverse la moyenne longue (ema_slow), ce n'etait pas un repli mais un retournement, et il sort sans discuter. La machine applique le stop a 6 %, l'objectif a 10 %, la taille, le plafond de deux positions et le budget d'ouvertures ; la vente au plus haut, la sortie sous ema_slow et le delai de 24 h avant de revenir sur une paire sont des consignes dont le respect se lit dans le journal.
+ce_que_claude_regarde:
+- 'trend = up et close au-dessus de ema_slow : la tendance de fond doit etre intacte'
+- 'L''ecart close / ema_fast - 1 entre -2 % et +2 % : le prix est revenu sur sa moyenne courte, au-dessus
+  ou en dessous'
+- 'rsi entre 35 et 48 : la respiration a eu lieu sans etre une chute ; sous 30, ou roc_5_pct sous -5,
+  c''est une capitulation et il n''achete pas'
+- 'La derniere bougie de dernieres_bougies_4h cloture au-dessus de la cloture precedente : le rebond a
+  commence'
+- dist_hh20_pct au-dessus de -0,5 ou rsi au-dessus de 65 pour vendre ; close sous ema_slow pour l'invalidation
+- fermee dans tes_trades_clotures_recents, compare a horodatage_utc, pour le delai de 24 h avant de revenir
+  sur une paire
+brief: |-
+  Tu achetes les replis d'une tendance haussiere intacte, jamais les chutes : un repli est un retour du prix vers ema_fast tant que trend reste up.
+  Conditions d'achat, toutes au meme cycle : trend vaut up ; close est au-dessus de ema_slow ; l'ecart close / ema_fast - 1 est entre -2 % et +2 % ; rsi est entre 35 et 48 ; la derniere bougie de dernieres_bougies_4h cloture au-dessus de la cloture precedente.
+  Sans cette bougie haussiere, n'achete pas, meme si tout le reste est parfait : tu acceptes de rater des rebonds pour ne jamais acheter en pleine chute.
+  Un rsi sous 30 ou un roc_5_pct sous -5 est une capitulation, pas un repli : hold, et ecris-le.
+  Taille : 35 % du book par achat, une position par paire, deux ouvertes au plus ; si plusieurs paires sont eligibles, prends celle dont le close est le plus proche de ema_fast.
+  Vends quand dist_hh20_pct remonte au-dessus de -0,5 (plus haut 20 bougies rejoint) ou quand rsi depasse 65, meme si le gain est modeste : tu encaisses des rebonds de quelques pour cent, a 0,3 % l'aller-retour, sans courir les tendances.
+  Vends sans attendre si close passe sous ema_slow, quel que soit pnl_pct : la tendance n'est plus intacte.
+  Apres une sortie sur une paire, attends six bougies (24 h) avant d'y revenir : compare fermee dans tes_trades_clotures_recents a horodatage_utc.
+  Un a deux achats par semaine sont la norme, des semaines a zero aussi : le budget est un plafond, pas un objectif. Ne te fabrique pas un repli pour l'utiliser.
+  En premiere phrase du reasoning d'un achat, ecris rsi, l'ecart a ema_fast et les deux dernieres clotures : c'est ce qui restera lisible dans tes_decisions_recentes.
+  Donne un bias a 24 h pour chaque paire a chaque cycle, meme en hold.
+  Pas de news : le repli se lit dans rsi, ema_fast, ema_slow et les bougies fournies.
+univers:
+- BTC/USDT
+- ETH/USDT
+- SOL/USDT
+horizon_bougies: 6 a 42 bougies (1 a 7 jours), le plus souvent 2 a 5 jours ; estimation calibree sur 311
+  bougies d'un regime haussier, ou les deux trades rejoues ont dure 34 bougies chacun
+ouvertures_par_semaine_attendues: '1 a 2 (plafond 4). Estimation calibree sur 311 bougies d''un regime
+  haussier, dont 2,7 semaines seulement avec ema_slow calculable : les regles rejouees sur ces bougies
+  donnent 1,1 ouverture par semaine (3 ouvertures, 2 trades clos), soit 9 a 16 trades clos sur 8 semaines
+  selon que la fenetre ressemble au bas ou au haut de la fourchette. Le verdict financier exige 20 trades
+  clos, ou 15 si moins de 60 % du budget a ete utilise, soit au plus 19 ouvertures sur 32 : le haut de
+  la fourchette y arrive, le bas non. Le plafond est fixe a 4 plutot qu''a 3 pour que le seuil reduit
+  de 15 reste atteignable : avec 3, moins de 60 % du budget serait 14 ouvertures au plus, donc jamais
+  15 trades clos.'
+risque:
+  max_position_pct: 0.35
+  stop_loss_pct: 0.06
+  take_profit_pct: 0.1
+  max_round_trips_per_week: 4
+quand_ca_marche: |-
+  Tendance haussiere reguliere avec des replis de 3 a 6 % toutes les une a deux semaines : Claude achete pres de ema_fast, revend 3 a 6 % plus haut deux a six jours apres, et le stop a 6 % est rarement approche parce que l'entree est deja basse dans le mouvement. Dans ce scenario favorable, et seulement dans celui-la, une dizaine de rebonds encaisses a +3 a +6 % sur 35 % du book font chacun +1 a +2 % de capital, frais de 0,3 % deduits, avec une exposition moyenne de 15 a 30 %, autour d'un quart du book, a la frontiere entre faible et moyenne ; rien ne dit que la fenetre en contiendra autant, et les bougies en base, rejouees, n'en ont produit que deux clos en 2,7 semaines. C'est aussi le regime ou le journal est le plus lisible : chaque achat s'explique par quatre chiffres ecrits en premiere phrase du raisonnement, et chaque vente par un seul.
+quand_ca_casse: |-
+  Le repli qui n'en est pas un : le prix revient sur ema_fast, rebondit d'une bougie, Claude achete, puis close traverse ema_slow ; il vend sous ema_slow ou prend le stop a 6 %, soit 2,1 % du book, et recommence sur la paire suivante. Trois fois de suite dans un retournement de marche, c'est 5 a 6 % du book en deux semaines : moins que le panier passif, mais une perte quand meme, faite de plusieurs petites. Le rebond mou : le prix ne rejoint jamais son plus haut 20 bougies, le rsi stagne entre 50 et 60, la position vit des jours sans signal de sortie et finit sur le stop ou sur une vente a peine positive dont les 0,3 % de frais mangent le gain ; sur les bougies en base, la sortie au plus haut 20 bougies a demande 5,7 jours, pas deux. Le marche plat ou baissier : trend n'est pas up, il n'a rien a acheter, reste en cash des semaines, et la fenetre ne produit pas les 15 trades clos qu'exige un verdict. Enfin, la vente au plus haut, la sortie sous ema_slow et le delai de 24 h avant de revenir sur une paire sont des consignes que la couche de risque n'applique pas ; elle n'applique que le stop, l'objectif, la taille, le plafond de deux positions et le budget, le reste se verifie dans le journal apres coup.
+pour_qui:
+- equilibre
+- patient
+- methodique
+axes:
+  horizon: moyen (3 a 10 jours)
+  mouvement: acheter la faiblesse
+  temperament: equilibre
+  exposition: faible
+  verdict_probable: incertain
