@@ -1,5 +1,5 @@
 {
-"genere_le": "2026-09-05T13:49:14+00:00",
+"genere_le": "2026-09-05T13:57:51+00:00",
 "mode": "paper",
 "phase": "paper",
 "capital": 100.0,
@@ -16,14 +16,14 @@
 "accroche": "Claude decide de son propre style et doit dire lequel, et pourquoi."
 },
 "dernier_cycle": {
-"id": "20260905T132431Z",
-"ts": "2026-09-05T13:24:35+00:00"
+"id": "20260905T135745Z",
+"ts": "2026-09-05T13:57:50+00:00"
 },
 "prochain_cycle_ts": "2026-09-05T16:01:30+00:00",
 "cycle_hours": 4,
 "bot": {
-"dernier_releve": "2026-09-05T13:24:35+00:00",
-"age_min": 24.7,
+"dernier_releve": "2026-09-05T13:57:50+00:00",
+"age_min": 0.0,
 "vivant": true
 },
 "drapeaux": {
