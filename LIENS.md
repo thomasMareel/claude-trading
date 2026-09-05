@@ -66,7 +66,7 @@ Tout se lance depuis `C:\Claude\Crypto`.
 
 | Étape | Où | Pourquoi |
 |---|---|---|
-| **Clé Claude** (indispensable, sinon Claude ne trade pas) | https://console.anthropic.com | compte API prépayé, distinct de l'abonnement ; charger 20 $, poser une limite mensuelle |
+| **Clé Claude** (indispensable, sinon Claude ne trade pas) | https://console.anthropic.com/settings/keys | compte API prépayé, distinct de l'abonnement ; charger 20 $ sur https://console.anthropic.com/settings/billing, poser une limite mensuelle ; puis double-cliquer `scripts\coller_cle.bat` |
 | Alertes sur le téléphone | application **ntfy** (Play Store / App Store) | un sujet secret à coller dans `.env` |
 | Reconnecter Claude en ligne de commande (pour le pont) | un terminal, taper `claude` | la connexion actuelle a expiré |
 | Clés Binance (plus tard, pour le réel) | https://www.binance.com > profil > API Management | sans droit de retrait, restreintes à votre IP |

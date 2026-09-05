@@ -54,23 +54,22 @@ par deux environ, au prix d'un raisonnement plus court.
    même en cas de bug, la facture ne peut pas dépasser ce montant.
 4. Section **API Keys** : cliquer **Create Key**, la nommer `crypto-claude`.
    La clé s'affiche **une seule fois**. La copier tout de suite.
-5. Ouvrir `C:\Claude\Crypto\.env` avec le Bloc-notes et coller la clé :
+5. **Double-cliquer `scripts\coller_cle.bat`.** Il demande la clé (saisie
+   masquée, jamais affichée), l'écrit dans `.env`, la vérifie, et redémarre
+   le bot. Le cycle qui suit est le premier où Claude répond : le repère se
+   constitue, l'expérience commence.
+
+   À la main, c'est la même chose en trois gestes : ouvrir
+   `C:\Claude\Crypto\.env` avec le Bloc-notes et coller la clé,
 
    ```
    ANTHROPIC_API_KEY=sk-ant-api03-la-suite-de-votre-cle
    ```
 
-   Pas d'espace, pas de guillemets.
-6. Vérifier :
-
-   ```bash
-   .venv\Scripts\python.exe scripts\verifier_cles.py
-   ```
-
-   La ligne `1. Cle Claude` doit afficher `OK` avec le nom du modèle.
-7. **Redémarrer le bot** pour qu'il lise la nouvelle clé : fermer la fenêtre
-   noire si elle est ouverte, puis relancer `start_paper_detached.bat`. Le
-   prochain cycle montrera le raisonnement de Claude dans le journal.
+   sans espace ni guillemets ; vérifier avec
+   `.venv\Scripts\python.exe scripts\verifier_cles.py` (la ligne
+   `1. Cle Claude` doit afficher `OK` avec le nom du modèle) ; puis fermer
+   la fenêtre noire du bot et relancer `start_paper_detached.bat`.
 
 ### Si la clé fuit
 
