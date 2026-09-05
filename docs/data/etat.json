@@ -1,0 +1,79 @@
+{
+"genere_le": "2026-09-05T13:49:14+00:00",
+"mode": "paper",
+"phase": "paper",
+"capital": 100.0,
+"quote": "USDT",
+"symbols": [
+"BTC/USDT",
+"ETH/USDT",
+"SOL/USDT"
+],
+"mandat": {
+"id": "libre",
+"nom": "Mandat libre",
+"famille": "Temoin",
+"accroche": "Claude decide de son propre style et doit dire lequel, et pourquoi."
+},
+"dernier_cycle": {
+"id": "20260905T132431Z",
+"ts": "2026-09-05T13:24:35+00:00"
+},
+"prochain_cycle_ts": "2026-09-05T16:01:30+00:00",
+"cycle_hours": 4,
+"bot": {
+"dernier_releve": "2026-09-05T13:24:35+00:00",
+"age_min": 24.7,
+"vivant": true
+},
+"drapeaux": {
+"coupe_circuit": false,
+"book_incertain": false
+},
+"alertes_configurees": false,
+"api": {
+"cout_total": 0.0,
+"cout_jour": 0.0,
+"appels": 0
+},
+"limites": {
+"max_position_pct": 0.4,
+"max_open_positions": 2,
+"max_round_trips_per_week": 4,
+"stop_loss_pct": 0.08,
+"take_profit_pct": 0.15,
+"max_daily_loss_pct": 0.06,
+"kill_switch_drawdown_pct": 0.2,
+"min_order_value": 12.0,
+"fee_rate": 0.001,
+"slippage": 0.0005
+},
+"modele": {
+"model": "claude-opus-5",
+"effort": "medium"
+},
+"liens": {
+"repo": "https://github.com/thomasMareel/claude-trading",
+"demande": "https://github.com/thomasMareel/claude-trading/issues/new?template=demande.yml",
+"protocole": "https://github.com/thomasMareel/claude-trading/blob/master/docs/protocole.md",
+"cles": "https://github.com/thomasMareel/claude-trading/blob/master/docs/cles-api.md",
+"claude_code": "https://claude.ai/code"
+},
+"fenetre": null,
+"bilan": {
+"capital": 100.0,
+"cash": 100.0,
+"positions_liq": 0.0,
+"equity": 100.0,
+"perf_pct": 0.0,
+"trading_brut": 0.0,
+"api_cost": 0.0,
+"api_calls": 0,
+"cost_per_call": 0.0,
+"net": 0.0,
+"fees_total": 0.0,
+"open_positions": []
+},
+"reperes": null,
+"statut": null
+}

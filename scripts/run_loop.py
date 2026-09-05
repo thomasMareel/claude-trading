@@ -93,6 +93,7 @@ def main() -> int:
                         n = engine.check_stops()
                         if n:
                             console.print(f"[yellow]chien de garde : {n} sortie(s) forcee(s)[/]")
+                            engine.export_site()
                     except KeyboardInterrupt:
                         raise
                     except Exception as e:
@@ -107,6 +108,7 @@ def main() -> int:
             run_now = False
             try:
                 engine.run_cycle()
+                engine.export_site()          # releves pour le tableau de bord, best-effort
             except KeyboardInterrupt:
                 raise
             except Exception as e:

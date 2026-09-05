@@ -1,0 +1,49 @@
+name: Demande a Claude
+description: Une question, une analyse ou une modification a demander a Claude sur le banc d'essai
+title: "[demande] "
+labels: ["demande"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Cette demande sera lue par Claude. Il repondra dans ce fil et, si une modification
+        du code ou de la configuration est necessaire, il la proposera sous forme de pull
+        request a valider. Claude ne passe jamais d'ordre et ne touche a aucune cle.
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type de demande
+      options:
+        - Question sur les releves ou une decision
+        - Analyser un comportement de Claude
+        - Changer de mandat a la prochaine fenetre
+        - Modifier un reglage (a appliquer a la prochaine fenetre)
+        - Signaler un probleme
+        - Autre
+    validations:
+      required: true
+  - type: textarea
+    id: detail
+    attributes:
+      label: Detail
+      description: Ce que vous avez observe, ce que vous voulez savoir ou obtenir. Citez un cycle ou une date si possible.
+      placeholder: "Le 12/09 a 08:01 UTC, Claude a vendu SOL apres deux cycles alors que sa these parlait d'une semaine..."
+    validations:
+      required: true
+  - type: dropdown
+    id: urgence
+    attributes:
+      label: Urgence
+      options:
+        - Quand possible
+        - Cette semaine
+        - Aujourd'hui
+    validations:
+      required: true
+  - type: checkboxes
+    id: rappel
+    attributes:
+      label: Rappel du protocole
+      options:
+        - label: Je sais qu'un changement de mandat ou de reglage ne prend effet qu'a la fenetre suivante, jamais en cours de fenetre.
+          required: true

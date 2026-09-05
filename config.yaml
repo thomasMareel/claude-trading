@@ -7,6 +7,11 @@ experiment:
   name: "claude-solo"
   # Capital du book, dans la devise de cotation (quote). Tout va a Claude.
   total_capital: 100.0
+  # Le mandat : la facon dont Claude est missionne. Une fiche par mandat dans
+  # strategies/<id>.yaml ; elle fixe le brief, le profil de risque (dans des
+  # bornes) et l'univers. Se choisit AVANT t0, ne change plus pendant la
+  # fenetre. Pour en changer : python scripts/fenetre.py --clore --mandat <id>
+  mandate: "libre"
   # Le repere de rentabilite : un panier equipondere des memes actifs,
   # achete au premier cycle et jamais touche, avec les memes frais et le
   # meme slippage des deux cotes. C'est "ce que vous auriez eu en ne
@@ -121,6 +126,19 @@ alerts:
   enabled: true
   # Aussi sur chaque stop ou objectif atteint, pas seulement les incidents.
   on_forced_exit: true
+
+# --------------------------------------------------------------------------
+#  Tableau de bord : apres chaque cycle, les releves sont exportes en JSON
+#  (sans aucun secret) dans docs/data et pousses sur GitHub. La page
+#  docs/index.html les lit. Le depot est PUBLIC : tout ce qui est exporte
+#  est visible par tous.
+# --------------------------------------------------------------------------
+site:
+  enabled: true
+  dir: "docs/data"
+  push: true
+  repo: "https://github.com/thomasMareel/claude-trading"
+  url: "https://thomasmareel.github.io/claude-trading/"
 
 storage:
   db_path: "data/trading.db"

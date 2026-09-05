@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude trading automatisé</title>
+<meta name="description" content="Relevés du banc d'essai : Claude trade seul 100 USDT face à un repère buy-and-hold, sous un protocole de mesure figé.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --page:      #f9f9f7;
+    --surface:   #fcfcfb;
+    --surface-2: #f2f2ef;
+    --ink:       #0b0b0b;
+    --ink-2:     #52514e;
+    --muted:     #898781;
+    --grid:      #e1e0d9;
+    --baseline:  #c3c2b7;
+    --border:    rgba(11,11,11,.10);
+    --accent:    #2a78d6;          /* serie 1 : Claude, et l'accent d'interface */
+    --accent-soft: rgba(42,120,214,.10);
+    --serie-2:   #eb6834;          /* serie 2 : le repere */
+    --good:      #0ca30c;  --good-text: #006300;
+    --warning:   #fab219;
+    --serious:   #ec835a;
+    --critical:  #d03b3b;
+    --shadow:    0 1px 2px rgba(11,11,11,.05), 0 8px 24px -16px rgba(11,11,11,.25);
+    --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --body:    "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono:    "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --surface-2: #222220;
+      --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,.10);
+      --accent: #3987e5; --accent-soft: rgba(57,135,229,.16); --serie-2: #d95926;
+      --good: #0ca30c; --good-text: #0ca30c;
+      --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px -16px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --surface-2: #222220;
+    --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,.10);
+    --accent: #3987e5; --accent-soft: rgba(57,135,229,.16); --serie-2: #d95926;
+    --good: #0ca30c; --good-text: #0ca30c;
+    --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px -16px rgba(0,0,0,.8);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--page); }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .wrap { max-width: 64rem; margin: 0 auto; padding: 1rem 1rem 4rem; display: flex; flex-direction: column; gap: 1.75rem; }
+  @media (min-width: 48rem) { .wrap { padding: 2rem 1.5rem 5rem; gap: 2.25rem; } }
+
+  h1, h2, h3 { font-family: var(--display); margin: 0; line-height: 1.15; text-wrap: balance; letter-spacing: -.01em; }
+  h1 { font-size: clamp(1.6rem, 4.5vw, 2.2rem); font-weight: 700; }
+  h2 { font-size: 1.2rem; font-weight: 700; }
+  h3 { font-size: 1rem; font-weight: 600; }
+  p { margin: 0; max-width: 68ch; }
+  .eyebrow { font-family: var(--mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+  .muted { color: var(--muted); } .ink2 { color: var(--ink-2); }
+  .mono { font-family: var(--mono); font-size: .86em; }
+  .num { font-variant-numeric: tabular-nums; }
+  .small { font-size: .85rem; }
+
+  /* ---------- header ---------- */
+  header { display: flex; flex-direction: column; gap: .8rem; }
+  .titlebar { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .theme { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: .3rem .7rem; font-size: .8rem; cursor: pointer; white-space: nowrap; }
+  .strip { display: flex; flex-wrap: wrap; gap: .45rem .6rem; align-items: center; }
+  .pill { display: inline-flex; align-items: center; gap: .35rem; border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: .18rem .6rem; font-size: .8rem; color: var(--ink-2); white-space: nowrap; }
+  .pill .dot { width: .5rem; height: .5rem; border-radius: 50%; background: var(--muted); }
+  .pill.good .dot { background: var(--good); } .pill.crit .dot { background: var(--critical); } .pill.warn .dot { background: var(--warning); }
+  .pill b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- banners ---------- */
+  .banner { border: 1px solid var(--border); border-left: 4px solid var(--accent); background: var(--surface); border-radius: 6px; padding: .9rem 1.1rem; display: flex; flex-direction: column; gap: .3rem; box-shadow: var(--shadow); }
+  .banner.crit { border-left-color: var(--critical); } .banner.warn { border-left-color: var(--warning); }
+  .banner h3 { font-size: .98rem; } .banner p { font-size: .9rem; color: var(--ink-2); }
+  .banner code { font-family: var(--mono); font-size: .8em; background: var(--surface-2); padding: .05em .35em; border-radius: 3px; }
+
+  /* ---------- KPI tiles ---------- */
+  .kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem; }
+  @media (min-width: 40rem) { .kpis { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 64rem) { .kpis { grid-template-columns: repeat(6, 1fr); } }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: .8rem .9rem; display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+  .kpi .lbl { font-size: .74rem; color: var(--muted); }
+  .kpi .val { font-size: 1.45rem; font-weight: 600; letter-spacing: -.01em; line-height: 1.15; overflow-wrap: anywhere; }
+  .kpi .sub { font-size: .76rem; color: var(--ink-2); }
+  .up { color: var(--good-text); } .down { color: var(--critical); }
+
+  /* ---------- sections and cards ---------- */
+  section { display: flex; flex-direction: column; gap: .9rem; }
+  .sechead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .4rem 1rem; border-top: 2px solid var(--ink); padding-top: .7rem; }
+  .sechead p { font-size: .85rem; color: var(--muted); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.1rem; }
+  .empty { color: var(--muted); font-size: .9rem; padding: 1.2rem 0; text-align: center; }
+
+  /* ---------- charts ---------- */
+  .chart { display: flex; flex-direction: column; gap: .5rem; }
+  .chart-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .3rem .8rem; }
+  .legend { display: flex; flex-wrap: wrap; gap: .3rem 1rem; font-size: .8rem; color: var(--ink-2); }
+  .legend span::before { content: ""; display: inline-block; width: 16px; height: 2px; vertical-align: middle; margin-right: .4rem; background: var(--c); border-radius: 1px; }
+  .plot { position: relative; width: 100%; }
+  .plot svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .plot text { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+  .plot .grid line { stroke: var(--grid); stroke-width: 1; }
+  .plot .axis line { stroke: var(--baseline); stroke-width: 1; }
+  .plot .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .plot .area { opacity: .10; }
+  .plot .end-label { fill: var(--ink-2); font-weight: 500; }
+  .plot .xhair { stroke: var(--baseline); stroke-width: 1; }
+  .plot .ref { stroke: var(--baseline); stroke-width: 1; }
+  .tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow); padding: .45rem .6rem; font-size: .78rem; color: var(--ink-2); min-width: 9rem; z-index: 2; display: none; }
+  .tip .t { font-family: var(--mono); font-size: .72rem; color: var(--muted); margin-bottom: .25rem; }
+  .tip .row { display: flex; align-items: center; gap: .45rem; }
+  .tip .row i { display: inline-block; width: 12px; height: 2px; background: var(--c); }
+  .tip .row b { color: var(--ink); font-weight: 600; margin-left: auto; font-variant-numeric: tabular-nums; }
+  details.tbl summary { cursor: pointer; font-size: .8rem; color: var(--muted); }
+
+  /* ---------- tables ---------- */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: .85rem; min-width: 30rem; }
+  th, td { text-align: left; padding: .5rem .75rem; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  thead th { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 500; border-bottom: 1px solid var(--baseline); }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.n, th.n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; font-size: .82rem; }
+  td.m { font-family: var(--mono); font-size: .8rem; white-space: nowrap; }
+
+  /* ---------- journal ---------- */
+  .filters { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+  .filters select, .filters input[type=search] { font: inherit; font-size: .85rem; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: .35rem .55rem; }
+  .filters label { font-size: .85rem; color: var(--ink-2); display: inline-flex; align-items: center; gap: .35rem; }
+  .cycle { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .cycle-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem .8rem; padding: .7rem 1rem; background: var(--surface-2); border-bottom: 1px solid var(--grid); }
+  .cycle-head .when { font-family: var(--mono); font-size: .78rem; color: var(--ink-2); }
+  .cycle-head .tag { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+  .view { padding: .6rem 1rem; font-size: .9rem; color: var(--ink-2); font-style: italic; border-bottom: 1px solid var(--grid); }
+  .dec { display: grid; grid-template-columns: auto 1fr; gap: .25rem .8rem; padding: .7rem 1rem; border-bottom: 1px solid var(--grid); align-items: start; }
+  .dec:last-child { border-bottom: 0; }
+  .dec .sym { font-family: var(--mono); font-size: .8rem; font-weight: 500; white-space: nowrap; padding-top: .15rem; }
+  .dec .line1 { display: flex; flex-wrap: wrap; gap: .3rem .5rem; align-items: center; }
+  .badge { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .09em; padding: .12rem .45rem; border-radius: 3px; border: 1px solid var(--border); color: var(--ink-2); white-space: nowrap; }
+  .badge.buy { border-color: var(--good); color: var(--good-text); }
+  .badge.sell { border-color: var(--serious); color: var(--ink); }
+  .badge.refus { background: rgba(250,178,25,.18); border-color: var(--warning); color: var(--ink); }
+  .badge.forced { background: var(--surface-2); }
+  .bias { font-family: var(--mono); font-size: .72rem; color: var(--ink-2); }
+  .dec .why { grid-column: 2; font-size: .9rem; color: var(--ink-2); }
+  .dec .refused { grid-column: 2; font-size: .85rem; color: var(--ink); background: rgba(250,178,25,.12); border-left: 3px solid var(--warning); padding: .3rem .6rem; border-radius: 3px; }
+  .dec details { grid-column: 2; font-size: .82rem; color: var(--ink-2); }
+  .dec details summary { cursor: pointer; color: var(--muted); font-size: .78rem; }
+  .dec details p { white-space: pre-wrap; margin-top: .3rem; }
+  .more { align-self: center; border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: .4rem 1rem; cursor: pointer; font-size: .85rem; }
+
+  /* ---------- metrics lists ---------- */
+  .grid2 { display: grid; grid-template-columns: 1fr; gap: .75rem; }
+  @media (min-width: 52rem) { .grid2 { grid-template-columns: 1fr 1fr; } }
+  dl.kv { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: .3rem 1rem; font-size: .88rem; }
+  dl.kv dt { color: var(--ink-2); } dl.kv dd { margin: 0; font-family: var(--mono); font-size: .82rem; text-align: right; color: var(--ink); }
+  .crit { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .crit li { display: grid; grid-template-columns: 1.6rem 1fr auto; gap: .5rem; padding: .45rem 0; border-bottom: 1px solid var(--grid); font-size: .88rem; align-items: baseline; }
+  .crit li:last-child { border-bottom: 0; }
+  .crit .mk { font-family: var(--mono); font-size: .72rem; font-weight: 500; }
+  .crit .ok { color: var(--good-text); } .crit .no { color: var(--critical); } .crit .na { color: var(--muted); }
+  .crit .v { font-family: var(--mono); font-size: .8rem; color: var(--ink-2); text-align: right; white-space: nowrap; }
+  .crit .v small { display: block; color: var(--muted); font-size: .7rem; }
+
+  /* ---------- mandates ---------- */
+  .chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .chip { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: .25rem .7rem; font-size: .8rem; cursor: pointer; color: var(--ink-2); }
+  .chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+  .mandats { display: grid; grid-template-columns: 1fr; gap: .75rem; }
+  @media (min-width: 44rem) { .mandats { grid-template-columns: 1fr 1fr; } }
+  .mandat { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: .5rem; }
+  .mandat.actif { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .mandat .top { display: flex; justify-content: space-between; gap: .6rem; align-items: baseline; }
+  .mandat .fam { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+  .mandat .acc { font-size: .92rem; color: var(--ink-2); }
+  .mandat .tags { display: flex; flex-wrap: wrap; gap: .3rem; }
+  .mandat .tags span { font-size: .72rem; color: var(--ink-2); background: var(--surface-2); border-radius: 3px; padding: .1rem .45rem; }
+  .mandat details { font-size: .88rem; color: var(--ink-2); }
+  .mandat details summary { cursor: pointer; color: var(--accent); font-size: .85rem; }
+  .mandat details > div { display: flex; flex-direction: column; gap: .6rem; margin-top: .6rem; }
+  .mandat h4 { margin: 0; font-size: .78rem; font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+  .mandat blockquote { margin: 0; padding: .6rem .8rem; border-left: 3px solid var(--accent); background: var(--surface-2); border-radius: 3px; font-size: .86rem; color: var(--ink); white-space: pre-wrap; }
+  .mandat ul { margin: 0; padding-left: 1.1rem; }
+  .mandat .risk { display: grid; grid-template-columns: repeat(2, 1fr); gap: .3rem .8rem; font-size: .82rem; }
+  .mandat .risk span b { font-family: var(--mono); font-weight: 500; color: var(--ink); }
+  .mandat .how { font-size: .8rem; color: var(--muted); }
+  .mandat .how code { font-family: var(--mono); font-size: .78rem; background: var(--surface-2); padding: .05em .35em; border-radius: 3px; overflow-wrap: anywhere; }
+
+  /* ---------- events ---------- */
+  .events { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; }
+  .events li { display: grid; grid-template-columns: auto auto 1fr; gap: .5rem .7rem; padding: .5rem .9rem; border-bottom: 1px solid var(--grid); font-size: .84rem; align-items: baseline; }
+  .events li:last-child { border-bottom: 0; }
+  .events .lvl { font-family: var(--mono); font-size: .66rem; text-transform: uppercase; letter-spacing: .1em; padding: .1rem .4rem; border-radius: 3px; border: 1px solid var(--border); }
+  .events .lvl.critical { border-color: var(--critical); color: var(--critical); }
+  .events .lvl.warning { border-color: var(--warning); color: var(--ink); }
+  .events .src { font-family: var(--mono); font-size: .76rem; color: var(--muted); }
+  .events .ts { grid-column: 1 / -1; font-family: var(--mono); font-size: .7rem; color: var(--muted); }
+  @media (min-width: 40rem) { .events li { grid-template-columns: auto auto 1fr auto; } .events .ts { grid-column: auto; } }
+
+  /* ---------- actions ---------- */
+  .actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+  .btn { display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; border-radius: 6px; padding: .55rem 1rem; font-weight: 500; font-size: .9rem; border: 1px solid var(--border); background: var(--surface); color: var(--ink); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  footer { border-top: 1px solid var(--border); padding-top: 1rem; color: var(--muted); font-size: .82rem; display: flex; flex-direction: column; gap: .5rem; }
+  footer .links { display: flex; flex-wrap: wrap; gap: .4rem 1rem; }
+
+  .error { border: 1px solid var(--critical); border-radius: 6px; padding: 1rem; background: var(--surface); font-size: .9rem; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <header>
+    <div class="titlebar">
+      <div>
+        <div class="eyebrow">Banc d'essai · Claude trade seul face à un repère</div>
+        <h1>Claude trading automatisé</h1>
+      </div>
+      <button class="theme" id="theme" type="button" aria-label="Changer de thème">Thème : auto</button>
+    </div>
+    <div class="strip" id="strip"><span class="pill"><span class="dot"></span>chargement des relevés…</span></div>
+  </header>
+  <div id="banners" style="display:flex;flex-direction:column;gap:.6rem"></div>
+  <section id="kpis"></section>
+  <section id="equity"></section>
+  <section id="exposure"></section>
+  <section id="positions"></section>
+  <section id="journal"></section>
+  <section id="metrics"></section>
+  <section id="trades"></section>
+  <section id="mandats"></section>
+  <section id="fenetres"></section>
+  <section id="events"></section>
+  <footer id="footer"></footer>
+</div>
+
+<script>
+(() => {
+'use strict';
+// ---------------------------------------------------------------- helpers
+const $ = (s, r = document) => r.querySelector(s);
+function el(tag, attrs = {}, ...children) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k === 'text') e.textContent = v;
+    else if (k === 'html') e.innerHTML = v;                  // uniquement pour des chaines ecrites ici, jamais des donnees
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (k === 'style' && typeof v === 'object') Object.assign(e.style, v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of children.flat(Infinity)) if (c !== null && c !== undefined && c !== false) e.append(c.nodeType ? c : document.createTextNode(String(c)));
+  return e;
+}
+const NS = 'http://www.w3.org/2000/svg';
+function svg(tag, attrs = {}, ...children) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) if (v !== null && v !== undefined) e.setAttribute(k, v);
+  for (const c of children.flat(Infinity)) if (c) e.append(c.nodeType ? c : document.createTextNode(String(c)));
+  return e;
+}
+const fmt = (n, d = 2) => (n === null || n === undefined || Number.isNaN(n)) ? '—' : Number(n).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
+const pct = (n, d = 2, sign = true) => (n === null || n === undefined || Number.isNaN(n)) ? '—' : (sign && n > 0 ? '+' : '') + fmt(n, d) + ' %';
+const pts = (n, d = 2) => (n === null || n === undefined) ? '—' : (n > 0 ? '+' : '') + fmt(n, d) + ' pts';
+const dtf = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const dtfLong = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+const fmtDT = (iso) => iso ? dtf.format(new Date(iso)) : '—';
+const fmtDTL = (iso) => iso ? dtfLong.format(new Date(iso)) : '—';
+function rel(iso) {
+  if (!iso) return '—';
+  const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (m < 1) return "à l'instant";
+  if (m < 60) return `il y a ${m} min`;
+  const h = Math.floor(m / 60);
+  if (h < 48) return `il y a ${h} h${m % 60 ? ' ' + (m % 60) + ' min' : ''}`;
+  return `il y a ${Math.floor(h / 24)} j`;
+}
+function until(iso) {
+  if (!iso) return '—';
+  const m = Math.round((new Date(iso).getTime() - Date.now()) / 60000);
+  if (m <= 0) return 'imminent';
+  if (m < 60) return `dans ${m} min`;
+  return `dans ${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`;
+}
+const sym = (s) => (s || '').split('/')[0];
+const BIAS = { up: '↑ hausse', down: '↓ baisse', flat: '→ plat' };
+const ACTION = { buy: 'achat', sell: 'vente', hold: 'attente' };
+
+// ---------------------------------------------------------------- theme
+const THEMES = ['auto', 'light', 'dark'];
+function applyTheme(t) {
+  if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t);
+  $('#theme').textContent = 'Thème : ' + ({ auto: 'auto', light: 'clair', dark: 'sombre' })[t];
+  try { localStorage.setItem('theme', t); } catch (e) { /* stockage indisponible */ }
+}
+let theme = 'auto';
+try { theme = THEMES.includes(localStorage.getItem('theme')) ? localStorage.getItem('theme') : 'auto'; } catch (e) { /* ignore */ }
+applyTheme(theme);
+$('#theme').addEventListener('click', () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % 3]; applyTheme(theme); rerenderCharts(); });
+
+// ---------------------------------------------------------------- data
+const FILES = ['etat', 'courbes', 'metriques', 'decisions', 'trades', 'evenements', 'mandats', 'fenetres'];
+async function load() {
+  const t = Date.now(), out = {};
+  await Promise.all(FILES.map(async (f) => {
+    const r = await fetch(`data/${f}.json?t=${t}`, { cache: 'no-store' });
+    if (!r.ok) throw new Error(`${f}.json : ${r.status}`);
+    out[f] = await r.json();
+  }));
+  return out;
+}
+
+// ---------------------------------------------------------------- charts
+const chartRenderers = [];
+function rerenderCharts() { for (const r of chartRenderers) r(); }
+function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function niceTicks(lo, hi, n = 5) {
+  if (!(hi > lo)) { hi = lo + 1; }
+  const span = hi - lo, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= n) || mag * 10;
+  const start = Math.floor(lo / step) * step, out = [];
+  for (let v = start; v <= hi + step * 0.5; v += step) out.push(+v.toFixed(10));
+  return out;
+}
+/** series: [{name, color (css var name), points:[{t:number(ms), v:number}]}] */
+function lineChart(host, series, opts = {}) {
+  host.replaceChildren();
+  const plot = el('div', { class: 'plot' });
+  const tip = el('div', { class: 'tip' });
+  host.append(plot, tip);
+  const draw = () => {
+    plot.querySelectorAll('svg').forEach(s => s.remove());
+    const W = Math.max(280, plot.clientWidth || 640), H = opts.height || 260;
+    const m = { l: 44, r: opts.endLabels ? 58 : 14, t: 12, b: 28 };
+    const pw = W - m.l - m.r, ph = H - m.t - m.b;
+    const all = series.flatMap(s => s.points);
+    if (!all.length) { plot.append(el('div', { class: 'empty', text: opts.empty || 'Pas encore de données.' })); return; }
+    const xs = all.map(p => p.t), ys = all.map(p => p.v);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs) || x0 + 1;
+    let y0 = opts.yMin ?? Math.min(...ys), y1 = opts.yMax ?? Math.max(...ys);
+    if (opts.yMin === undefined) { const pad = (y1 - y0) * 0.15 || Math.abs(y1) * 0.02 || 1; y0 -= pad; y1 += pad; }
+    const X = t => m.l + (x1 === x0 ? pw / 2 : (t - x0) / (x1 - x0) * pw);
+    const Y = v => m.t + (y1 === y0 ? ph / 2 : (y1 - v) / (y1 - y0) * ph);
+    const root = svg('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': opts.aria || '' });
+    const g = svg('g', { class: 'grid' });
+    const ticks = niceTicks(y0, y1, 4);
+    for (const v of ticks) {
+      if (v < y0 || v > y1) continue;
+      g.append(svg('line', { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v) }));
+      root.append(svg('text', { x: m.l - 6, y: Y(v) + 4, 'text-anchor': 'end' }, opts.yFmt ? opts.yFmt(v) : fmt(v, 0)));
+    }
+    root.append(g);
+    root.append(svg('g', { class: 'axis' }, svg('line', { x1: m.l, x2: W - m.r, y1: m.t + ph, y2: m.t + ph })));
+    // x ticks : un par jour si possible
+    const span = x1 - x0, nX = Math.max(2, Math.min(6, Math.floor(pw / 90)));
+    const xt = [];
+    for (let i = 0; i <= nX; i++) xt.push(x0 + span * i / nX);
+    for (const t of xt) root.append(svg('text', { x: X(t), y: H - 8, 'text-anchor': 'middle' }, span > 3 * 86400e3 ? new Date(t).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : fmtDT(new Date(t).toISOString())));
+    for (const r of (opts.refs || [])) {
+      root.append(svg('line', { class: 'ref', x1: m.l, x2: W - m.r, y1: Y(r.v), y2: Y(r.v) }));
+      root.append(svg('text', { x: W - m.r, y: Y(r.v) - 4, 'text-anchor': 'end' }, r.label));
+    }
+    for (const s of series) {
+      const color = cssVar(s.color);
+      const d = s.points.map((p, i) => (i ? 'L' : 'M') + X(p.t).toFixed(1) + ' ' + Y(p.v).toFixed(1)).join(' ');
+      if (opts.area) {
+        const base = Y(opts.yMin ?? y0);
+        root.append(svg('path', { class: 'area', fill: color, d: d + ` L${X(s.points.at(-1).t).toFixed(1)} ${base} L${X(s.points[0].t).toFixed(1)} ${base} Z` }));
+      }
+      root.append(svg('path', { class: 'line', stroke: color, d }));
+      const last = s.points.at(-1);
+      root.append(svg('circle', { cx: X(last.t), cy: Y(last.v), r: 6, fill: cssVar('--surface') }));
+      root.append(svg('circle', { cx: X(last.t), cy: Y(last.v), r: 4, fill: color }));
+      if (opts.endLabels) root.append(svg('text', { class: 'end-label', x: X(last.t) + 9, y: Y(last.v) + 4 }, opts.yFmt ? opts.yFmt(last.v) : fmt(last.v)));
+    }
+    // crosshair + tooltip
+    const xhair = svg('line', { class: 'xhair', y1: m.t, y2: m.t + ph, style: 'display:none' });
+    const dots = series.map(s => svg('circle', { r: 4.5, fill: cssVar(s.color), stroke: cssVar('--surface'), 'stroke-width': 2, style: 'display:none' }));
+    root.append(xhair, ...dots);
+    const times = [...new Set(all.map(p => p.t))].sort((a, b) => a - b);
+    const overlay = svg('rect', { x: m.l, y: m.t, width: pw, height: ph, fill: 'transparent' });
+    overlay.addEventListener('pointermove', (ev) => {
+      const rect = root.getBoundingClientRect(), sx = W / rect.width;
+      const px = (ev.clientX - rect.left) * sx;
+      const t = x0 + (px - m.l) / pw * (x1 - x0);
+      let best = times[0]; for (const tt of times) if (Math.abs(tt - t) < Math.abs(best - t)) best = tt;
+      xhair.setAttribute('x1', X(best)); xhair.setAttribute('x2', X(best)); xhair.style.display = '';
+      tip.replaceChildren(el('div', { class: 't', text: fmtDTL(new Date(best).toISOString()) }));
+      series.forEach((s, i) => {
+        let p = null; for (const q of s.points) if (q.t <= best) p = q;
+        if (!p) { dots[i].style.display = 'none'; return; }
+        dots[i].setAttribute('cx', X(p.t)); dots[i].setAttribute('cy', Y(p.v)); dots[i].style.display = '';
+        tip.append(el('div', { class: 'row' }, el('i', { style: { background: cssVar(s.color) } }), s.name, el('b', { text: opts.yFmt ? opts.yFmt(p.v) : fmt(p.v) })));
+      });
+      tip.style.display = 'block';
+      const left = (px / sx) + 12, tw = tip.offsetWidth;
+      tip.style.left = Math.min(left, rect.width - tw - 4) + 'px';
+      tip.style.top = '8px';
+    });
+    overlay.addEventListener('pointerleave', () => { tip.style.display = 'none'; xhair.style.display = 'none'; dots.forEach(d => d.style.display = 'none'); });
+    root.append(overlay);
+    plot.append(root);
+  };
+  draw();
+  chartRenderers.push(draw);
+  // table view (accessibilite)
+  const times = [...new Set(series.flatMap(s => s.points.map(p => p.t)))].sort((a, b) => a - b);
+  if (times.length) {
+    const det = el('details', { class: 'tbl' }, el('summary', { text: 'Voir les valeurs en tableau' }));
+    const tb = el('table', {}, el('thead', {}, el('tr', {}, el('th', { text: 'Date' }), ...series.map(s => el('th', { class: 'n', text: s.name })))));
+    const body = el('tbody');
+    for (const t of times.slice(-120)) body.append(el('tr', {}, el('td', { class: 'm', text: fmtDT(new Date(t).toISOString()) }), ...series.map(s => { const p = s.points.find(q => q.t === t); return el('td', { class: 'n', text: p ? (opts.yFmt ? opts.yFmt(p.v) : fmt(p.v)) : '' }); })));
+    tb.append(body);
+    det.append(el('div', { class: 'tablewrap', style: { marginTop: '.4rem' } }, tb));
+    host.append(det);
+  }
+}
+/** barres horizontales, une seule teinte, etiquette de valeur au bout */
+function hBars(host, rows, opts = {}) {
+  host.replaceChildren();
+  const plot = el('div', { class: 'plot' });
+  host.append(plot);
+  const draw = () => {
+    plot.replaceChildren();
+    const W = Math.max(280, plot.clientWidth || 640), rowH = 34, m = { l: 70, r: 60, t: 8, b: 22 };
+    const H = m.t + rows.length * rowH + m.b, pw = W - m.l - m.r;
+    const max = opts.max ?? Math.max(1, ...rows.map(r => r.v || 0));
+    const X = v => m.l + v / max * pw;
+    const root = svg('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': opts.aria || '' });
+    for (const r of (opts.refs || [])) {
+      root.append(svg('line', { class: 'ref', x1: X(r.v), x2: X(r.v), y1: m.t, y2: H - m.b }));
+      root.append(svg('text', { x: X(r.v), y: H - 6, 'text-anchor': 'middle' }, r.label));
+    }
+    root.append(svg('g', { class: 'axis' }, svg('line', { x1: m.l, x2: m.l, y1: m.t, y2: H - m.b })));
+    rows.forEach((r, i) => {
+      const y = m.t + i * rowH + 6, h = 22, w = Math.max(0, X(r.v ?? 0) - m.l);
+      root.append(svg('text', { x: m.l - 8, y: y + h / 2 + 4, 'text-anchor': 'end', fill: cssVar('--ink-2') }, r.label));
+      const path = w > 4 ? `M${m.l} ${y} H${m.l + w - 4} a4 4 0 0 1 4 4 v${h - 8} a4 4 0 0 1 -4 4 H${m.l} Z` : `M${m.l} ${y} h${w} v${h} h${-w} Z`;
+      const bar = svg('path', { d: path, fill: cssVar('--accent') });
+      bar.append(svg('title', {}, `${r.label} : ${r.text}`));
+      root.append(bar);
+      root.append(svg('text', { class: 'end-label', x: m.l + w + 6, y: y + h / 2 + 4 }, r.text));
+    });
+    plot.append(root);
+  };
+  draw();
+  chartRenderers.push(draw);
+}
+
+// ---------------------------------------------------------------- render
+function pill(cls, label, strong) { return el('span', { class: 'pill ' + (cls || '') }, el('span', { class: 'dot' }), label, strong !== undefined ? el('b', { text: strong }) : null); }
+function kpi(label, value, sub, cls) { return el('div', { class: 'kpi' }, el('div', { class: 'lbl', text: label }), el('div', { class: 'val ' + (cls || ''), text: value }), sub ? el('div', { class: 'sub', text: sub }) : null); }
+function sechead(title, note) { return el('div', { class: 'sechead' }, el('h2', { text: title }), note ? el('p', { text: note }) : null); }
+const dir = (n) => n > 0 ? 'up' : n < 0 ? 'down' : '';
+
+function renderStrip(e) {
+  const strip = $('#strip'); strip.replaceChildren();
+  const alive = e.bot && e.bot.vivant;
+  strip.append(pill(alive ? 'good' : 'crit', alive ? 'bot en marche' : 'bot arrêté', alive ? '' : (e.bot && e.bot.dernier_releve ? rel(e.bot.dernier_releve) : 'jamais relevé')));
+  strip.append(pill(e.mode === 'live' ? 'warn' : '', e.mode === 'live' ? 'argent réel' : 'mode papier'));
+  strip.append(pill('', 'mandat', e.mandat && e.mandat.nom ? e.mandat.nom : e.mandat.id));
+  strip.append(pill('', 'relevé', rel(e.genere_le)));
+  strip.append(pill('', 'prochain cycle', until(e.prochain_cycle_ts)));
+  if (e.fenetre) strip.append(pill('', `fenêtre ${e.fenetre.phase}`, `jour ${Math.floor(e.fenetre.days) + 1} / ${e.fenetre.target_days}`));
+}
+function renderBanners(e) {
+  const box = $('#banners'); box.replaceChildren();
+  if (e.drapeaux && e.drapeaux.coupe_circuit) box.append(el('div', { class: 'banner crit' }, el('h3', { text: 'Coupe-circuit déclenché' }), el('p', { text: 'Le book a perdu plus que le seuil de catastrophe. Tout a été liquidé et plus rien ne repart. C’est un échec de discipline au sens du protocole : reconstituer la séquence trade par trade dans le journal.' })));
+  if (e.drapeaux && e.drapeaux.book_incertain) box.append(el('div', { class: 'banner crit' }, el('h3', { text: 'Book incertain : achats gelés' }), el('p', { text: 'Un ordre réel a eu un résultat inconnu, ou un remplissage n’a pas pu être écrit en base. Vérifier le compte Binance à la main, puis acquitter avec scripts/acquitter.py.' })));
+  if (!(e.bot && e.bot.vivant)) box.append(el('div', { class: 'banner warn' }, el('h3', { text: 'Le bot ne publie plus' }), el('p', { text: `Dernier relevé ${rel(e.bot && e.bot.dernier_releve)}. Un cycle est attendu toutes les ${e.cycle_hours} h. Vérifier la fenêtre noire sur le PC, ou relancer start_paper_detached.bat.` })));
+  if (!e.fenetre) {
+    const p = el('p');
+    p.append('L’expérience n’a pas encore commencé. Le repère buy-and-hold se constitue au premier cycle où Claude répond vraiment ');
+    p.append(el('span', { class: 'mono', text: '(t0)' }), '. Tant que la clé API est absente, Claude s’abstient à chaque cycle et le journal l’écrit. Suivre ');
+    p.append(el('a', { href: e.liens && e.liens.cles ? e.liens.cles : '#', text: 'docs/cles-api.md' }), '.');
+    box.append(el('div', { class: 'banner' }, el('h3', { text: 'En attente du départ (t0)' }), p));
+  }
+  if (e.api && e.api.appels > 0 && !e.alertes_configurees) box.append(el('div', { class: 'banner warn' }, el('h3', { text: 'Aucune alerte configurée' }), el('p', { text: 'Un stop, un incident ou un coupe-circuit resterait dans un fichier que personne ne lit. Cinq minutes avec l’application ntfy suffisent (docs/cles-api.md, étape 2).' })));
+}
+function renderKpis(e, met) {
+  const s = $('#kpis'); s.replaceChildren();
+  const b = e.bilan || {}, r = e.reperes, bias = met && met.bias ? met.bias.protocol : null, proc = met && met.processus;
+  const row = el('div', { class: 'kpis' });
+  row.append(kpi(`Equity Claude (${e.quote})`, fmt(b.equity), e.fenetre ? `${pct(b.perf_pct)} depuis t0, liquidation` : `capital ${fmt(e.capital)}, avant t0`, e.fenetre ? dir(b.perf_pct) : ''));
+  row.append(kpi('Repère buy-and-hold', r ? pct(r.b1_pct) : '—', r ? `écart Claude ${pts(r.excess_b1)}` : 'constitué à t0', r ? dir(r.b1_pct) : ''));
+  row.append(kpi('Écart vs jumeau B2', r ? pts(r.excess_b2) : '—', r ? `la part du timing · exposition moy. ${fmt(r.mean_exposure * 100, 0)} %` : 'la part du timing', r ? dir(r.excess_b2) : ''));
+  row.append(kpi('Justesse 24 h', bias && bias.scored ? pct(bias.accuracy * 100, 1, false) : '—', bias && bias.scored ? `${bias.correct}/${bias.scored} · hasard ≈ 33 %, seuil 60 %` : 'prévisions à 24 h, cycles 00:00 UTC'));
+  row.append(kpi('Coût API', fmt(e.api.cout_total) + ' $', `${e.api.appels} appel${e.api.appels > 1 ? 's' : ''} · ${fmt(e.api.cout_jour)} $ aujourd’hui`));
+  row.append(kpi('Trades clos', proc ? String(proc.trades_closed) : '0', proc && proc.trades_closed ? `${proc.wins} gagnant${proc.wins > 1 ? 's' : ''} · frais ${fmt(b.fees_total, 3)}` : `frais cumulés ${fmt(b.fees_total || 0, 3)}`));
+  s.append(row);
+}
+function renderEquity(e, c) {
+  const s = $('#equity'); s.replaceChildren();
+  s.append(sechead('Courbe d’equity', 'valeur de liquidation, frais et slippage de sortie déduits, pour Claude comme pour le repère'));
+  const card = el('div', { class: 'card chart' });
+  const legend = el('div', { class: 'legend' }, el('span', { style: { '--c': 'var(--accent)' }, text: 'Claude' }), el('span', { style: { '--c': 'var(--serie-2)' }, text: 'Repère buy-and-hold' }));
+  card.append(el('div', { class: 'chart-head' }, el('h3', { text: `Base ${fmt(e.capital, 0)} ${e.quote}` }), legend));
+  const host = el('div'); card.append(host); s.append(card);
+  const claude = (c.claude || []).map(p => ({ t: Date.parse(p.ts), v: p.total }));
+  const rep = (c.repere || []).map(p => ({ t: Date.parse(p.ts), v: p.total }));
+  lineChart(host, [{ name: 'Claude', color: '--accent', points: claude }, { name: 'Repère', color: '--serie-2', points: rep }].filter(x => x.points.length), { endLabels: true, aria: 'Equity de Claude et du repère dans le temps', empty: 'La courbe commence au premier relevé après t0.' });
+}
+function renderExposure(c) {
+  const s = $('#exposure'); s.replaceChildren();
+  s.append(sechead('Exposition', 'part du book investie à chaque relevé ; Claude est plafonné à 80 %'));
+  const card = el('div', { class: 'card chart' }); const host = el('div'); card.append(host); s.append(card);
+  const pts_ = (c.claude || []).filter(p => p.total > 0).map(p => ({ t: Date.parse(p.ts), v: p.positions / p.total * 100 }));
+  lineChart(host, [{ name: 'Exposition', color: '--accent', points: pts_ }], { area: true, yMin: 0, yMax: 100, height: 180, yFmt: v => fmt(v, 0) + ' %', aria: 'Exposition dans le temps', empty: 'Aucun relevé encore.' });
+}
+function renderPositions(e, t) {
+  const s = $('#positions'); s.replaceChildren();
+  const open = (t && t.ouvertes) || [];
+  s.append(sechead('Positions ouvertes', open.length ? `${open.length} sur ${e.limites.max_open_positions} au maximum` : 'aucune position en ce moment'));
+  if (!open.length) { s.append(el('div', { class: 'card empty', text: 'Le cash attend. Une position ouverte apparaît ici avec son stop et son objectif.' })); return; }
+  const tb = el('table', {}, el('thead', {}, el('tr', {}, ...['Paire', 'Ouverte', 'Entrée', 'Prix', 'P&L', 'Valeur', 'Stop', 'Objectif'].map((h, i) => el('th', { class: i >= 2 ? 'n' : '', text: h })))));
+  const body = el('tbody');
+  for (const p of open) body.append(el('tr', {}, el('td', { class: 'm', text: p.symbol }), el('td', { class: 'm', text: fmtDT(p.opened_at) }), el('td', { class: 'n', text: fmt(p.entry_price, 4) }), el('td', { class: 'n', text: fmt(p.price, 4) }), el('td', { class: 'n ' + dir(p.pnl_pct), text: pct(p.pnl_pct) }), el('td', { class: 'n', text: fmt(p.value_quote) }), el('td', { class: 'n', text: fmt(p.stop_loss, 4) }), el('td', { class: 'n', text: fmt(p.take_profit, 4) })));
+  tb.append(body); s.append(el('div', { class: 'tablewrap' }, tb));
+}
+function renderJournal(decs) {
+  const s = $('#journal'); s.replaceChildren();
+  s.append(sechead('Journal des décisions', 'ce que Claude a décidé et pourquoi, cycle par cycle, y compris ce que la couche de risque a refusé'));
+  const symbols = [...new Set(decs.map(d => d.symbol))].sort();
+  const fSym = el('select', {}, el('option', { value: '', text: 'toutes les paires' }), ...symbols.map(x => el('option', { value: x, text: x })));
+  const fAct = el('select', {}, el('option', { value: '', text: 'toutes les actions' }), ...['buy', 'sell', 'hold'].map(a => el('option', { value: a, text: ACTION[a] })));
+  const fRef = el('input', { type: 'checkbox' });
+  const fTxt = el('input', { type: 'search', placeholder: 'chercher dans les raisonnements' });
+  const filters = el('div', { class: 'filters' }, fSym, fAct, el('label', {}, fRef, 'refusées seulement'), fTxt);
+  const list = el('div', { style: { display: 'flex', flexDirection: 'column', gap: '.6rem' } });
+  const more = el('button', { class: 'more', type: 'button', text: 'Afficher plus de cycles' });
+  let shown = 12;
+  const render = () => {
+    list.replaceChildren();
+    const q = fTxt.value.trim().toLowerCase();
+    const rows = decs.filter(d => (!fSym.value || d.symbol === fSym.value) && (!fAct.value || d.action === fAct.value) && (!fRef.checked || !d.accepted) && (!q || (d.reasoning || '').toLowerCase().includes(q) || (d.market_view || '').toLowerCase().includes(q)));
+    const byCycle = new Map();
+    for (const d of rows) { if (!byCycle.has(d.cycle_id)) byCycle.set(d.cycle_id, []); byCycle.get(d.cycle_id).push(d); }
+    const cycles = [...byCycle.entries()];
+    if (!cycles.length) { list.append(el('div', { class: 'card empty', text: 'Aucune décision ne correspond à ce filtre.' })); more.style.display = 'none'; return; }
+    for (const [cid, ds] of cycles.slice(0, shown)) {
+      const wd = cid.startsWith('WD');
+      const card = el('div', { class: 'cycle' });
+      card.append(el('div', { class: 'cycle-head' }, el('span', { class: 'when', text: fmtDTL(ds[0].ts) }), el('span', { class: 'tag', text: wd ? 'chien de garde' : 'cycle ' + cid.slice(9, 11) + ':' + cid.slice(11, 13) + ' UTC' }), ds[0].cost_usd ? el('span', { class: 'tag', text: `${fmt(ds[0].cost_usd, 3)} $` }) : null));
+      const view = ds.find(d => d.market_view);
+      if (view) card.append(el('div', { class: 'view', text: view.market_view }));
+      for (const d of ds.slice().sort((a, b) => a.symbol.localeCompare(b.symbol))) {
+        const line1 = el('div', { class: 'line1' }, el('span', { class: 'badge ' + d.action, text: ACTION[d.action] || d.action }));
+        if (d.forced) line1.append(el('span', { class: 'badge forced', text: ({ stop_loss: 'stop', take_profit: 'objectif', kill_switch: 'coupe-circuit' })[d.forced] || d.forced }));
+        if (!d.accepted) line1.append(el('span', { class: 'badge refus', text: 'refusée par le risque' }));
+        if (d.bias) line1.append(el('span', { class: 'bias', text: '24 h : ' + (BIAS[d.bias] || d.bias) }));
+        if (d.size_quote && d.action === 'buy') line1.append(el('span', { class: 'bias', text: `taille ${fmt(d.size_quote)}` }));
+        if (d.confidence !== null && d.confidence !== undefined && !d.forced) line1.append(el('span', { class: 'bias', text: `confiance ${fmt(d.confidence, 2)}` }));
+        const row = el('div', { class: 'dec' }, el('div', { class: 'sym', text: d.symbol }), line1);
+        if (!d.accepted && d.reject_reason) row.append(el('div', { class: 'refused', text: d.reject_reason }));
+        if (d.reasoning) row.append(el('div', { class: 'why', text: d.reasoning }));
+        if (d.thinking) row.append(el('details', {}, el('summary', { text: 'raisonnement interne (résumé)' }), el('p', { text: d.thinking })));
+        card.append(row);
+      }
+      list.append(card);
+    }
+    more.style.display = cycles.length > shown ? '' : 'none';
+  };
+  for (const c of [fSym, fAct, fRef]) c.addEventListener('change', () => { shown = 12; render(); });
+  fTxt.addEventListener('input', () => { shown = 12; render(); });
+  more.addEventListener('click', () => { shown += 12; render(); });
+  s.append(filters, list, more);
+  if (!decs.length) { list.append(el('div', { class: 'card empty', text: 'Aucune décision enregistrée encore.' })); more.style.display = 'none'; return; }
+  render();
+}
+function renderMetrics(e, met) {
+  const s = $('#metrics'); s.replaceChildren();
+  s.append(sechead('Métriques du protocole', 'ce qui répond à « comment Claude s’organise », indépendamment du P&L'));
+  if (!met || !met.fenetre) { s.append(el('div', { class: 'card empty', text: 'Les métriques démarrent à t0.' })); return; }
+  const bias = met.bias.protocol, proc = met.processus, r = met.reperes, st = met.statut;
+  const g = el('div', { class: 'grid2' });
+  // justesse par paire
+  const c1 = el('div', { class: 'card chart' }, el('div', { class: 'chart-head' }, el('h3', { text: 'Justesse directionnelle à 24 h, par paire' }), el('span', { class: 'small muted', text: bias.scored ? `${bias.scored} prévisions notées · ${bias.pending} en attente` : 'aucune prévision notée encore' })));
+  const host = el('div'); c1.append(host);
+  const rows = e.symbols.map(sy => { const v = bias.by_symbol[sy]; return { label: sym(sy), v: v ? v.correct / v.n * 100 : 0, text: v ? `${fmt(v.correct / v.n * 100, 0)} % (${v.correct}/${v.n})` : 'aucune' }; });
+  hBars(host, rows, { max: 100, refs: [{ v: 33.3, label: 'hasard' }, { v: 60, label: 'seuil' }], aria: 'Justesse des prévisions par paire' });
+  if (met.bias.all_cycles.scored) c1.append(el('p', { class: 'small muted', text: `Indicatif, tous cycles (chevauchants) : ${fmt(met.bias.all_cycles.accuracy * 100, 1)} % sur ${met.bias.all_cycles.scored}.` }));
+  g.append(c1);
+  // processus
+  const kv = el('dl', { class: 'kv' });
+  const add = (k, v) => kv.append(el('dt', { text: k }), el('dd', { text: v }));
+  add('Cycles', String(proc.cycles)); add('Cycles tout en attente', `${proc.all_hold_cycles} (${fmt(proc.all_hold_share * 100, 0)} %)`);
+  add('Décisions buy/sell émises', String(proc.active)); add('Refusées par le risque', `${proc.refused} (${fmt(proc.refusal_rate * 100, 0)} %)`);
+  for (const [m, n] of Object.entries(proc.refusal_motifs || {})) add('   ' + m, String(n));
+  add('Exposition moyenne', fmt(r.mean_exposure * 100, 0) + ' %'); add('Drawdown maximal', fmt(r.max_drawdown_pct, 2) + ' %');
+  add('Trades clos', `${proc.trades_closed} (${proc.wins} gagnants)`);
+  for (const [k, n] of Object.entries(proc.exit_reasons || {})) add('   sortie ' + ({ stop_loss: 'stop', take_profit: 'objectif', signal: 'signal', kill_switch: 'coupe-circuit' })[k] || k, String(n));
+  if (proc.cage_share !== null) add('Sorties décidées par la cage', fmt(proc.cage_share * 100, 0) + ' %');
+  if (proc.stops) add('Stops sur du bruit', `${proc.noise_stops}/${proc.stops}`);
+  if (proc.brier !== null) add(`Calibration (Brier, ${proc.brier_n})`, fmt(proc.brier, 3));
+  if (proc.fees_over_gross !== null) add('Frais / P&L brut', fmt(proc.fees_over_gross * 100, 0) + ' %');
+  add('Ouvertures', `${proc.opens} · budget ${proc.budget_per_week}/sem · usage ${fmt(proc.budget_use * 100, 0)} %`);
+  add('Gels journaliers', String(proc.daily_freezes));
+  g.append(el('div', { class: 'card' }, el('h3', { text: 'Processus', style: { marginBottom: '.5rem' } }), kv));
+  s.append(g);
+  // criteres
+  const c3 = el('div', { class: 'card' }, el('h3', { text: 'État des critères du protocole' }), el('p', { class: 'small muted', style: { margin: '.2rem 0 .6rem' }, text: st.note }));
+  const ul = el('ul', { class: 'crit' });
+  for (const c of st.criteria) ul.append(el('li', {}, el('span', { class: 'mk ' + (c.ok === true ? 'ok' : c.ok === false ? 'no' : 'na'), text: c.ok === true ? 'ok' : c.ok === false ? 'non' : '…' }), el('span', { text: c.label }), el('span', { class: 'v' }, String(c.value), el('small', { text: 'cible ' + c.target }))));
+  c3.append(ul); s.append(c3);
+}
+function renderTrades(t) {
+  const s = $('#trades'); s.replaceChildren();
+  const closes = (t && t.closes) || [];
+  s.append(sechead('Trades clos', closes.length ? `${closes.length} aller${closes.length > 1 ? 's' : ''}-retour${closes.length > 1 ? 's' : ''}` : 'aucun aller-retour terminé'));
+  if (!closes.length) { s.append(el('div', { class: 'card empty', text: 'Chaque position fermée apparaît ici avec son P&L net des frais des deux côtés et son motif de sortie.' })); return; }
+  const tb = el('table', {}, el('thead', {}, el('tr', {}, ...['Paire', 'Ouverte', 'Fermée', 'Entrée', 'Sortie', 'P&L', 'P&L', 'Frais', 'Motif'].map((h, i) => el('th', { class: i >= 3 && i <= 7 ? 'n' : '', text: h })))));
+  const body = el('tbody');
+  for (const c of closes.slice().reverse()) body.append(el('tr', {}, el('td', { class: 'm', text: c.symbol }), el('td', { class: 'm', text: fmtDT(c.opened_at) }), el('td', { class: 'm', text: fmtDT(c.closed_at) }), el('td', { class: 'n', text: fmt(c.entry_price, 4) }), el('td', { class: 'n', text: fmt(c.exit_price, 4) }), el('td', { class: 'n ' + dir(c.pnl_quote), text: (c.pnl_quote > 0 ? '+' : '') + fmt(c.pnl_quote) }), el('td', { class: 'n ' + dir(c.pnl_pct), text: pct(c.pnl_pct) }), el('td', { class: 'n', text: fmt(c.fees_quote, 3) }), el('td', { text: ({ stop_loss: 'stop', take_profit: 'objectif', signal: 'signal', kill_switch: 'coupe-circuit' })[c.close_reason] || c.close_reason })));
+  tb.append(body); s.append(el('div', { class: 'tablewrap' }, tb));
+}
+function renderMandats(e, m) {
+  const s = $('#mandats'); s.replaceChildren();
+  const all = (m && m.mandats) || [];
+  s.append(sechead('Mandats', 'un même trader, missionné différemment · un mandat par fenêtre, choisi avant t0'));
+  const intro = el('p', { class: 'ink2 small' });
+  intro.append('Un mandat est le brief exact que Claude reçoit, avec un profil de risque et un univers. Il se choisit ');
+  intro.append(el('b', { text: 'avant' }), ' le départ d’une fenêtre et ne change plus ensuite : changer en cours de route détruirait la mesure. Le mandat actif est encadré. Filtrez selon votre tempérament, ouvrez une fiche, lisez « quand ça casse » avant « quand ça marche ».');
+  s.append(intro);
+  if (!all.length) { s.append(el('div', { class: 'card empty', text: (m && m.erreur) || 'Le catalogue est en cours de rédaction.' })); return; }
+  const axes = {}; const tags = new Set();
+  for (const x of all) { for (const [k, v] of Object.entries(x.axes || {})) { (axes[k] ||= new Set()).add(v); } for (const t of x.pour_qui || []) tags.add(t); }
+  const active = new Map();
+  const chipRow = el('div', { class: 'chips' });
+  const mkChip = (group, val) => { const c = el('button', { class: 'chip', type: 'button', 'aria-pressed': 'false', text: val }); c.addEventListener('click', () => { const cur = active.get(group); if (cur === val) active.delete(group); else active.set(group, val); chipRow.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(active.get(b.dataset.g) === b.textContent))); render(); }); c.dataset.g = group; return c; };
+  for (const [k, vs] of Object.entries(axes)) { chipRow.append(el('span', { class: 'eyebrow', style: { alignSelf: 'center', marginRight: '.2rem' }, text: k })); for (const v of [...vs].sort()) chipRow.append(mkChip(k, v)); }
+  if (tags.size) { chipRow.append(el('span', { class: 'eyebrow', style: { alignSelf: 'center', marginRight: '.2rem' }, text: 'pour qui' })); for (const t of [...tags].sort()) chipRow.append(mkChip('pour_qui', t)); }
+  const grid = el('div', { class: 'mandats' });
+  const render = () => {
+    grid.replaceChildren();
+    const rows = all.filter(x => [...active.entries()].every(([g, v]) => g === 'pour_qui' ? (x.pour_qui || []).includes(v) : (x.axes || {})[g] === v));
+    if (!rows.length) { grid.append(el('div', { class: 'card empty', text: 'Aucun mandat ne correspond.' })); return; }
+    for (const x of rows) {
+      const isActive = x.id === (m.actif || (e.mandat && e.mandat.id));
+      const card = el('div', { class: 'mandat' + (isActive ? ' actif' : '') });
+      card.append(el('div', { class: 'top' }, el('div', {}, el('div', { class: 'fam', text: x.famille }), el('h3', { text: x.nom })), isActive ? el('span', { class: 'badge', style: { borderColor: 'var(--accent)', color: 'var(--accent)' }, text: 'actif' }) : null));
+      card.append(el('p', { class: 'acc', text: x.accroche }));
+      card.append(el('div', { class: 'tags' }, ...Object.values(x.axes || {}).map(v => el('span', { text: v })), ...(x.pour_qui || []).map(v => el('span', { text: v }))));
+      const d = el('details', {}, el('summary', { text: 'Lire la fiche complète' }));
+      const inner = el('div');
+      inner.append(el('h4', { text: 'Philosophie' }), el('p', { text: x.philosophie }));
+      inner.append(el('h4', { text: 'Ce que Claude regarde' }), el('ul', {}, ...(x.ce_que_claude_regarde || []).map(t => el('li', { text: t }))));
+      inner.append(el('h4', { text: 'Le brief exact reçu par Claude' }), el('blockquote', { text: x.brief }));
+      const rk = x.risque || {};
+      inner.append(el('h4', { text: 'Profil de risque' }), el('div', { class: 'risk' }, el('span', {}, 'Position max ', el('b', { text: fmt(rk.max_position_pct * 100, 0) + ' %' })), el('span', {}, 'Stop ', el('b', { text: '−' + fmt(rk.stop_loss_pct * 100, 0) + ' %' })), el('span', {}, 'Objectif ', el('b', { text: '+' + fmt(rk.take_profit_pct * 100, 0) + ' %' })), el('span', {}, 'Ouvertures ', el('b', { text: rk.max_round_trips_per_week + ' / sem' })), el('span', {}, 'Univers ', el('b', { text: (x.univers || []).map(sym).join(', ') })), el('span', {}, 'Horizon ', el('b', { text: x.horizon_bougies }))));
+      inner.append(el('h4', { text: 'Activité attendue' }), el('p', { text: x.ouvertures_par_semaine_attendues }));
+      inner.append(el('h4', { text: 'Quand ça casse' }), el('p', { text: x.quand_ca_casse }));
+      inner.append(el('h4', { text: 'Quand ça marche' }), el('p', { text: x.quand_ca_marche }));
+      const how = el('p', { class: 'how' });
+      how.append('Pour ce mandat à la prochaine fenêtre : ', el('code', { text: `python scripts/fenetre.py --clore --mandat ${x.id} --yes` }), ' puis redémarrer le bot. Ou ');
+      const link = e.liens && e.liens.demande ? e.liens.demande + '&title=' + encodeURIComponent(`[demande] Passer au mandat ${x.id} à la prochaine fenêtre`) : null;
+      how.append(link ? el('a', { href: link, target: '_blank', rel: 'noopener', text: 'demander à Claude de le programmer' }) : 'demander à Claude de le programmer', '.');
+      inner.append(how);
+      d.append(inner); card.append(d); grid.append(card);
+    }
+  };
+  render();
+  s.append(chipRow, grid);
+}
+function renderFenetres(f) {
+  const s = $('#fenetres'); s.replaceChildren();
+  const rows = Array.isArray(f) ? f : [];
+  s.append(sechead('Fenêtres passées', rows.length ? `${rows.length} fenêtre${rows.length > 1 ? 's' : ''} archivée${rows.length > 1 ? 's' : ''}` : 'aucune fenêtre close pour l’instant'));
+  if (!rows.length) { s.append(el('div', { class: 'card empty', text: 'Chaque fenêtre close est archivée ici avec son mandat, sa durée, son régime de marché et son bilan. Le verdict, lui, se lit avec le protocole et les singes.' })); return; }
+  const tb = el('table', {}, el('thead', {}, el('tr', {}, ...['Mandat', 'Phase', 't0', 'Jours', 'Régime', 'Trading brut', 'Repère B1', 'Écart B2', 'Trades', 'Justesse 24 h'].map((h, i) => el('th', { class: i >= 3 ? 'n' : '', text: h })))));
+  const body = el('tbody');
+  for (const w of rows.slice().reverse()) body.append(el('tr', {}, el('td', { text: w.mandat }), el('td', { text: w.phase }), el('td', { class: 'm', text: fmtDT(w.t0) }), el('td', { class: 'n', text: fmt(w.jours, 1) }), el('td', { class: 'n', text: w.regime }), el('td', { class: 'n ' + dir(w.bilan.trading_brut), text: (w.bilan.trading_brut > 0 ? '+' : '') + fmt(w.bilan.trading_brut) }), el('td', { class: 'n', text: pct(w.reperes.b1_pct) }), el('td', { class: 'n', text: pts(w.reperes.ecart_b2) }), el('td', { class: 'n', text: String(w.processus.trades_clos) }), el('td', { class: 'n', text: w.bias.justesse !== null && w.bias.justesse !== undefined ? pct(w.bias.justesse * 100, 0, false) : '—' })));
+  tb.append(body); s.append(el('div', { class: 'tablewrap' }, tb));
+}
+function renderEvents(evs) {
+  const s = $('#events'); s.replaceChildren();
+  s.append(sechead('Événements', 'incidents, alertes, jalons'));
+  const rows = (evs || []).filter(x => x.level !== 'info' || x.source === 'protocol_start').slice(0, 40);
+  if (!rows.length) { s.append(el('div', { class: 'card empty', text: 'Rien à signaler.' })); return; }
+  const ul = el('ul', { class: 'events' });
+  for (const x of rows) ul.append(el('li', {}, el('span', { class: 'lvl ' + x.level, text: x.level }), el('span', { class: 'src', text: x.source }), el('span', { text: x.message }), el('span', { class: 'ts', text: fmtDTL(x.ts) })));
+  s.append(ul);
+}
+function renderFooter(e) {
+  const f = $('#footer'); f.replaceChildren();
+  const L = e.liens || {};
+  f.append(el('div', { class: 'actions' }, L.claude_code ? el('a', { class: 'btn primary', href: L.claude_code, target: '_blank', rel: 'noopener', text: 'Ouvrir Claude Code' }) : null, L.demande ? el('a', { class: 'btn', href: L.demande, target: '_blank', rel: 'noopener', text: 'Demander à Claude' }) : null));
+  f.append(el('p', { text: 'Cette page lit des relevés publiés par le bot après chaque cycle. Elle ne pilote rien : les clés restent sur le PC, aucun ordre ne part d’ici. « Demander à Claude » ouvre une demande GitHub que Claude lit et traite ; une modification passe toujours par une pull request à valider et ne prend effet qu’à la fenêtre suivante.' }));
+  f.append(el('div', { class: 'links' }, L.repo ? el('a', { href: L.repo, target: '_blank', rel: 'noopener', text: 'dépôt' }) : null, L.protocole ? el('a', { href: L.protocole, target: '_blank', rel: 'noopener', text: 'protocole de mesure' }) : null, L.cles ? el('a', { href: L.cles, target: '_blank', rel: 'noopener', text: 'clés et alertes' }) : null, el('span', { text: `modèle ${e.modele.model} · effort ${e.modele.effort} · relevé ${fmtDTL(e.genere_le)}` })));
+}
+
+// ---------------------------------------------------------------- go
+load().then(d => {
+  renderStrip(d.etat); renderBanners(d.etat); renderKpis(d.etat, d.metriques);
+  renderEquity(d.etat, d.courbes); renderExposure(d.courbes); renderPositions(d.etat, d.trades);
+  renderJournal(d.decisions || []); renderMetrics(d.etat, d.metriques); renderTrades(d.trades);
+  renderMandats(d.etat, d.mandats); renderFenetres(d.fenetres); renderEvents(d.evenements); renderFooter(d.etat);
+  let raf = 0; window.addEventListener('resize', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(rerenderCharts); });
+}).catch(err => {
+  $('#strip').replaceChildren(pill('crit', 'relevés indisponibles'));
+  $('#banners').replaceChildren(el('div', { class: 'error' }, el('b', { text: 'Impossible de lire les relevés. ' }), `${err.message}. Si la page est ouverte depuis le disque, le navigateur bloque la lecture des fichiers : servir le dossier docs (python -m http.server) ou passer par l’adresse GitHub Pages.`));
+});
+})();
+</script>
+</body>
+</html>

@@ -11,3 +11,4 @@ LIVE_ARMED
 .pytest_cache/
 logs/*.log
 data/*.db-*
+.claude/

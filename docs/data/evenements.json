@@ -1,0 +1,16 @@
+[
+{
+"id": 2,
+"ts": "2026-09-05T13:24:35+00:00",
+"level": "warning",
+"source": "llm_brain",
+"message": "cle API Claude absente : renseigne ANTHROPIC_API_KEY dans .env pour activer le trader (voir docs/cles-api.md)"
+},
+{
+"id": 1,
+"ts": "2026-09-05T11:02:34+00:00",
+"level": "warning",
+"source": "llm_brain",
+"message": "cle API Claude absente : renseigne ANTHROPIC_API_KEY dans .env pour activer le trader (voir docs/cles-api.md)"
+}
+]

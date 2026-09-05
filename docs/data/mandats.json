@@ -1,0 +1,43 @@
+{
+"actif": "libre",
+"mandats": [
+{
+"id": "libre",
+"nom": "Mandat libre",
+"famille": "Temoin",
+"accroche": "Claude decide de son propre style et doit dire lequel, et pourquoi.",
+"philosophie": "Aucune consigne de style. Claude recoit le dossier et les regles du jeu, rien de plus. Il doit lui-meme choisir quand agir, quand attendre, et expliquer sa logique a chaque cycle. C'est le mandat qui repond le plus directement a la question de depart : comment une IA s'organise-t-elle pour trader quand on la laisse faire ? C'est aussi le temoin contre lequel les mandats diriges se lisent.\n",
+"ce_que_claude_regarde": [
+"Tout le dossier : tendance (EMA50 / EMA200), RSI, ATR, momentum 5 et 20 bougies, volume, extremes 20 bougies",
+"Ses propres decisions passees et leur resultat",
+"Le budget d'ouvertures restant dans la semaine"
+],
+"brief": "Tu n'as pas de style impose. Choisis toi-meme ta facon de trader et nomme-la dans ta lecture du marche a chaque cycle : suiveur de tendance, acheteur de replis, attentiste, ou autre. Reste coherent d'un cycle a l'autre : si tu changes d'approche, dis pourquoi, en citant ce qui t'a fait changer d'avis. Rappelle-toi que chaque aller-retour coute 0,2 % et que ne rien faire est une decision legitime. N'invente aucune information absente du dossier.\n",
+"univers": [
+"BTC/USDT",
+"ETH/USDT",
+"SOL/USDT"
+],
+"horizon_bougies": "au choix de Claude, typiquement 6 a 60 bougies (1 a 10 jours)",
+"ouvertures_par_semaine_attendues": "0 a 4, selon ce que Claude decide",
+"risque": {
+"max_position_pct": 0.4,
+"stop_loss_pct": 0.08,
+"take_profit_pct": 0.15,
+"max_round_trips_per_week": 4
+},
+"quand_ca_marche": "Quand on veut observer le comportement spontane du modele plutot que tester une these. Le journal est le plus riche des mandats : Claude y expose et justifie ses propres choix de style.\n",
+"quand_ca_casse": "Un style qui change trop souvent produit un comportement incoherent, difficile a lire et souvent perdant par friction. Sans consigne, Claude peut aussi simplement rester en attente la plupart du temps, ce qui est un resultat en soi mais donne peu de trades a mesurer.\n",
+"pour_qui": [
+"curieux",
+"observateur",
+"equilibre"
+],
+"axes": {
+"horizon": "variable",
+"style": "libre",
+"temperament": "equilibre"
+}
+}
+]
+}

@@ -50,6 +50,10 @@ class Config:
     def total_capital(self) -> float:
         return float(self.get("experiment.total_capital", 100.0))
 
+    @property
+    def mandate(self) -> str:
+        return str(self.get("experiment.mandate", "libre"))
+
 
 class ConfigError(ValueError):
     pass
@@ -60,6 +64,14 @@ def load_config(path: str | Path | None = None) -> Config:
     cfg_path = Path(path) if path else ROOT / "config.yaml"
     with open(cfg_path, "r", encoding="utf-8") as fh:
         raw = yaml.safe_load(fh)
+    # Le mandat choisi (experiment.mandate) applique son profil de risque et
+    # son univers AVANT la validation : ce sont les valeurs effectives qui
+    # sont verifiees, puis pre-enregistrees a t0.
+    from . import mandates
+    try:
+        raw = mandates.apply_to_config(raw)
+    except mandates.MandateError as e:
+        raise ConfigError(str(e)) from e
     cfg = Config(raw=raw)
     validate(cfg)
     return cfg

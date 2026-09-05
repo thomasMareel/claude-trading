@@ -20,6 +20,7 @@ from typing import Any
 
 import anthropic
 
+from .. import mandates
 from ..alerts import notify
 from .base import BrainContext, Decision
 
@@ -161,6 +162,9 @@ class LLMBrain:
         self.p_out = float(cfg.get("llm.price_output_per_mtok", 25.0))
         self.max_position_pct = float(cfg.get("risk.max_position_pct", 0.4))
         self.alerts_on = bool(cfg.get("alerts.enabled", True))
+        # Le mandat : un brief ajoute au prompt de base. Choisi avant t0, fige ensuite.
+        self.mandate = mandates.get(str(cfg.get("experiment.mandate", mandates.DEFAULT)))
+        self.system = SYSTEM_PROMPT + mandates.prompt_section(self.mandate)
         self._client: anthropic.Anthropic | None = None
 
     @property
@@ -204,7 +208,7 @@ class LLMBrain:
             response = self.client.messages.create(
                 model=self.model,
                 max_tokens=self.max_tokens,
-                system=SYSTEM_PROMPT,
+                system=self.system,
                 thinking={"type": "adaptive", "display": "summarized"},
                 output_config={
                     "effort": self.effort,
@@ -219,7 +223,7 @@ class LLMBrain:
         except anthropic.APITimeoutError:
             # Le serveur a peut-etre genere et facture la reponse entiere. On
             # provisionne un cout plafond pour que le garde-fou journalier le voie.
-            est_in = (len(SYSTEM_PROMPT) + len(user_msg)) // 3
+            est_in = (len(self.system) + len(user_msg)) // 3
             est = (est_in * self.p_in + self.max_tokens * self.p_out) / 1_000_000
             self.storage.record_api_cost("timeout-estime", est_in, self.max_tokens, est)
             return self._fail(ctx, f"appel API sans reponse apres {self.timeout:.0f} s "

@@ -36,7 +36,7 @@ from rich.table import Table
 
 from .alerts import notify
 from .brains.base import Brain, BrainContext, Decision, MarketSnapshot, PositionView
-from .config import Config
+from .config import ROOT, Config
 from .exchange import Exchange, OrderUncertainError
 from .executor import LiveExecutor, PaperExecutor
 from .indicators import candles_to_df, enrich, latest_snapshot
@@ -197,14 +197,17 @@ class Engine:
             basket = self.storage.benchmark_basket()
             # t0 est pre-enregistre : version exacte du code et de la configuration
             # figee, pour prouver ensuite que rien n'a bouge en cours de fenetre
-            root = Path(__file__).resolve().parent.parent
+            mandate = getattr(self.brain, "mandate", None)
             self.storage.event(
                 "info", "protocol_start",
                 f"t0 : repere constitue, {self.capital:.2f} {self.quote} en {len(self.symbols)} parts egales",
                 {
                     "capital": self.capital, "prices": prices, "symbols": self.symbols,
-                    "git_commit": git_head(root),
+                    "git_commit": git_head(ROOT),
                     "config": {k: self.cfg.raw.get(k) for k in FROZEN_SECTIONS},
+                    # le brief exact recu par Claude : toute retouche en cours de fenetre sera vue
+                    "mandate": ({"id": mandate.id, "nom": mandate.nom, "brief": mandate.brief}
+                                if mandate is not None else None),
                 },
             )
             console.print(f"[bold]t0[/] repere buy-and-hold constitue : {per:.2f} {self.quote} "
@@ -473,6 +476,28 @@ class Engine:
             self._execute_sell(cycle_id, p, prices[p.symbol], "kill_switch", did)
         cash = compute_cash(self.storage, self.name, self.capital)
         self.storage.record_equity(self.name, cash, 0.0)
+
+    # ==================================================================
+    def export_site(self) -> None:
+        """Exporte les releves en JSON pour le tableau de bord et les pousse
+        sur GitHub. Best-effort : un echec ici ne touche jamais au trading."""
+        if not bool(self.cfg.get("site.enabled", True)):
+            return
+        try:
+            from .export import export_all
+            from .publish import publish
+            prices = self.data.fetch_prices(self.symbols, strict=False)
+            out_dir = ROOT / str(self.cfg.get("site.dir", "docs/data"))
+            export_all(self.storage, self.cfg, prices, out_dir, brain=self.brain)
+            if bool(self.cfg.get("site.push", True)):
+                ok, msg = publish(ROOT, [str(out_dir.relative_to(ROOT))],
+                                  f"releve {datetime.now(timezone.utc):%Y-%m-%d %H:%M} UTC")
+                console.print(f"[dim]site : {msg}[/]" if ok else f"[yellow]site : {msg}[/]")
+                if not ok:
+                    self.storage.event("warning", "site", f"publication en echec : {msg[:300]}")
+        except Exception as e:
+            self.storage.event("warning", "site", f"export en echec : {e!r}")
+            console.print(f"[yellow]site : export en echec : {e!r}[/]")
 
     # ==================================================================
     def assert_live_consistent(self) -> None:
