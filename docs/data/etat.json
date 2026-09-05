@@ -1,5 +1,5 @@
 {
-"genere_le": "2026-09-05T21:55:24+00:00",
+"genere_le": "2026-09-05T21:56:27+00:00",
 "mode": "paper",
 "phase": "paper",
 "capital": 100.0,
@@ -16,14 +16,14 @@
 "accroche": "Personne ne dit a Claude comment trader : il choisit sa methode, la redit a chaque cycle et doit s'y tenir, et il sert de point de comparaison aux autres."
 },
 "dernier_cycle": {
-"id": "20260905T214515Z",
-"ts": "2026-09-05T21:45:20+00:00"
+"id": "20260905T215619Z",
+"ts": "2026-09-05T21:56:26+00:00"
 },
 "prochain_cycle_ts": "2026-09-06T00:01:30+00:00",
 "cycle_hours": 4,
 "bot": {
-"dernier_releve": "2026-09-05T21:45:20+00:00",
-"age_min": 10.1,
+"dernier_releve": "2026-09-05T21:56:26+00:00",
+"age_min": 0.0,
 "vivant": true
 },
 "drapeaux": {
