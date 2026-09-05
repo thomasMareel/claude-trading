@@ -1,4 +1,31 @@
 {
-"ouvertes": [],
+"ouvertes": [
+{
+"id": 1,
+"symbol": "ETH/USDT",
+"opened_at": "2026-09-05T22:28:45+00:00",
+"entry_price": 2481.0399,
+"amount_base": 0.0161,
+"cost_quote": 39.9847,
+"price": 2479.44,
+"value_quote": 39.919,
+"pnl_pct": -0.064,
+"stop_loss": 2282.556708,
+"take_profit": 2853.195885
+},
+{
+"id": 2,
+"symbol": "SOL/USDT",
+"opened_at": "2026-09-05T22:28:45+00:00",
+"entry_price": 103.381665,
+"amount_base": 0.386,
+"cost_quote": 39.9452,
+"price": 103.33,
+"value_quote": 39.8854,
+"pnl_pct": -0.05,
+"stop_loss": 95.1111318,
+"take_profit": 118.88891475
+}
+],
 "closes": []
 }
