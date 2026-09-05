@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import pytest  # noqa: E402
 
 from src.config import Config  # noqa: E402
-from src.exchange import Exchange, ExchangeError  # noqa: E402
+from src.exchange import Exchange, ExchangeError, OrderUncertainError  # noqa: E402
 
 CFG = Config(raw={"exchange": {"id": "binance", "quote": "USDT", "fee_rate": 0.001}})
 
@@ -68,3 +68,87 @@ def test_client_order_id_is_deterministic_and_binance_safe():
     assert len(cid) <= 36
     assert Exchange.client_order_id("20260904T091345Z-B-BTC/USDT") == cid   # meme tag, meme id
     assert Exchange.client_order_id("WD20260904T091345Z-S-SOL/USDT") != cid
+
+
+# ------------------------------------------------------------ chemin d'envoi, sans reseau
+import ccxt  # noqa: E402
+
+
+def make_live(monkeypatch):
+    monkeypatch.setenv("BINANCE_API_KEY", "k")
+    monkeypatch.setenv("BINANCE_API_SECRET", "s")
+    monkeypatch.setattr("src.exchange.time.sleep", lambda *_: None)
+    x = Exchange(CFG, trading=True)
+    x.amount_to_precision = lambda symbol, amount: amount
+    return x
+
+
+FILLED = {"id": "42", "status": "closed", "filled": 0.0004, "average": 100_000.0, "cost": 40.0,
+          "fees": [{"currency": "BTC", "cost": 0.0000004}]}
+
+
+def test_operation_failed_on_send_is_recovered_by_client_order_id(monkeypatch):
+    x = make_live(monkeypatch)
+    seen = {}
+
+    def create(*a, **k):
+        raise ccxt.OperationFailed("binance -1006 Execution status unknown")
+
+    def fetch_order(oid, symbol, params):
+        seen["params"] = params
+        return FILLED
+
+    x._x.create_market_buy_order_with_cost = create
+    x._x.fetch_order = fetch_order
+    f = x.market_buy_quote("BTC/USDT", 40.0, tag="C1-B-BTC/USDT")
+    assert seen["params"] == {"origClientOrderId": "C1-B-BTCUSDT"}
+    assert f["amount_base"] == pytest.approx(0.0003996)      # l'ordre retrouve est pris tel quel
+
+
+def test_order_never_received_is_a_clean_failure_not_uncertainty(monkeypatch):
+    x = make_live(monkeypatch)
+    x._x.create_market_buy_order_with_cost = lambda *a, **k: (_ for _ in ()).throw(ccxt.RequestTimeout("timeout"))
+
+    def fetch_order(*a, **k):
+        raise ccxt.OrderNotFound("binance -2013 Order does not exist")
+
+    x._x.fetch_order = fetch_order
+    with pytest.raises(ExchangeError) as ei:
+        x.market_buy_quote("BTC/USDT", 40.0, tag="C2-B-BTC/USDT")
+    assert not isinstance(ei.value, OrderUncertainError)
+    assert "jamais recu" in str(ei.value)
+
+
+def test_unreadable_recovery_is_uncertain(monkeypatch):
+    x = make_live(monkeypatch)
+    x._x.create_market_buy_order_with_cost = lambda *a, **k: (_ for _ in ()).throw(ccxt.NetworkError("down"))
+    x._x.fetch_order = lambda *a, **k: (_ for _ in ()).throw(ccxt.NetworkError("still down"))
+    with pytest.raises(OrderUncertainError):
+        x.market_buy_quote("BTC/USDT", 40.0, tag="C3-B-BTC/USDT")
+
+
+def test_clear_refusal_before_execution_is_a_clean_failure(monkeypatch):
+    x = make_live(monkeypatch)
+    x._x.create_market_buy_order_with_cost = lambda *a, **k: (_ for _ in ()).throw(ccxt.InsufficientFunds("-2010"))
+    with pytest.raises(ExchangeError) as ei:
+        x.market_buy_quote("BTC/USDT", 40.0, tag="C4-B-BTC/USDT")
+    assert not isinstance(ei.value, OrderUncertainError)
+
+
+def test_error_after_acceptance_is_uncertain_never_a_plain_failure(monkeypatch):
+    x = make_live(monkeypatch)
+    x._x.create_market_buy_order_with_cost = lambda *a, **k: {"id": "7", "status": "closed"}   # sans average ni filled
+    x._x.fetch_order = lambda *a, **k: (_ for _ in ()).throw(ccxt.NetworkError("relecture impossible"))
+    with pytest.raises(OrderUncertainError):
+        x.market_buy_quote("BTC/USDT", 40.0, tag="C5-B-BTC/USDT")
+
+
+def test_recovered_order_without_fees_assumes_fee_on_received_asset(monkeypatch):
+    x = make_live(monkeypatch)
+    no_fee = {"id": "9", "status": "closed", "filled": 0.0004, "average": 100_000.0, "cost": 40.0}
+    x._x.create_market_buy_order_with_cost = lambda *a, **k: (_ for _ in ()).throw(ccxt.RequestTimeout("t"))
+    x._x.fetch_order = lambda *a, **k: no_fee
+    x._x.fetch_order_trades = lambda *a, **k: (_ for _ in ()).throw(ccxt.NetworkError("no trades"))
+    f = x.market_buy_quote("BTC/USDT", 40.0, tag="C6-B-BTC/USDT")
+    assert f["amount_base"] == pytest.approx(0.0004 * 0.999)   # prudent : la vente ne peut pas echouer
+    assert f["fee_quote"] == pytest.approx(0.04)

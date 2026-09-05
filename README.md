@@ -128,20 +128,23 @@ logs/loop.log          sortie de la boucle détachée
 
 1. Rafraîchir bougies et prix. Les indicateurs sont calculés sur les bougies
    **clôturées** uniquement.
-2. Relever le repère buy-and-hold. Au premier cycle, il est constitué :
-   capital divisé à parts égales entre les paires, frais et slippage
-   d'entrée déduits. Ensuite sa valeur de liquidation, frais et slippage de
-   sortie déduits, est relevée à chaque cycle.
-3. Coupe-circuit : si le book a perdu plus que le seuil, tout est liquidé et
+2. Coupe-circuit : si le book a perdu plus que le seuil, tout est liquidé et
    plus rien ne repart jamais. C'est un garde-fou de catastrophe, pas un stop.
-4. Sorties forcées : stop de perte, objectif de gain.
-5. Construction du dossier : book, positions, indicateurs, décisions passées
+3. Sorties forcées : stop de perte, objectif de gain.
+4. Construction du dossier : book, positions, indicateurs, décisions passées
    et leur résultat, budget restant.
-6. Claude décide.
-7. La couche de risque relit chaque décision, la redimensionne ou la refuse.
-8. Exécution des ventes puis des achats. Ordre et position sont écrits dans
-   une seule transaction.
-9. Relevé d'equity et résumé.
+5. Claude décide.
+6. La couche de risque relit chaque décision, la redimensionne ou la refuse.
+7. Exécution des ventes puis des achats. Ordre et position sont écrits dans
+   une seule transaction ; si l'écriture échoue après un remplissage réel, le
+   book est déclaré incertain.
+8. Relevé d'equity de Claude, **en valeur de liquidation** : frais et slippage
+   de sortie déduits, exactement comme le repère.
+9. Relevé du repère buy-and-hold. Il est constitué au premier cycle où Claude
+   a **vraiment répondu** (t0 du protocole, première ligne dans `api_costs`),
+   aux prix de ce cycle : capital divisé à parts égales entre les paires,
+   frais et slippage d'entrée déduits. Tant que la clé API manque, il n'y a
+   pas de repère, et le journal le dit.
 
 ### Entre deux cycles : le chien de garde
 

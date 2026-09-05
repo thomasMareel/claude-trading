@@ -60,6 +60,51 @@ def test_absurd_values_are_refused(path, value, fragment):
         check(raw)
 
 
+@pytest.mark.parametrize("path,value", [
+    ("risk.max_open_positions", "abc"),
+    ("risk.max_open_positions", None),
+    ("risk.max_round_trips_per_week", 2.5),
+    ("engine.cycle_hours", "4"),
+])
+def test_integer_keys_refuse_non_integers_with_a_clear_message(path, value):
+    raw = base()
+    node = raw
+    *parents, leaf = path.split(".")
+    for p in parents:
+        node = node[p]
+    node[leaf] = value
+    with pytest.raises(ConfigError, match=leaf):
+        check(raw)
+
+
+def test_min_order_value_cannot_exceed_the_largest_possible_buy():
+    raw = base()
+    raw["risk"]["min_order_value"] = 50.0          # 40 % de 100 = 40 : aucun achat ne passerait
+    with pytest.raises(ConfigError, match="min_order_value"):
+        check(raw)
+
+
+def test_daily_freeze_must_come_before_the_kill_switch():
+    raw = base()
+    raw["risk"]["max_daily_loss_pct"] = 0.25
+    with pytest.raises(ConfigError, match="max_daily_loss_pct"):
+        check(raw)
+
+
+def test_take_profit_must_cover_a_round_trip_of_friction():
+    raw = base()
+    raw["risk"]["take_profit_pct"] = 0.002
+    with pytest.raises(ConfigError, match="take_profit_pct"):
+        check(raw)
+
+
+def test_max_open_positions_cannot_exceed_the_number_of_symbols():
+    raw = base()
+    raw["risk"]["max_open_positions"] = 4
+    with pytest.raises(ConfigError, match="max_open_positions"):
+        check(raw)
+
+
 def test_one_full_stop_must_not_reach_the_kill_switch():
     raw = base()
     raw["risk"]["stop_loss_pct"] = 0.5

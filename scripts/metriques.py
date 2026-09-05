@@ -52,9 +52,12 @@ def regime_label(basket_ret_pct: float) -> str:
 
 
 def close_at(st: Storage, symbol: str, tf: str, ts_ms: int):
+    """Close de la derniere bougie CLOTUREE a l'instant donne. La bougie en
+    cours a cet instant n'est pas encore terminee : la prendre noterait la
+    prevision sur une fenetre decalee de 4 heures."""
     row = st._conn.execute(
-        "SELECT close FROM candles WHERE symbol=? AND timeframe=? AND ts<=? ORDER BY ts DESC LIMIT 1",
-        (symbol, tf, ts_ms),
+        "SELECT close FROM candles WHERE symbol=? AND timeframe=? AND ts + ? <= ? ORDER BY ts DESC LIMIT 1",
+        (symbol, tf, TF_MS, ts_ms),
     ).fetchone()
     return float(row["close"]) if row else None
 
@@ -86,15 +89,25 @@ def main() -> int:
     console.rule("[bold]1. Fenetre")
     console.print(f"t0 {t0}  |  {days:.1f} jours  |  regime du panier : [bold]{regime_label(b1_pct)}[/] ({b1_pct:+.2f} %)")
     calls = st.api_calls_total()
-    models = Counter(r["model"] for r in st._conn.execute("SELECT model FROM api_costs"))
+    models = Counter(r["model"] for r in st._conn.execute("SELECT model FROM api_costs WHERE model != 'timeout-estime'"))
     if len(models) > 1:
         console.print(f"[yellow]!! plusieurs versions de modele servies dans la fenetre : {dict(models)} "
                       f"(le protocole demande de cloturer la fenetre comme incomplete)[/]")
+    # la configuration a-t-elle bouge depuis t0 ? (pre-enregistrement)
+    starts = st.events_by_source("protocol_start")
+    if starts:
+        frozen = json.loads(starts[-1]["payload"] or "{}")
+        drift = [k for k, v in (frozen.get("config") or {}).items() if v != cfg.raw.get(k)]
+        if drift:
+            console.print(f"[bold red]!! la configuration a change depuis t0 : sections {drift}. "
+                          f"Le protocole interdit toute modification en cours de fenetre.[/]")
+        if frozen.get("git_commit"):
+            console.print(f"[dim]code a t0 : commit {frozen['git_commit'][:12]}[/]")
 
     # ------------------------------------------------------------ 2. bilan
     cash = compute_cash(st, BRAIN, init)
     pos = build_positions(st, BRAIN, prices)
-    eq = cash + sum(p.value_quote for p in pos)
+    eq = cash + sum(p.value_quote for p in pos) * (1 - slip) * (1 - fee)    # liquidation, comme le repere
     api = st.api_cost_total()
     console.rule("[bold]2. Bilan en trois lignes (jamais fusionnees avant le rapport final)")
     t = Table(show_header=False, pad_edge=False)
@@ -154,7 +167,9 @@ def main() -> int:
             continue
         t_ms = int(iso(r["ts"]).timestamp() * 1000)
         p0 = close_at(st, r["symbol"], tf, t_ms)
-        p1 = close_at(st, r["symbol"], tf, t_ms + 24 * 3600 * 1000) if iso(r["ts"]) + timedelta(hours=24) <= now else None
+        horizon_ms = t_ms + 24 * 3600 * 1000
+        # la bougie qui cloture l'horizon doit etre terminee ET rafraichie en base
+        p1 = close_at(st, r["symbol"], tf, horizon_ms) if horizon_ms + TF_MS <= int(now.timestamp() * 1000) else None
         if p0 is None or p1 is None:
             pending += 1
             continue

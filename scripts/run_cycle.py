@@ -1,9 +1,14 @@
-"""Execute UN cycle de decision et s'arrete. Ideal pour un planificateur
-externe (Task Scheduler Windows, cron) ou pour tester a la main.
+"""Execute UN cycle de decision et s'arrete. Pour tester a la main, ou pour
+un planificateur externe.
 
     python scripts/run_cycle.py            # mode de config.yaml
     python scripts/run_cycle.py --paper    # force le paper
     python scripts/run_cycle.py --live     # force le live (exige LIVE_ARMED)
+
+Attention : ce script n'a pas de chien de garde. Entre deux appels, aucun
+stop n'est verifie. Pour de l'argent reel, utiliser run_loop.py. En live,
+le compte reel est reconcilie avec le book avant le cycle, comme dans la
+boucle ; en cas d'ecart, code de sortie 3.
 """
 from __future__ import annotations
 
@@ -28,6 +33,7 @@ def main() -> int:
     mode = "paper" if args.paper else "live" if args.live else None
     engine = build_engine(cfg, mode_override=mode)
     try:
+        engine.assert_live_consistent()     # SystemExit(3) en live si le compte ne correspond pas
         engine.run_cycle()
     finally:
         engine.storage.close()

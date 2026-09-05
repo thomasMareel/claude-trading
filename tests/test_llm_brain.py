@@ -172,6 +172,25 @@ def test_broken_json_becomes_hold():
     assert any("JSON invalide" in e["message"] for e in st.recent_events())
 
 
+def test_timeout_provisions_a_cost_so_the_daily_cap_sees_it():
+    import anthropic
+
+    class FakeTimeout(anthropic.APITimeoutError):
+        def __init__(self):
+            Exception.__init__(self, "timeout")
+
+    class TimingOut:
+        def create(self, **kw):
+            raise FakeTimeout()
+
+    brain, st = make_brain(fake_response({}))
+    brain._client.messages = TimingOut()
+    decs = brain.decide(_ctx())
+    assert all(d.action == "hold" for d in decs)
+    assert st.api_cost_today() > 0.1                    # cout plafond provisionne
+    assert any("provisionne" in e["message"] for e in st.recent_events())
+
+
 def test_daily_runaway_cap_stops_calls():
     brain, st = make_brain(fake_response({}))
     st.record_api_cost("claude-opus-5", 1, 1, 2.0)  # plafond anti-emballement atteint

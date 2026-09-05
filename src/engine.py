@@ -6,19 +6,30 @@ meme slippage. Claude doit faire mieux que ce repere, net de tout.
 
 Ordre d'un cycle :
   1. rafraichir les bougies et les prix
-  2. releve du repere buy-and-hold (constitue au premier cycle)
-  3. coupe-circuit (drawdown du book, garde-fou de catastrophe)
-  4. sorties forcees (stop de perte, objectif de gain)
-  5. construction du dossier (BrainContext)
-  6. Claude decide
-  7. la couche de risque tranche, decision par decision
-  8. execution des ventes, puis des achats
-  9. releve d'equity, resume console
+  2. coupe-circuit (drawdown du book, garde-fou de catastrophe)
+  3. sorties forcees (stop de perte, objectif de gain)
+  4. construction du dossier (BrainContext)
+  5. Claude decide
+  6. la couche de risque tranche, decision par decision
+  7. execution des ventes, puis des achats
+  8. releve d'equity de Claude
+  9. releve du repere buy-and-hold ; il est constitue au premier cycle ou
+     Claude a VRAIMENT repondu (t0 = premiere ligne dans api_costs), aux prix
+     de ce cycle, jamais avant
+ 10. resume console
+
+Deux valeurs pour un meme book :
+  - la valeur BRUTE (cash + quantite x prix) sert au dimensionnement des
+    ordres, a la perte journaliere et au coupe-circuit ;
+  - la valeur de LIQUIDATION (frais et slippage de sortie deduits) est celle
+    qui est relevee dans la base et comparee au repere, lui aussi en valeur
+    de liquidation. Comparer brut a liquide fausserait le verdict de 0.15 %.
 """
 from __future__ import annotations
 
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 
 from rich.console import Console
 from rich.table import Table
@@ -38,11 +49,33 @@ from .storage import Storage, utcnow_iso
 
 console = Console()
 BENCHMARK = "benchmark"
+FORCED_REASONS = ("stop_loss", "take_profit", "kill_switch")
+FROZEN_SECTIONS = ("experiment", "exchange", "risk", "llm", "indicators", "engine")
 
 
 def timeframe_to_ms(tf: str) -> int:
     unit = {"m": 60, "h": 3600, "d": 86400, "w": 604800}[tf[-1]]
     return int(tf[:-1]) * unit * 1000
+
+
+def git_head(root: Path) -> str | None:
+    """Hash du commit courant, lu dans .git sans lancer git. None si inconnu."""
+    try:
+        head = (root / ".git" / "HEAD").read_text(encoding="utf-8").strip()
+        if not head.startswith("ref: "):
+            return head
+        ref = head[5:]
+        loose = root / ".git" / ref
+        if loose.exists():
+            return loose.read_text(encoding="utf-8").strip()
+        packed = root / ".git" / "packed-refs"
+        if packed.exists():
+            for line in packed.read_text(encoding="utf-8").splitlines():
+                if line.endswith(" " + ref):
+                    return line.split()[0]
+    except OSError:
+        pass
+    return None
 
 
 class Engine:
@@ -72,6 +105,9 @@ class Engine:
             rsi_period=int(cfg.get("indicators.rsi_period", 14)),
             atr_period=int(cfg.get("indicators.atr_period", 14)),
         )
+        # echecs consecutifs de vente forcee, par position : au 2e, le book est
+        # declare incertain (il ne reflete plus ce que l'exchange accepte de vendre)
+        self._sell_failures: dict[int, int] = {}
 
     # ==================================================================
     def _alert(self, title: str, message: str, priority: str = "default", tags: str = "") -> None:
@@ -82,6 +118,11 @@ class Engine:
         cash = compute_cash(self.storage, self.name, self.capital)
         positions = build_positions(self.storage, self.name, prices)
         return cash, positions
+
+    def _liq(self, positions: list[PositionView]) -> float:
+        """Valeur de liquidation des positions : frais et slippage de sortie
+        deduits, comme pour le repere."""
+        return sum(p.value_quote for p in positions) * (1 - self.slippage) * (1 - self.fee_rate)
 
     # ==================================================================
     def run_cycle(self) -> str:
@@ -154,10 +195,17 @@ class Engine:
                 rows.append((s, utcnow_iso(), prices[s], amount, per))
             self.storage.set_benchmark_basket(rows)
             basket = self.storage.benchmark_basket()
+            # t0 est pre-enregistre : version exacte du code et de la configuration
+            # figee, pour prouver ensuite que rien n'a bouge en cours de fenetre
+            root = Path(__file__).resolve().parent.parent
             self.storage.event(
                 "info", "protocol_start",
                 f"t0 : repere constitue, {self.capital:.2f} {self.quote} en {len(self.symbols)} parts egales",
-                {"capital": self.capital, "prices": prices, "symbols": self.symbols},
+                {
+                    "capital": self.capital, "prices": prices, "symbols": self.symbols,
+                    "git_commit": git_head(root),
+                    "config": {k: self.cfg.raw.get(k) for k in FROZEN_SECTIONS},
+                },
             )
             console.print(f"[bold]t0[/] repere buy-and-hold constitue : {per:.2f} {self.quote} "
                           f"sur chacun de {', '.join(self.symbols)}")
@@ -209,25 +257,29 @@ class Engine:
         n = 0
         exits = self.risk.forced_exits(positions)
         for p, reason in exits:
-            did = self.storage.record_decision(
-                cycle_id, self.name, p.symbol, "sell", confidence=1.0,
-                reasoning=f"chien de garde : {reason} (prix {p.current_price}, "
-                          f"entree {p.entry_price}, stop {p.stop_loss}, objectif {p.take_profit})",
-                accepted=True, raw={"forced": reason, "watchdog": True},
-            )
+            did = None
+            if p.position_id not in self._sell_failures:
+                # une seule decision par sortie forcee, pas une par retentative
+                did = self.storage.record_decision(
+                    cycle_id, self.name, p.symbol, "sell", confidence=1.0,
+                    reasoning=f"chien de garde : {reason} (prix {p.current_price}, "
+                              f"entree {p.entry_price}, stop {p.stop_loss}, objectif {p.take_profit})",
+                    accepted=True, raw={"forced": reason, "watchdog": True},
+                )
             if self._execute_sell(cycle_id, p, prices[p.symbol], reason, did):
                 n += 1
         if exits:
             cash, positions = self._book(prices)
-            self.storage.record_equity(self.name, cash, sum(q.value_quote for q in positions))
+            self.storage.record_equity(self.name, cash, self._liq(positions))
         return n
 
     # ==================================================================
     def _context(self, cycle_id: str, markets, prices) -> BrainContext:
         cash, positions = self._book(prices)
-        equity = cash + sum(p.value_quote for p in positions)
+        # perte du jour en valeur de liquidation, comme les releves qui servent de reference
+        equity_liq = cash + self._liq(positions)
         ref = equity_day_start(self.storage, self.name, self.capital)
-        daily_pct = (equity / ref - 1) * 100 if ref > 0 else 0.0
+        daily_pct = (equity_liq / ref - 1) * 100 if ref > 0 else 0.0
         return BrainContext(
             cycle_id=cycle_id, brain=self.name, now_iso=utcnow_iso(),
             initial_capital=self.capital, cash=cash, positions=positions, markets=markets,
@@ -312,21 +364,51 @@ class Engine:
                     opens_this_cycle += 1
 
         final = self._context(cycle_id, markets, prices)
-        self.storage.record_equity(self.name, final.cash, final.positions_value)
+        self.storage.record_equity(self.name, final.cash, self._liq(final.positions))
 
     # ==================================================================
     def _tag(self, cycle_id: str, side: str, symbol: str) -> str:
         return f"{cycle_id}-{side}-{symbol.replace('/', '')}"
 
-    def _book_uncertain(self, side: str, symbol: str, err: Exception) -> None:
-        """Un ordre reel a ete envoye et son resultat est inconnu. Le book
-        ne peut plus etre cru : on gele les achats jusqu'a acquittement."""
-        msg = (f"{side} {symbol} : ordre reel envoye, resultat INCONNU ({err}). "
-               f"Le book n'est plus fiable. Achats geles jusqu'a verification manuelle "
-               f"du compte Binance et acquittement (scripts/acquitter.py).")
-        self.storage.event("critical", BOOK_UNCERTAIN, msg, {"side": side, "symbol": symbol})
+    def _book_uncertain(self, side: str, symbol: str, err: Exception, payload: dict | None = None) -> None:
+        """Le book ne peut plus etre cru : ordre reel au resultat inconnu, ou
+        remplissage reel impossible a ecrire en base, ou vente forcee que
+        l'exchange refuse. On gele les achats jusqu'a acquittement humain."""
+        msg = (f"{side} {symbol} : {err}. Le book n'est plus fiable. Achats geles jusqu'a "
+               f"verification manuelle du compte Binance et acquittement (scripts/acquitter.py).")
         console.print(f"    [bold red]BOOK INCERTAIN[/] {msg}")
+        if self.risk.book_uncertain():
+            return                                  # deja signale, pas de rafale d'alertes
+        self.storage.event("critical", BOOK_UNCERTAIN, msg, {"side": side, "symbol": symbol, **(payload or {})})
         self._alert("Book incertain", msg, "urgent", "warning")
+
+    def _persist_or_freeze(self, side: str, symbol: str, fill, write) -> None:
+        """Ecrit un remplissage REEL en base. Si l'ecriture echoue, la crypto
+        est detenue mais inconnue de la base : c'est le pire etat possible, on
+        gele avec le remplissage complet dans le payload pour reparer a la main,
+        puis on laisse l'exception remonter pour que le cycle echoue bruyamment."""
+        try:
+            return write()
+        except Exception as e:
+            self._book_uncertain(f"{side} (ecriture en base)", symbol, e, {
+                "fill": {"exchange_id": fill.exchange_id, "price": fill.price, "amount_base": fill.amount_base,
+                         "value_quote": fill.value_quote, "fee_quote": fill.fee_quote},
+            })
+            raise
+
+    def _forced_sell_failed(self, p: PositionView, reason: str, err: Exception) -> None:
+        """Une vente forcee (stop, objectif, coupe-circuit) refusee par l'exchange
+        n'est pas un incident ordinaire : la protection du capital ne s'execute
+        pas. Alerte au premier echec ; au second, ou sur solde insuffisant, le
+        book est declare incertain."""
+        n = self._sell_failures.get(p.position_id, 0) + 1
+        self._sell_failures[p.position_id] = n
+        insufficient = "insufficient" in (type(err).__name__ + str(err)).lower()
+        if n == 1:
+            self._alert(f"Vente forcee refusee {p.symbol}", f"{reason} : {err}", "high", "warning")
+        if n >= 2 or insufficient:
+            self._book_uncertain(f"vente forcee ({reason}, echec {n})", p.symbol, err,
+                                 {"position_id": p.position_id, "amount_base": p.amount_base})
 
     def _execute_buy(self, cycle_id: str, d: Decision, price: float, decision_id: int):
         try:
@@ -340,18 +422,18 @@ class Engine:
             console.print(f"    [red]execution achat echouee : {e!r}[/]")
             return None
         stop, target = self.risk.stop_and_target(fill.price)
-        self.storage.record_buy_fill(
+        self._persist_or_freeze("achat", d.symbol, fill, lambda: self.storage.record_buy_fill(
             cycle_id=cycle_id, brain=self.name, symbol=d.symbol, mode=self.executor.mode,
             price=fill.price, amount_base=fill.amount_base, value_quote=fill.value_quote,
             fee_quote=fill.fee_quote, exchange_id=fill.exchange_id, decision_id=decision_id,
             stop_loss=stop, take_profit=target,
-        )
+        ))
         console.print(f"    [green]ACHAT[/] {fill.amount_base:.6f} @ {fill.price:.4f} "
                       f"= {fill.value_quote:.2f} (frais {fill.fee_quote:.3f}) "
                       f"stop {stop:.4f} / objectif {target:.4f}")
         return fill
 
-    def _execute_sell(self, cycle_id: str, p: PositionView, price: float, reason: str, decision_id: int):
+    def _execute_sell(self, cycle_id: str, p: PositionView, price: float, reason: str, decision_id: int | None):
         try:
             fill = self.executor.sell(p.symbol, p.amount_base, price,
                                       tag=self._tag(cycle_id, "S", p.symbol))
@@ -361,13 +443,16 @@ class Engine:
         except Exception as e:
             self.storage.event("warning", "executor", f"vente {p.symbol} echouee : {e!r}")
             console.print(f"    [red]execution vente echouee : {e!r}[/]")
+            if reason in FORCED_REASONS:
+                self._forced_sell_failed(p, reason, e)
             return None
-        pnl = self.storage.record_sell_fill(
+        self._sell_failures.pop(p.position_id, None)
+        pnl = self._persist_or_freeze("vente", p.symbol, fill, lambda: self.storage.record_sell_fill(
             cycle_id=cycle_id, brain=self.name, symbol=p.symbol, mode=self.executor.mode,
             price=fill.price, amount_base=fill.amount_base, value_quote=fill.value_quote,
             fee_quote=fill.fee_quote, exchange_id=fill.exchange_id, decision_id=decision_id,
             position_id=p.position_id, reason=reason,
-        )
+        ))
         color = "green" if pnl >= 0 else "red"
         console.print(f"    [{color}]VENTE[/] {fill.amount_base:.6f} @ {fill.price:.4f} "
                       f"= {fill.value_quote:.2f} (frais {fill.fee_quote:.3f}) "
@@ -390,6 +475,22 @@ class Engine:
         self.storage.record_equity(self.name, cash, 0.0)
 
     # ==================================================================
+    def assert_live_consistent(self) -> None:
+        """En live : le compte reel doit correspondre au book, sinon on refuse
+        de tourner (SystemExit 3), avec evenement critique et alerte. Appele au
+        demarrage et apres tout cycle en echec, par run_loop ET run_cycle."""
+        if self.executor.mode != "live":
+            return
+        problems = self.reconcile_live()
+        if not problems:
+            console.print("[green]reconciliation OK : le compte reel correspond au book[/]")
+            return
+        msg = "reconciliation refusee : le compte reel ne correspond pas au book.\n  - " + "\n  - ".join(problems)
+        self.storage.event("critical", "reconciliation", msg, {"problems": problems})
+        console.print(f"[bold red]{msg}[/]")
+        self._alert("Reconciliation refusee", msg, "urgent", "rotating_light")
+        raise SystemExit(3)
+
     def reconcile_live(self) -> list[str]:
         """Compare le book reconstruit au compte Binance reel. Retourne la
         liste des ecarts. Une liste vide veut dire : la base dit vrai."""
@@ -415,7 +516,7 @@ class Engine:
             t.add_column(col, justify="right" if col != "book" else "left")
 
         cash, pos = self._book(prices)
-        pv = sum(p.value_quote for p in pos)
+        pv = self._liq(pos)                     # valeur de liquidation, comme le repere
         eq = cash + pv
         perf = (eq / self.capital - 1) * 100
         color = "green" if perf >= 0 else "red"

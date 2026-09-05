@@ -168,7 +168,10 @@ class LLMBrain:
         if self._client is None:
             # Lit ANTHROPIC_API_KEY depuis l'env. Le delai borne l'appel : sans
             # lui, un appel bloque gelerait toute la boucle, chien de garde compris.
-            self._client = anthropic.Anthropic(timeout=self.timeout, max_retries=1)
+            # Aucune relance automatique : un appel qui a depasse le delai a pu etre
+            # facture entierement cote serveur, le rejouer doublerait la facture.
+            # Le cycle suivant est dans 4 heures, on peut attendre.
+            self._client = anthropic.Anthropic(timeout=self.timeout, max_retries=0)
         return self._client
 
     @staticmethod
@@ -214,7 +217,13 @@ class LLMBrain:
         except anthropic.RateLimitError as e:
             return self._fail(ctx, f"rate limit API : {e}")
         except anthropic.APITimeoutError:
-            return self._fail(ctx, f"appel API sans reponse apres {self.timeout:.0f} s")
+            # Le serveur a peut-etre genere et facture la reponse entiere. On
+            # provisionne un cout plafond pour que le garde-fou journalier le voie.
+            est_in = (len(SYSTEM_PROMPT) + len(user_msg)) // 3
+            est = (est_in * self.p_in + self.max_tokens * self.p_out) / 1_000_000
+            self.storage.record_api_cost("timeout-estime", est_in, self.max_tokens, est)
+            return self._fail(ctx, f"appel API sans reponse apres {self.timeout:.0f} s "
+                                   f"(cout provisionne {est:.3f} $)")
         except anthropic.APIStatusError as e:
             return self._fail(ctx, f"erreur API {e.status_code} : {e.message}")
         except anthropic.APIConnectionError as e:

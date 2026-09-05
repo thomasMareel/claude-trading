@@ -82,6 +82,18 @@ def _num(cfg: Config, path: str, lo: float, hi: float, *, lo_open: bool = False,
     return x
 
 
+def _int(cfg: Config, path: str, lo: int, hi: int) -> int:
+    v = cfg.get(path)
+    if v is None:
+        raise ConfigError(f"{path} manquant")
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or float(v) != int(v):
+        raise ConfigError(f"{path} doit etre un entier, trouve {v!r}")
+    x = int(v)
+    if not lo <= x <= hi:
+        raise ConfigError(f"{path} doit etre dans [{lo}, {hi}], trouve {x}")
+    return x
+
+
 def validate(cfg: Config) -> None:
     """Echoue tot et bruyamment plutot que de trader avec une config absurde.
 
@@ -102,49 +114,61 @@ def validate(cfg: Config) -> None:
             "Reactiver le levier ou le short demande de reecrire la couche de risque."
         )
 
-    # ---- risque ----
-    maxpos = _num(cfg, "risk.max_position_pct", 0.0, 1.0, lo_open=True)
-    if int(cfg.get("risk.max_open_positions", 0)) < 1:
-        raise ConfigError("risk.max_open_positions doit etre >= 1")
-    _num(cfg, "risk.min_order_value", 0.0, cfg.total_capital, lo_open=True)
-    if int(cfg.get("risk.max_round_trips_per_week", 0)) < 1:
-        raise ConfigError("risk.max_round_trips_per_week doit etre >= 1")
-    _num(cfg, "risk.max_daily_loss_pct", 0.0, 1.0, lo_open=True, hi_open=True)
-    kill = _num(cfg, "risk.kill_switch_drawdown_pct", 0.0, 1.0, lo_open=True, hi_open=True)
-    stop = _num(cfg, "risk.stop_loss_pct", 0.0, 0.5, lo_open=True)
-    _num(cfg, "risk.take_profit_pct", 0.0, 5.0, lo_open=True)
-    if stop * maxpos >= kill:
-        raise ConfigError(
-            "un seul stop plein depasserait le coupe-circuit : "
-            f"stop {stop:.0%} x position {maxpos:.0%} >= coupe-circuit {kill:.0%}"
-        )
-
     # ---- exchange ----
-    _num(cfg, "exchange.fee_rate", 0.0, 0.01)
-    _num(cfg, "exchange.slippage", 0.0, 0.01)
-    lookback = int(cfg.get("exchange.lookback_candles", 0))
-    ema_slow = int(cfg.get("indicators.ema_slow", 200))
+    fee = _num(cfg, "exchange.fee_rate", 0.0, 0.01)
+    slip = _num(cfg, "exchange.slippage", 0.0, 0.01)
+    lookback = _int(cfg, "exchange.lookback_candles", 50, 5000)
+    ema_slow = _int(cfg, "indicators.ema_slow", 2, 1000)
     if lookback < ema_slow + 20:
         raise ConfigError(
             f"exchange.lookback_candles ({lookback}) doit depasser indicators.ema_slow "
             f"({ema_slow}) d'au moins 20 bougies"
         )
 
+    # ---- risque : chaque borne, puis les interactions ----
+    maxpos = _num(cfg, "risk.max_position_pct", 0.0, 1.0, lo_open=True)
+    _int(cfg, "risk.max_open_positions", 1, len(cfg.symbols))
+    minval = _num(cfg, "risk.min_order_value", 0.0, cfg.total_capital, lo_open=True)
+    _int(cfg, "risk.max_round_trips_per_week", 1, 50)
+    daily = _num(cfg, "risk.max_daily_loss_pct", 0.0, 1.0, lo_open=True, hi_open=True)
+    kill = _num(cfg, "risk.kill_switch_drawdown_pct", 0.0, 1.0, lo_open=True, hi_open=True)
+    stop = _num(cfg, "risk.stop_loss_pct", 0.0, 0.5, lo_open=True)
+    tp = _num(cfg, "risk.take_profit_pct", 0.0, 5.0, lo_open=True)
+    if stop * maxpos >= kill:
+        raise ConfigError(
+            "un seul stop plein depasserait le coupe-circuit : "
+            f"stop {stop:.0%} x position {maxpos:.0%} >= coupe-circuit {kill:.0%}"
+        )
+    if minval > maxpos * cfg.total_capital * 0.99:
+        raise ConfigError(
+            f"risk.min_order_value ({minval:.2f}) depasse la taille maximale d'un achat "
+            f"({maxpos:.0%} x {cfg.total_capital:.2f} = {maxpos * cfg.total_capital:.2f}) : "
+            "le trader ne pourrait jamais acheter"
+        )
+    if daily >= kill:
+        raise ConfigError(
+            f"risk.max_daily_loss_pct ({daily:.0%}) doit rester sous le coupe-circuit ({kill:.0%}) : "
+            "le gel journalier doit intervenir avant l'arret definitif"
+        )
+    if tp <= 2 * (fee + slip):
+        raise ConfigError(
+            f"risk.take_profit_pct ({tp:.2%}) ne couvre pas un aller-retour de frais et slippage "
+            f"({2 * (fee + slip):.2%})"
+        )
+
     # ---- llm ----
     if str(cfg.get("llm.effort", "medium")) not in EFFORTS:
         raise ConfigError(f"llm.effort doit etre parmi {EFFORTS}")
-    if int(cfg.get("llm.max_tokens", 0)) < 1000:
-        raise ConfigError("llm.max_tokens doit etre >= 1000 (la reflexion compte dedans)")
+    _int(cfg, "llm.max_tokens", 1000, 128_000)
     _num(cfg, "llm.timeout_seconds", 10.0, 600.0)
     _num(cfg, "llm.max_daily_api_cost_usd", 0.0, 100.0, lo_open=True)
     _num(cfg, "llm.alert_cost_per_call_usd", 0.0, 10.0, lo_open=True)
 
     # ---- moteur ----
-    ch = int(cfg.get("engine.cycle_hours", 0))
-    if ch < 1 or 24 % ch != 0:
+    ch = _int(cfg, "engine.cycle_hours", 1, 24)
+    if 24 % ch != 0:
         raise ConfigError("engine.cycle_hours doit diviser 24 (1, 2, 3, 4, 6, 8, 12, 24)")
-    if int(cfg.get("engine.watchdog_minutes", 0)) < 0:
-        raise ConfigError("engine.watchdog_minutes doit etre >= 0")
+    _int(cfg, "engine.watchdog_minutes", 0, ch * 60)
 
 
 def secret(name: str) -> str | None:

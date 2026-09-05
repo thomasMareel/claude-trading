@@ -276,6 +276,52 @@ def test_benchmark_waits_for_the_first_real_answer_of_the_trader():
     assert any(e["source"] == "protocol_start" for e in st.recent_events())
 
 
+def test_equity_is_recorded_in_liquidation_value_like_the_benchmark():
+    eng, st, _ = make_engine({"BTC/USDT": 100.0, "ETH/USDT": 10.0}, ScriptedBrain([[BUY_BTC]]))
+    eng.run_cycle()
+    row = st.last_equity("llm")
+    gross = sum(float(p["amount_base"]) * 100.0 for p in st.open_positions("llm"))
+    assert abs(float(row["positions_value"]) - gross * 0.9995 * 0.999) < 1e-6   # frais et slippage de sortie deduits
+    assert float(row["positions_value"]) < gross
+
+
+def test_persistence_failure_after_a_real_fill_freezes_the_book():
+    eng, st, _ = make_engine({"BTC/USDT": 100.0, "ETH/USDT": 10.0}, ScriptedBrain([[BUY_BTC], [BUY_BTC]]))
+
+    def boom(**kw):
+        raise RuntimeError("base verrouillee")
+
+    st.record_buy_fill = boom                           # l'ordre est rempli, l'ecriture echoue
+    with pytest.raises(RuntimeError):
+        eng.run_cycle()                                 # le cycle echoue bruyamment...
+    assert st.is_flagged(BOOK_UNCERTAIN)                # ...et le book est gele
+    ev = [e for e in st.recent_events() if e["source"] == BOOK_UNCERTAIN][0]
+    assert "ecriture en base" in ev["message"] and '"fill"' in ev["payload"]   # de quoi reparer a la main
+
+
+def test_forced_sell_refused_twice_freezes_the_book_and_records_one_decision():
+    class RefusingSell(PaperExecutor):
+        def sell(self, *a, **k):
+            raise RuntimeError("LOT_SIZE refuse")
+
+    data = FakeData({"BTC/USDT": 100.0, "ETH/USDT": 10.0})
+    st = Storage(":memory:")
+    ok = PaperExecutor(0.001, 0.0005, data.amount_to_precision)
+    eng = Engine(CFG, st, data, ok, ScriptedBrain([[BUY_BTC]]), RiskManager(CFG, st))
+    eng.run_cycle()
+    eng.executor = RefusingSell(0.001, 0.0005, data.amount_to_precision)
+    data.prices["BTC/USDT"] = 90.0                      # stop touche, la vente est refusee
+    assert eng.check_stops() == 0
+    assert not st.is_flagged(BOOK_UNCERTAIN)            # premier echec : alerte seulement
+    assert eng.check_stops() == 0
+    assert st.is_flagged(BOOK_UNCERTAIN)                # second echec : le book ne reflete plus l'exchange
+    wd = [d for d in st.recent_decisions("llm", 10) if d["cycle_id"].startswith("WD")]
+    assert len(wd) == 1                                 # une seule decision, pas une par retentative
+    eng.executor = ok
+    assert eng.check_stops() == 1                       # la vente finit par passer
+    assert st.open_positions("llm") == []
+
+
 # ---------------------------------------------------------------- ordres reels incertains
 def test_uncertain_order_freezes_buys_until_acknowledged():
     brain = ScriptedBrain([[BUY_BTC], [BUY_BTC], [BUY_BTC]])

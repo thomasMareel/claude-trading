@@ -61,10 +61,10 @@ def simulate(rng, ts_list, series, symbols, cfg, p_buy, p_sell):
     daily = float(r["max_daily_loss_pct"]); kill = float(r["kill_switch_drawdown_pct"])
     sl, tp = float(r["stop_loss_pct"]), float(r["take_profit_pct"])
 
-    cash, positions, trades = capital, {}, 0
+    cash, positions, trades, opens = capital, {}, 0, 0
     week_key, opens_week = None, 0
     day_key, day_start_eq = None, capital
-    expos, basket_rets = [], []
+    expos_after, basket_rets = [], []      # exposition APRES les actions de chaque bougie
     prev_closes = None
     dead = False
     for ts in ts_list:
@@ -73,65 +73,58 @@ def simulate(rng, ts_list, series, symbols, cfg, p_buy, p_sell):
         closes = {s: series[s][ts][2] for s in symbols}
         if prev_closes is not None:
             basket_rets.append(np.mean([closes[s] / prev_closes[s] - 1 for s in symbols]))
-        eq_before = cash + sum(a * closes[s] for s, (a, _e, _st, _tp) in positions.items())
-        expos.append(0.0 if eq_before <= 0 else sum(a * closes[s] for s, (a, *_r) in positions.items()) / eq_before)
-        if dead:
-            prev_closes = closes
-            continue
-        if wk != week_key:
-            week_key, opens_week = wk, 0
-        if dk != day_key:
-            day_key, day_start_eq = dk, eq_before
-        # sorties forcees sur low / high
-        for s in list(positions):
-            amount, entry, stop, target = positions[s]
-            high, low, _c = series[s][ts]
-            px = None
-            if low <= stop:
-                px = stop
-            elif high >= target:
-                px = target
-            if px is not None:
-                v = amount * px * (1 - slip)
-                cash += v - v * fee
-                del positions[s]; trades += 1
-        eq = cash + sum(a * closes[s] for s, (a, *_r) in positions.items())
-        if eq <= capital * (1 - kill):                       # coupe-circuit : liquidation, fin
-            for s, (a, *_r) in positions.items():
-                v = a * closes[s] * (1 - slip); cash += v - v * fee; trades += 1
-            positions.clear(); dead = True
-            prev_closes = closes
-            continue
-        # ventes aleatoires
-        for s in list(positions):
-            if rng.random() < p_sell:
-                a = positions.pop(s)[0]
-                v = a * closes[s] * (1 - slip); cash += v - v * fee; trades += 1
-        # achats aleatoires sous contraintes
-        frozen = eq <= day_start_eq * (1 - daily)
-        for s in symbols:
-            if s in positions or frozen or len(positions) >= maxopen or opens_week >= budget:
-                continue
-            if rng.random() >= p_buy:
-                continue
-            size = min(eq * maxpos, cash * 0.995)
-            if size < max(minval, 5.0):
-                continue
-            px = closes[s] * (1 + slip)
-            a = size / px
-            cash -= size + size * fee
-            positions[s] = (a, px, px * (1 - sl), px * (1 + tp))
-            opens_week += 1
+        eq_before = cash + sum(a * closes[s] for s, (a, *_r) in positions.items())
+        if not dead:
+            if wk != week_key:
+                week_key, opens_week = wk, 0
+            if dk != day_key:
+                day_key, day_start_eq = dk, eq_before
+            # sorties forcees sur low / high (approximation du chien de garde)
+            for s in list(positions):
+                amount, entry, stop, target = positions[s]
+                high, low, _c = series[s][ts]
+                px = stop if low <= stop else target if high >= target else None
+                if px is not None:
+                    v = amount * px * (1 - slip)
+                    cash += v - v * fee
+                    del positions[s]; trades += 1
+            eq = cash + sum(a * closes[s] for s, (a, *_r) in positions.items())
+            if eq <= capital * (1 - kill):                   # coupe-circuit : liquidation, fin
+                for s, (a, *_r) in positions.items():
+                    v = a * closes[s] * (1 - slip); cash += v - v * fee; trades += 1
+                positions.clear(); dead = True
+            else:
+                for s in list(positions):                    # ventes aleatoires
+                    if rng.random() < p_sell:
+                        a = positions.pop(s)[0]
+                        v = a * closes[s] * (1 - slip); cash += v - v * fee; trades += 1
+                frozen = eq <= day_start_eq * (1 - daily)    # achats aleatoires sous contraintes
+                for s in symbols:
+                    if s in positions or frozen or len(positions) >= maxopen or opens_week >= budget:
+                        continue
+                    if rng.random() >= p_buy:
+                        continue
+                    size = min(eq * maxpos, cash * 0.995)
+                    if size < max(minval, 5.0):
+                        continue
+                    px = closes[s] * (1 + slip)
+                    cash -= size + size * fee
+                    positions[s] = (size / px, px, px * (1 - sl), px * (1 + tp))
+                    opens_week += 1; opens += 1
+        pv = sum(a * closes[s] for s, (a, *_r) in positions.items())
+        eq_after = cash + pv
+        expos_after.append(0.0 if eq_after <= 0 else pv / eq_after)
         prev_closes = closes
     last = {s: series[s][ts_list[-1]][2] for s in symbols}
     liq = cash + sum(a * last[s] * (1 - slip) * (1 - fee) for s, (a, *_r) in positions.items())
-    # jumeau a exposition egale, chaine cycle par cycle
+    # jumeau a exposition egale : le rendement de la bougie i vers i+1 est gagne
+    # avec l'exposition prise A la bougie i, apres ses actions
     twin = capital
     for i, rb in enumerate(basket_rets):
-        e_prev = expos[i]; e_now = expos[i + 1]
+        e_prev, e_now = expos_after[i], expos_after[i + 1]
         twin *= 1 + e_prev * rb
         twin -= abs(e_now - e_prev) * FRICTION_RT * twin
-    return liq / capital - 1, twin / capital - 1, trades
+    return liq / capital - 1, twin / capital - 1, trades, opens
 
 
 def main() -> int:
@@ -185,18 +178,19 @@ def main() -> int:
 
     # ---- calibrage des singes sur l'activite de Claude ----
     rng = np.random.default_rng(args.seed)
-    p_sell = 1.0 / max(median_hold, 1.0)
+    # detention geometrique : la MEDIANE vaut ln2/p, pas 1/p
+    p_sell = float(np.log(2)) / max(median_hold, 1.0)
     target_opens = max(int(n_opens), 1)
     p_buy = target_opens / (len(ts_list) * len(cfg.symbols)) * 2.5
-    for _ in range(3):
-        sample = [simulate(rng, ts_list, series, cfg.symbols, cfg, p_buy, p_sell)[2] for _ in range(150)]
+    for _ in range(3):   # cible : autant d'OUVERTURES que Claude (pas de trades clos)
+        sample = [simulate(rng, ts_list, series, cfg.symbols, cfg, p_buy, p_sell)[3] for _ in range(150)]
         med = max(float(np.median(sample)), 0.5)
         p_buy = min(max(p_buy * target_opens / med, 1e-4), 0.9)
 
     console.print(f"[dim]fenetre {t0} -> maintenant : {len(ts_list)} bougies 4h  |  Claude : {n_opens} ouvertures, "
                   f"{n_closed} clos, detention mediane {median_hold:.0f} bougies  |  singes calibres p_buy={p_buy:.4f} p_sell={p_sell:.3f}[/]")
     results = np.array([simulate(rng, ts_list, series, cfg.symbols, cfg, p_buy, p_sell) for _ in range(args.n)])
-    rets, twins, ntr = results[:, 0], results[:, 1], results[:, 2]
+    rets, twins, ntr, nop = results[:, 0], results[:, 1], results[:, 2], results[:, 3]
     excess = rets - twins
 
     basket_ret = np.mean([last[s] / series[s][ts_list[0]][2] - 1 for s in cfg.symbols])
@@ -213,6 +207,8 @@ def main() -> int:
         t.add_row(label, *[f"{v*100:+.1f} %" for v in q], f"{cv*100:+.1f} %", f"[{color}]p{pc:.0f}[/]")
     q = np.percentile(ntr, [5, 20, 50, 80, 95])
     t.add_row("trades clos", *[f"{v:.0f}" for v in q], f"{n_closed}", "-")
+    q = np.percentile(nop, [5, 20, 50, 80, 95])
+    t.add_row("ouvertures", *[f"{v:.0f}" for v in q], f"{n_opens}", "-")
     console.print(t)
     console.print("[dim]Lecture (docs/protocole.md) : au-dessus de p95 = signal notable, entre p5 et p95 = indistinguable du hasard, "
                   "sous p5 = pire que le hasard. Un singe sur vingt depasse p95 sans aucune competence.[/]")

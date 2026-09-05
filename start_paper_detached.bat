@@ -9,9 +9,10 @@ echo. >> logs\loop.log
 echo ===== demarrage %DATE% %TIME% ===== >> logs\loop.log
 .venv\Scripts\python.exe scripts\run_loop.py --paper --now >> logs\loop.log 2>&1
 echo ===== arret code %ERRORLEVEL% le %DATE% %TIME% ===== >> logs\loop.log
-REM code 2 = coupe-circuit, code 3 = reconciliation refusee : on n'insiste pas.
+REM codes 2 (coupe-circuit), 3 (reconciliation refusee), 4 (demarrage impossible) : on n insiste pas.
 if "%ERRORLEVEL%"=="2" goto fin
 if "%ERRORLEVEL%"=="3" goto fin
+if "%ERRORLEVEL%"=="4" goto fin
 timeout /t 30 /nobreak >nul
 goto loop
 :fin

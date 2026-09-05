@@ -41,10 +41,10 @@ def main() -> int:
     fee = float(cfg.get("exchange.fee_rate", 0.001))
     slip = float(cfg.get("exchange.slippage", 0.0005))
 
-    # ---- Claude ----
+    # ---- Claude, en valeur de liquidation comme le repere ----
     cash = compute_cash(st, BRAIN, init)
     pos = build_positions(st, BRAIN, prices)
-    eq = cash + sum(p.value_quote for p in pos)
+    eq = cash + sum(p.value_quote for p in pos) * (1 - slip) * (1 - fee)
     closed = st.closed_positions(BRAIN)
     wins = sum(1 for c in closed if (c["pnl_quote"] or 0) > 0)
     curve = [float(r["total_quote"]) for r in st.equity_curve(BRAIN)] or [init]

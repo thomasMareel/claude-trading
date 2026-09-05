@@ -150,54 +150,85 @@ class Exchange:
         return cleaned[:36]
 
     def market_buy_quote(self, symbol: str, quote_amount: float, *, tag: str = "") -> dict[str, Any]:
-        """Achat au marche pour un montant en quote (ex: 40 USDT).
-
-        La creation d'ordre n'est JAMAIS rejouee aveuglement : sur un delai
-        reseau, on relit l'ordre par son clientOrderId. S'il n'existe pas,
-        l'achat n'a pas eu lieu et on le dit. S'il existe, on le prend.
-        Sinon on leve OrderUncertainError et le moteur gele le book.
-        """
+        """Achat au marche pour un montant en quote (ex: 40 USDT)."""
         self._require_trading()
         cid = self.client_order_id(tag or f"B-{symbol}-{int(time.time())}")
-        try:
-            order = self._x.create_market_buy_order_with_cost(symbol, quote_amount, {"newClientOrderId": cid})
-        except (ccxt.NetworkError, ccxt.RequestTimeout, ccxt.DDoSProtection) as e:
-            order = self._recover_order(symbol, cid, e)
-        except ccxt.ExchangeError as e:
-            raise ExchangeError(str(e)) from e
-        return self._normalize_fill(order, symbol, "buy")
+        return self._submit(
+            lambda: self._x.create_market_buy_order_with_cost(symbol, quote_amount, {"newClientOrderId": cid}),
+            symbol, "buy", cid,
+        )
 
     def market_sell_base(self, symbol: str, base_amount: float, *, tag: str = "") -> dict[str, Any]:
         self._require_trading()
         amt = self.amount_to_precision(symbol, base_amount)
         cid = self.client_order_id(tag or f"S-{symbol}-{int(time.time())}")
+        return self._submit(
+            lambda: self._x.create_order(symbol, "market", "sell", amt, None, {"newClientOrderId": cid}),
+            symbol, "sell", cid,
+        )
+
+    def _submit(self, create, symbol: str, side: str, cid: str) -> dict[str, Any]:
+        """Envoi d'un ordre puis lecture de son remplissage.
+
+        Trois issues, et seulement trois :
+          - echec PROPRE (ExchangeError) : l'exchange a refuse avant d'executer,
+            ou n'a jamais recu l'ordre, ou l'a annule ; rien n'est detenu ;
+          - remplissage lu : on le rend ;
+          - OrderUncertainError : l'ordre a pu etre execute et l'on ne sait pas
+            ce que l'on detient. Le moteur gele alors les achats.
+        Une fois l'envoi parti, AUCUNE autre exception ne peut sortir d'ici :
+        c'est ainsi qu'un achat ne devient jamais deux achats.
+        """
         try:
-            order = self._x.create_order(symbol, "market", "sell", amt, None, {"newClientOrderId": cid})
-        except (ccxt.NetworkError, ccxt.RequestTimeout, ccxt.DDoSProtection) as e:
+            order = create()
+        except ccxt.OperationFailed as e:
+            # parent de NetworkError, RequestTimeout, DDoSProtection, BadResponse
+            # et des codes Binance -1000/-1001/-1006 "execution status unknown"
             order = self._recover_order(symbol, cid, e)
         except ccxt.ExchangeError as e:
+            # refus clair AVANT execution : solde, LOT_SIZE, MIN_NOTIONAL...
             raise ExchangeError(str(e)) from e
-        return self._normalize_fill(order, symbol, "sell")
+        try:
+            return self._normalize_fill(order, symbol, side)
+        except ExchangeError:
+            raise                       # incertitude, ou refus avere (annule, rejete)
+        except Exception as e:
+            raise OrderUncertainError(f"ordre {cid} accepte, remplissage illisible : {e!r}") from e
 
     def _recover_order(self, symbol: str, cid: str, err: Exception) -> dict[str, Any]:
-        """Apres un delai reseau sur l'ENVOI d'un ordre : existe-t-il ?"""
-        for _ in range(3):
+        """L'envoi a echoue cote reseau : l'ordre existe-t-il chez l'exchange ?
+
+        Seul OrderNotFound, confirme deux fois, vaut "jamais recu". Tout le
+        reste, relecture illisible comprise, est incertain.
+        """
+        not_found = 0
+        for _ in range(4):
             time.sleep(2.0)
             try:
                 o = self._x.fetch_order(None, symbol, {"origClientOrderId": cid})
             except ccxt.OrderNotFound:
-                # Binance ne l'a jamais recu : l'ordre n'a pas eu lieu, c'est un echec propre.
-                raise ExchangeError(f"ordre {cid} jamais recu par l'exchange (delai reseau) : {err}") from err
-            except (ccxt.NetworkError, ccxt.RequestTimeout, ccxt.DDoSProtection):
+                not_found += 1
+                if not_found >= 2:
+                    raise ExchangeError(f"ordre {cid} jamais recu par l'exchange (delai reseau) : {err}") from err
                 continue
-            except ccxt.ExchangeError as e:
-                raise ExchangeError(str(e)) from e
-            status = (o or {}).get("status")
-            if status in ("closed", "filled") or float((o or {}).get("filled") or 0) > 0:
+            except ccxt.BaseError:
+                continue
+            o = o or {}
+            status = str(o.get("status") or "").lower()
+            if float(o.get("filled") or 0) > 0 or status in ("closed", "filled"):
                 return o
             if status in ("canceled", "rejected", "expired"):
-                raise ExchangeError(f"ordre {cid} {status} chez l'exchange")
-        raise OrderUncertainError(f"ordre {cid} envoye, resultat inconnu apres 3 relectures : {err}")
+                raise ExchangeError(f"ordre {cid} {status} chez l'exchange, rien execute")
+        raise OrderUncertainError(f"ordre {cid} envoye, resultat inconnu apres relectures : {err}")
+
+    def _fees_from_trades(self, oid, symbol: str) -> list[dict[str, Any]]:
+        """Un ordre relu par fetch_order n'a pas ses frais : on les cherche
+        dans les trades. En echec, liste vide et l'appelant estime."""
+        try:
+            trades = self._x.fetch_order_trades(oid, symbol)
+        except Exception:
+            return []
+        return [t["fee"] for t in (trades or []) if t.get("fee")]
 
     def _normalize_fill(self, order: dict[str, Any], symbol: str, side: str) -> dict[str, Any]:
         """Ramene un ordre ccxt a : prix moyen, quantite NETTE detenue,
@@ -211,18 +242,28 @@ class Exchange:
         """
         oid = order.get("id")
         # Les market orders Binance reviennent parfois sans 'average' : on re-lit.
+        # L'ordre EXISTE a ce stade : une relecture impossible est une incertitude.
         if not order.get("average") or not order.get("filled"):
             time.sleep(0.5)
-            order = self._retry(self._x.fetch_order, oid, symbol)
+            try:
+                order = self._retry(self._x.fetch_order, oid, symbol)
+            except Exception as e:
+                raise OrderUncertainError(f"ordre {oid} cree, relecture impossible : {e}") from e
         base = symbol.split("/")[0]
         filled = float(order.get("filled") or 0.0)
         avg = float(order.get("average") or order.get("price") or 0.0)
         cost = float(order.get("cost") or filled * avg)
         if filled <= 0 or avg <= 0:
-            raise ExchangeError(f"ordre {oid} non rempli : {order}")
+            status = str(order.get("status") or "").lower()
+            if status in ("canceled", "rejected", "expired"):
+                raise ExchangeError(f"ordre {oid} {status}, rien execute")
+            raise OrderUncertainError(f"ordre {oid} sans remplissage lisible (statut {status!r})")
 
+        fee_rate = float(self.cfg.get("exchange.fee_rate", 0.001))
         fee_quote, fee_base, fee_other = 0.0, 0.0, 0.0
         fees = order.get("fees") or ([order["fee"]] if order.get("fee") else [])
+        if not fees:
+            fees = self._fees_from_trades(oid, symbol)
         for f in fees:
             if not f:
                 continue
@@ -233,7 +274,16 @@ class Exchange:
                 fee_base += amt
             else:
                 # BNB ou autre : paye hors de ce book, estime prudemment
-                fee_other += cost * float(self.cfg.get("exchange.fee_rate", 0.001))
+                fee_other += cost * fee_rate
+        if not fees:
+            # Aucun frais lisible (ordre relu par fetch_order) : on suppose le cas
+            # Binance standard, frais preleves sur l'actif recu au taux configure.
+            # Prudent : on sous-estime ce que l'on detient, la vente ne peut pas
+            # echouer pour solde insuffisant ; il restera un peu de poussiere.
+            if side == "buy":
+                fee_base = filled * fee_rate
+            else:
+                fee_quote = cost * fee_rate
 
         if side == "buy":
             return {
