@@ -17,6 +17,8 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parent.parent
 LIVE_ARM_FILE = ROOT / "LIVE_ARMED"
 
+EFFORTS = ("low", "medium", "high", "xhigh", "max")
+
 
 @dataclass
 class Config:
@@ -32,7 +34,6 @@ class Config:
             node = node[part]
         return node
 
-    # --- raccourcis les plus utilises ---
     @property
     def symbols(self) -> list[str]:
         return list(self.get("exchange.symbols", []))
@@ -49,9 +50,9 @@ class Config:
     def total_capital(self) -> float:
         return float(self.get("experiment.total_capital", 100.0))
 
-    def brain_capital(self, brain: str) -> float:
-        alloc = float(self.get(f"experiment.allocation.{brain}", 0.0))
-        return self.total_capital * alloc
+
+class ConfigError(ValueError):
+    pass
 
 
 def load_config(path: str | Path | None = None) -> Config:
@@ -60,32 +61,90 @@ def load_config(path: str | Path | None = None) -> Config:
     with open(cfg_path, "r", encoding="utf-8") as fh:
         raw = yaml.safe_load(fh)
     cfg = Config(raw=raw)
-    _validate(cfg)
+    validate(cfg)
     return cfg
 
 
-def _validate(cfg: Config) -> None:
-    """Echoue tot et bruyamment plutot que de trader avec une config absurde."""
-    alloc = cfg.get("experiment.allocation", {}) or {}
-    total = sum(float(v) for v in alloc.values())
-    if abs(total - 1.0) > 1e-6:
-        raise ValueError(
-            f"experiment.allocation doit sommer a 1.0, trouve {total:.4f}"
-        )
+def _num(cfg: Config, path: str, lo: float, hi: float, *, lo_open: bool = False, hi_open: bool = False) -> float:
+    v = cfg.get(path)
+    if v is None:
+        raise ConfigError(f"{path} manquant")
+    try:
+        x = float(v)
+    except (TypeError, ValueError):
+        raise ConfigError(f"{path} doit etre un nombre, trouve {v!r}")
+    lo_ok = x > lo if lo_open else x >= lo
+    hi_ok = x < hi if hi_open else x <= hi
+    if not (lo_ok and hi_ok):
+        left = "]" if lo_open else "["
+        right = "[" if hi_open else "]"
+        raise ConfigError(f"{path} doit etre dans {left}{lo}, {hi}{right}, trouve {x}")
+    return x
+
+
+def validate(cfg: Config) -> None:
+    """Echoue tot et bruyamment plutot que de trader avec une config absurde.
+
+    Chaque limite de risque est verifiee ici. Une limite declaree mais
+    absurde (stop a 0 %, budget a 0) vaudrait une limite absente.
+    """
     if cfg.total_capital <= 0:
-        raise ValueError("experiment.total_capital doit etre > 0")
+        raise ConfigError("experiment.total_capital doit etre > 0")
     if not cfg.symbols:
-        raise ValueError("exchange.symbols est vide")
+        raise ConfigError("exchange.symbols est vide")
+    if len(set(cfg.symbols)) != len(cfg.symbols):
+        raise ConfigError("exchange.symbols contient un doublon")
     if cfg.mode not in ("paper", "live"):
-        raise ValueError(f"engine.mode invalide : {cfg.mode!r} (paper ou live)")
+        raise ConfigError(f"engine.mode invalide : {cfg.mode!r} (paper ou live)")
     if cfg.get("risk.allow_leverage") or cfg.get("risk.allow_short"):
-        raise ValueError(
+        raise ConfigError(
             "Ce banc d'essai est concu pour du spot long-only. "
             "Reactiver le levier ou le short demande de reecrire la couche de risque."
         )
-    mp = float(cfg.get("risk.max_position_pct", 0))
-    if not 0 < mp <= 1:
-        raise ValueError("risk.max_position_pct doit etre dans ]0, 1]")
+
+    # ---- risque ----
+    maxpos = _num(cfg, "risk.max_position_pct", 0.0, 1.0, lo_open=True)
+    if int(cfg.get("risk.max_open_positions", 0)) < 1:
+        raise ConfigError("risk.max_open_positions doit etre >= 1")
+    _num(cfg, "risk.min_order_value", 0.0, cfg.total_capital, lo_open=True)
+    if int(cfg.get("risk.max_round_trips_per_week", 0)) < 1:
+        raise ConfigError("risk.max_round_trips_per_week doit etre >= 1")
+    _num(cfg, "risk.max_daily_loss_pct", 0.0, 1.0, lo_open=True, hi_open=True)
+    kill = _num(cfg, "risk.kill_switch_drawdown_pct", 0.0, 1.0, lo_open=True, hi_open=True)
+    stop = _num(cfg, "risk.stop_loss_pct", 0.0, 0.5, lo_open=True)
+    _num(cfg, "risk.take_profit_pct", 0.0, 5.0, lo_open=True)
+    if stop * maxpos >= kill:
+        raise ConfigError(
+            "un seul stop plein depasserait le coupe-circuit : "
+            f"stop {stop:.0%} x position {maxpos:.0%} >= coupe-circuit {kill:.0%}"
+        )
+
+    # ---- exchange ----
+    _num(cfg, "exchange.fee_rate", 0.0, 0.01)
+    _num(cfg, "exchange.slippage", 0.0, 0.01)
+    lookback = int(cfg.get("exchange.lookback_candles", 0))
+    ema_slow = int(cfg.get("indicators.ema_slow", 200))
+    if lookback < ema_slow + 20:
+        raise ConfigError(
+            f"exchange.lookback_candles ({lookback}) doit depasser indicators.ema_slow "
+            f"({ema_slow}) d'au moins 20 bougies"
+        )
+
+    # ---- llm ----
+    if str(cfg.get("llm.effort", "medium")) not in EFFORTS:
+        raise ConfigError(f"llm.effort doit etre parmi {EFFORTS}")
+    if int(cfg.get("llm.max_tokens", 0)) < 1000:
+        raise ConfigError("llm.max_tokens doit etre >= 1000 (la reflexion compte dedans)")
+    _num(cfg, "llm.timeout_seconds", 10.0, 600.0)
+    _num(cfg, "llm.max_daily_api_cost_usd", 0.0, 100.0, lo_open=True)
+    _num(cfg, "llm.alert_cost_per_call_usd", 0.0, 10.0, lo_open=True)
+
+    # ---- moteur ----
+    ch = int(cfg.get("engine.cycle_hours", 0))
+    if ch < 1 or 24 % ch != 0:
+        raise ConfigError("engine.cycle_hours doit diviser 24 (1, 2, 3, 4, 6, 8, 12, 24)")
+    if int(cfg.get("engine.watchdog_minutes", 0)) < 0:
+        raise ConfigError("engine.watchdog_minutes doit etre >= 0")
 
 
 def secret(name: str) -> str | None:

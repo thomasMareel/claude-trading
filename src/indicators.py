@@ -1,4 +1,9 @@
-"""Indicateurs techniques en pandas pur. Pas de dependance lourde."""
+"""Indicateurs techniques en pandas pur. Pas de dependance lourde.
+
+Convention : pendant la periode de chauffe, un indicateur vaut NaN, jamais
+une valeur neutre inventee. latest_snapshot le rend alors `null` dans le
+dossier de Claude, qui sait ainsi qu'il ne sait pas.
+"""
 from __future__ import annotations
 
 import numpy as np
@@ -19,14 +24,18 @@ def ema(s: pd.Series, n: int) -> pd.Series:
 
 
 def rsi(close: pd.Series, n: int = 14) -> pd.Series:
+    """RSI de Wilder. 100 quand il n'y a eu que des hausses, 0 que des
+    baisses, 50 quand rien n'a bouge, NaN pendant la chauffe."""
     delta = close.diff()
     up = delta.clip(lower=0)
     down = -delta.clip(upper=0)
     avg_up = up.ewm(alpha=1 / n, adjust=False, min_periods=n).mean()
     avg_down = down.ewm(alpha=1 / n, adjust=False, min_periods=n).mean()
-    rs = avg_up / avg_down.replace(0, np.nan)
-    out = 100 - 100 / (1 + rs)
-    return out.fillna(50.0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        rs = avg_up / avg_down                      # inf si avg_down == 0
+        out = 100 - 100 / (1 + rs)                  # -> 100 quand rs = inf
+    flat = (avg_down == 0) & (avg_up == 0)          # 0/0 : rien n'a bouge
+    return out.mask(flat, 50.0)
 
 
 def atr(df: pd.DataFrame, n: int = 14) -> pd.Series:
@@ -54,7 +63,7 @@ def enrich(
     rsi_period: int = 14,
     atr_period: int = 14,
 ) -> pd.DataFrame:
-    """Ajoute les colonnes d'indicateurs utilisees par les deux cerveaux."""
+    """Ajoute les colonnes d'indicateurs fournies a Claude."""
     df = df.copy()
     df["ema_fast"] = ema(df["close"], ema_fast)
     df["ema_slow"] = ema(df["close"], ema_slow)
@@ -70,8 +79,8 @@ def enrich(
     return df
 
 
-def latest_snapshot(df: pd.DataFrame) -> dict[str, float]:
-    """Dernieres valeurs, arrondies, pour le journal et le prompt LLM."""
+def latest_snapshot(df: pd.DataFrame) -> dict[str, float | str | None]:
+    """Dernieres valeurs, arrondies, pour le journal et le dossier de Claude."""
     last = df.iloc[-1]
 
     def f(x, nd=4):
@@ -81,20 +90,18 @@ def latest_snapshot(df: pd.DataFrame) -> dict[str, float]:
         except (TypeError, ValueError):
             return None
 
+    ef, es = f(last["ema_fast"], 6), f(last["ema_slow"], 6)
+    trend = None if ef is None or es is None else ("up" if ef > es else "down" if ef < es else "flat")
     return {
         "close": f(last["close"], 6),
-        "ema_fast": f(last["ema_fast"], 6),
-        "ema_slow": f(last["ema_slow"], 6),
+        "ema_fast": ef,
+        "ema_slow": es,
         "rsi": f(last["rsi"], 1),
-        "atr_pct": f(last["atr_pct"] * 100 if last["atr_pct"] == last["atr_pct"] else None, 2),
+        "atr_pct": f(last["atr_pct"] * 100, 2),
         "roc_5_pct": f(last["roc_5"] * 100, 2),
         "roc_20_pct": f(last["roc_20"] * 100, 2),
         "vol_ratio": f(last["vol_ratio"], 2),
         "dist_hh20_pct": f((last["close"] / last["hh_20"] - 1) * 100, 2),
         "dist_ll20_pct": f((last["close"] / last["ll_20"] - 1) * 100, 2),
-        "trend": (
-            "up" if last["ema_fast"] > last["ema_slow"]
-            else "down" if last["ema_fast"] < last["ema_slow"]
-            else "flat"
-        ),
+        "trend": trend,
     }

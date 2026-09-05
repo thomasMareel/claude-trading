@@ -1,12 +1,14 @@
 """Boucle continue : un cycle toutes les N heures, aligne sur les clotures
 de bougie (00h, 04h, 08h... UTC pour du 4h), avec un petit delai pour
-laisser l'exchange finaliser la bougie.
+laisser l'exchange finaliser la bougie. Entre deux cycles, le chien de
+garde verifie stops, objectifs et coupe-circuit.
 
     python scripts/run_loop.py --paper
     python scripts/run_loop.py --live      # exige LIVE_ARMED
 
-Ctrl+C arrete proprement. Un crash dans un cycle est journalise et la
-boucle reprend au cycle suivant : le bot ne meurt pas silencieusement.
+Codes de sortie : 0 arret demande, 2 coupe-circuit, 3 reconciliation
+refusee (le compte reel ne correspond pas au book). Un crash dans un cycle
+est journalise et la boucle reprend au cycle suivant.
 """
 from __future__ import annotations
 
@@ -21,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from rich.console import Console  # noqa: E402
 
+from src.alerts import configured as alerts_configured, notify  # noqa: E402
 from src.config import load_config  # noqa: E402
 from src.engine import build_engine  # noqa: E402
 
@@ -47,10 +50,28 @@ def main() -> int:
     cfg = load_config()
     cycle_hours = int(cfg.get("engine.cycle_hours", 4))
     watchdog_min = int(cfg.get("engine.watchdog_minutes", 5))
+    alerts_on = bool(cfg.get("alerts.enabled", True))
     mode = "paper" if args.paper else "live" if args.live else None
     engine = build_engine(cfg, mode_override=mode)
+
+    if engine.executor.mode == "live":
+        problems = engine.reconcile_live()
+        if problems:
+            msg = "reconciliation refusee : le compte reel ne correspond pas au book.\n  - " + "\n  - ".join(problems)
+            engine.storage.event("critical", "reconciliation", msg, {"problems": problems})
+            console.print(f"[bold red]{msg}[/]")
+            if alerts_on:
+                notify("Reconciliation refusee", msg, priority="urgent", tags="rotating_light")
+            engine.storage.close()
+            return 3
+        console.print("[green]reconciliation OK : le compte reel correspond au book[/]")
+
     console.print(f"[bold]Boucle demarree[/] mode={engine.executor.mode} cycle={cycle_hours}h "
-                  f"chien de garde={watchdog_min}min symboles={cfg.symbols}")
+                  f"chien de garde={watchdog_min}min symboles={cfg.symbols} "
+                  f"alertes={'ntfy' if alerts_configured() else 'AUCUNE (NTFY_TOPIC absent)'}")
+    if alerts_on:
+        notify("Bot demarre", f"mode {engine.executor.mode}, cycle {cycle_hours}h, {', '.join(cfg.symbols)}",
+               priority="low", tags="robot")
 
     run_now = args.now
     try:
@@ -65,7 +86,6 @@ def main() -> int:
                     wait = (target - datetime.now(timezone.utc)).total_seconds()
                     if wait <= 0 or watchdog_min <= 0:
                         continue
-                    # entre deux cycles : stops, objectifs, coupe-circuit
                     try:
                         n = engine.check_stops()
                         if n:
@@ -76,8 +96,7 @@ def main() -> int:
                         engine.storage.event("warning", "watchdog", f"echec : {e!r}")
                         console.print(f"[yellow]chien de garde en echec : {e!r}[/]")
                     if engine.storage.kill_switch_tripped():
-                        console.print("[bold red]Coupe-circuit declenche par le chien de garde. "
-                                      "Boucle arretee.[/]")
+                        console.print("[bold red]Coupe-circuit declenche par le chien de garde. Boucle arretee.[/]")
                         return 2
             run_now = False
             try:
@@ -88,6 +107,8 @@ def main() -> int:
                 tb = traceback.format_exc()
                 engine.storage.event("critical", "loop", f"cycle en echec : {e!r}", {"traceback": tb})
                 console.print(f"[bold red]cycle en echec : {e!r}[/]\n{tb}")
+                if alerts_on:
+                    notify("Cycle en echec", f"{e!r}", priority="high", tags="warning")
             if engine.storage.kill_switch_tripped():
                 console.print("[bold red]Coupe-circuit declenche. Boucle arretee.[/]")
                 return 2

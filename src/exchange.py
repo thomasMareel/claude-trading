@@ -22,6 +22,13 @@ class ExchangeError(RuntimeError):
     pass
 
 
+class OrderUncertainError(ExchangeError):
+    """Un ordre a ete ENVOYE et son resultat est inconnu (delai reseau
+    depasse apres l'envoi, relectures en echec). Il a peut-etre ete
+    execute. Ne JAMAIS le renvoyer aveuglement : c'est ainsi qu'un achat
+    devient deux achats."""
+
+
 class Exchange:
     def __init__(self, cfg: Config, *, trading: bool = False, testnet: bool = False):
         self.cfg = cfg
@@ -32,6 +39,7 @@ class Exchange:
 
         params: dict[str, Any] = {
             "enableRateLimit": True,
+            "timeout": 20_000,  # ms ; un appel qui traine ne doit pas geler la boucle
             "options": {"defaultType": "spot", "adjustForTimeDifference": True},
         }
         if trading:
@@ -107,7 +115,9 @@ class Exchange:
             raise ExchangeError(f"pas de prix pour {symbol}")
         return float(px)
 
-    def fetch_prices(self, symbols: list[str]) -> dict[str, float]:
+    def fetch_prices(self, symbols: list[str], *, strict: bool = True) -> dict[str, float]:
+        """strict=True (cycle) : tous les prix ou une erreur.
+        strict=False (chien de garde) : ce qui est disponible, le reste manque."""
         tickers = self._retry(self._x.fetch_tickers, symbols)
         out: dict[str, float] = {}
         for s in symbols:
@@ -115,29 +125,79 @@ class Exchange:
             if t and (t.get("last") or t.get("close")):
                 out[s] = float(t.get("last") or t.get("close"))
         missing = [s for s in symbols if s not in out]
-        if missing:
+        if missing and strict:
             raise ExchangeError(f"pas de prix pour {missing}")
         return out
 
-    def fetch_balance_quote(self) -> float:
+    def fetch_balances(self) -> dict[str, float]:
+        """Soldes libres par actif, pour la reconciliation avec le book."""
         if not self.trading:
-            raise ExchangeError("fetch_balance necessite trading=True")
+            raise ExchangeError("fetch_balances necessite trading=True")
         bal = self._retry(self._x.fetch_balance)
-        free = (bal.get("free") or {}).get(self.quote, 0.0)
-        return float(free or 0.0)
+        free = bal.get("free") or {}
+        return {k: float(v) for k, v in free.items() if v}
+
+    def fetch_balance_quote(self) -> float:
+        return self.fetch_balances().get(self.quote, 0.0)
 
     # ---------------- ordres (live uniquement) ----------------
-    def market_buy_quote(self, symbol: str, quote_amount: float) -> dict[str, Any]:
-        """Achat au marche pour un montant en quote (ex: 20 USDT)."""
+    @staticmethod
+    def client_order_id(tag: str) -> str:
+        """Identifiant d'ordre deterministe accepte par Binance
+        (^[.A-Z:/a-z0-9_-]{1,36}$). Le meme tag redonne le meme id : si le
+        reseau coupe apres l'envoi, on RETROUVE l'ordre au lieu de le refaire."""
+        cleaned = "".join(ch for ch in tag if ch.isalnum() or ch in "-_")
+        return cleaned[:36]
+
+    def market_buy_quote(self, symbol: str, quote_amount: float, *, tag: str = "") -> dict[str, Any]:
+        """Achat au marche pour un montant en quote (ex: 40 USDT).
+
+        La creation d'ordre n'est JAMAIS rejouee aveuglement : sur un delai
+        reseau, on relit l'ordre par son clientOrderId. S'il n'existe pas,
+        l'achat n'a pas eu lieu et on le dit. S'il existe, on le prend.
+        Sinon on leve OrderUncertainError et le moteur gele le book.
+        """
         self._require_trading()
-        order = self._retry(self._x.create_market_buy_order_with_cost, symbol, quote_amount)
+        cid = self.client_order_id(tag or f"B-{symbol}-{int(time.time())}")
+        try:
+            order = self._x.create_market_buy_order_with_cost(symbol, quote_amount, {"newClientOrderId": cid})
+        except (ccxt.NetworkError, ccxt.RequestTimeout, ccxt.DDoSProtection) as e:
+            order = self._recover_order(symbol, cid, e)
+        except ccxt.ExchangeError as e:
+            raise ExchangeError(str(e)) from e
         return self._normalize_fill(order, symbol, "buy")
 
-    def market_sell_base(self, symbol: str, base_amount: float) -> dict[str, Any]:
+    def market_sell_base(self, symbol: str, base_amount: float, *, tag: str = "") -> dict[str, Any]:
         self._require_trading()
         amt = self.amount_to_precision(symbol, base_amount)
-        order = self._retry(self._x.create_order, symbol, "market", "sell", amt)
+        cid = self.client_order_id(tag or f"S-{symbol}-{int(time.time())}")
+        try:
+            order = self._x.create_order(symbol, "market", "sell", amt, None, {"newClientOrderId": cid})
+        except (ccxt.NetworkError, ccxt.RequestTimeout, ccxt.DDoSProtection) as e:
+            order = self._recover_order(symbol, cid, e)
+        except ccxt.ExchangeError as e:
+            raise ExchangeError(str(e)) from e
         return self._normalize_fill(order, symbol, "sell")
+
+    def _recover_order(self, symbol: str, cid: str, err: Exception) -> dict[str, Any]:
+        """Apres un delai reseau sur l'ENVOI d'un ordre : existe-t-il ?"""
+        for _ in range(3):
+            time.sleep(2.0)
+            try:
+                o = self._x.fetch_order(None, symbol, {"origClientOrderId": cid})
+            except ccxt.OrderNotFound:
+                # Binance ne l'a jamais recu : l'ordre n'a pas eu lieu, c'est un echec propre.
+                raise ExchangeError(f"ordre {cid} jamais recu par l'exchange (delai reseau) : {err}") from err
+            except (ccxt.NetworkError, ccxt.RequestTimeout, ccxt.DDoSProtection):
+                continue
+            except ccxt.ExchangeError as e:
+                raise ExchangeError(str(e)) from e
+            status = (o or {}).get("status")
+            if status in ("closed", "filled") or float((o or {}).get("filled") or 0) > 0:
+                return o
+            if status in ("canceled", "rejected", "expired"):
+                raise ExchangeError(f"ordre {cid} {status} chez l'exchange")
+        raise OrderUncertainError(f"ordre {cid} envoye, resultat inconnu apres 3 relectures : {err}")
 
     def _normalize_fill(self, order: dict[str, Any], symbol: str, side: str) -> dict[str, Any]:
         """Ramene un ordre ccxt a : prix moyen, quantite NETTE detenue,

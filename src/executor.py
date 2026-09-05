@@ -4,6 +4,10 @@ Les deux executeurs partagent exactement la meme interface, pour que le
 moteur soit identique en paper et en live. C'est la condition pour que
 deux semaines de paper trading valident vraiment le code qui partira
 en reel.
+
+`tag` est un identifiant deterministe (cycle + sens + symbole). En live il
+devient le clientOrderId Binance : si le reseau coupe apres l'envoi, on
+retrouve l'ordre au lieu de le renvoyer en double.
 """
 from __future__ import annotations
 
@@ -29,14 +33,13 @@ class PaperExecutor:
         self.slippage = slippage
         self._prec = amount_precision  # fn(symbol, amount) -> amount arrondi
 
-    def buy(self, symbol: str, size_quote: float, price: float) -> Fill:
-        px = price * (1 + self.slippage)
-        raw_amount = size_quote / px
-        amount = self._prec(symbol, raw_amount)
+    def buy(self, symbol: str, size_quote: float, price: float, *, tag: str = "") -> Fill:
+        px = price * (1 + self.slippage)          # slippage defavorable
+        amount = self._prec(symbol, size_quote / px)
         value = amount * px
         return Fill(price=px, amount_base=amount, value_quote=value, fee_quote=value * self.fee_rate)
 
-    def sell(self, symbol: str, amount_base: float, price: float) -> Fill:
+    def sell(self, symbol: str, amount_base: float, price: float, *, tag: str = "") -> Fill:
         px = price * (1 - self.slippage)
         amount = self._prec(symbol, amount_base)
         value = amount * px
@@ -51,10 +54,8 @@ class LiveExecutor:
             raise RuntimeError("LiveExecutor exige un Exchange construit avec trading=True")
         self.x = exchange
 
-    def buy(self, symbol: str, size_quote: float, price: float) -> Fill:
-        f = self.x.market_buy_quote(symbol, size_quote)
-        return Fill(**f)
+    def buy(self, symbol: str, size_quote: float, price: float, *, tag: str = "") -> Fill:
+        return Fill(**self.x.market_buy_quote(symbol, size_quote, tag=tag))
 
-    def sell(self, symbol: str, amount_base: float, price: float) -> Fill:
-        f = self.x.market_sell_base(symbol, amount_base)
-        return Fill(**f)
+    def sell(self, symbol: str, amount_base: float, price: float, *, tag: str = "") -> Fill:
+        return Fill(**self.x.market_sell_base(symbol, amount_base, tag=tag))

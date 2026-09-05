@@ -1,31 +1,35 @@
-# Banc d'essai : trading crypto automatisé, LLM contre règles
+# Banc d'essai : Claude trade seul, face à un repère
 
 Un système complet pour observer **comment une IA s'organise pour trader**,
 sur un petit capital que l'on accepte de perdre, avec des garde-fous
 déterministes que personne ne peut contourner.
 
-Deux cerveaux tradent en parallèle, chacun avec la moitié du capital :
+Un seul trader, Claude. Il reçoit toutes les quatre heures un dossier de
+marché, rend des décisions structurées avec son raisonnement écrit, et une
+couche de risque relit chaque décision avant exécution.
 
-| Cerveau | Qui décide | Rôle |
-|---|---|---|
-| `llm` | Claude, à partir d'un dossier de marché, avec raisonnement écrit | Le sujet de l'expérience |
-| `rules` | Un suivi de tendance simple, non optimisé | Le témoin |
+Un seul repère de rentabilité : **le panier équipondéré des mêmes actifs,
+acheté au premier cycle et jamais touché**, aux mêmes frais et au même
+slippage, des deux côtés. C'est ce que vous auriez eu en ne faisant rien
+d'intelligent. Claude doit faire mieux que ça, net de tout.
 
-Un troisième témoin, la simple détention de bitcoin, est calculé dans le rapport.
+Le protocole de mesure, ce qui compte comme un succès et ce que l'on peut
+conclure ou non, est dans [docs/protocole.md](docs/protocole.md).
 
 ## Ce qu'il faut savoir avant de commencer
 
-- **Le résultat financier ne sera pas statistiquement significatif.** Avec 100 € sur
-  quelques semaines, le hasard domine. Ce que l'on mesure vraiment, c'est le
-  raisonnement, la discipline et la mécanique.
-- **Les frais décident de tout à cette taille.** Un aller-retour coûte 0,2 %. Le
-  budget est donc limité à quelques nouvelles positions par semaine, en dur.
-- **Le cerveau LLM coûte de l'argent en appels API**, indépendamment du capital
-  tradé. Ordre de grandeur avec `claude-opus-5` en effort `medium`, six cycles par
-  jour : autour de 10 à 15 $ par mois. Un plafond journalier est configuré.
-  Pour réduire, baisser `llm.effort` à `low` dans `config.yaml`.
-- **Spot uniquement, long uniquement, aucun levier.** Le code refuse de démarrer
-  autrement.
+- **Le résultat financier ne sera pas statistiquement significatif.** Avec
+  100 € sur quelques semaines, le hasard domine. Ce que l'on mesure d'abord,
+  c'est le raisonnement, la discipline et la mécanique. Le protocole dit
+  précisément ce que l'on a le droit de conclure.
+- **Les frais décident de tout à cette taille.** Un aller-retour coûte 0,2 %.
+  Le budget est limité à quatre nouvelles positions par semaine, en dur.
+- **Claude coûte de l'argent en appels API**, indépendamment du capital tradé.
+  Ordre de grandeur avec `claude-opus-5` en effort `medium`, six cycles par
+  jour : 10 à 18 $ par mois. Le rapport affiche la performance nette de ce
+  coût.
+- **Spot uniquement, long uniquement, aucun levier.** Le code refuse de
+  démarrer autrement.
 
 ## Installation
 
@@ -36,12 +40,12 @@ pip install -r requirements.txt
 copy .env.example .env
 ```
 
-Puis remplir `.env` :
+Puis créer les clés en suivant [docs/cles-api.md](docs/cles-api.md). Seule la
+clé Claude est nécessaire pour le paper trading. Vérifier :
 
-- `ANTHROPIC_API_KEY` pour le cerveau LLM. Sans elle, il rend `hold` et le
-  journal l'indique, le reste fonctionne.
-- Les clés Binance ne sont **pas nécessaires en paper trading**. Elles ne le
-  deviennent qu'au passage en live.
+```bash
+python scripts/verifier_cles.py
+```
 
 ## Utilisation
 
@@ -51,23 +55,23 @@ Charger de l'historique une première fois, pour amorcer les indicateurs :
 python scripts/fetch_history.py --days 120
 ```
 
-Lancer un cycle de décision immédiatement, pour voir le système fonctionner :
+Lancer la boucle en continu, détachée, avec redémarrage automatique et
+journal dans `logs/loop.log`. C'est le mode normal :
+
+```bat
+start_paper_detached.bat
+```
+
+Un seul cycle, tout de suite, pour voir le système fonctionner :
 
 ```bash
 python scripts/run_cycle.py --paper
 ```
 
-Lancer la boucle continue, un cycle toutes les 4 heures, alignée sur les clôtures
-de bougie. `--now` déclenche un premier cycle tout de suite :
-
-```bash
-python scripts/run_loop.py --paper --now
-```
-
 Lire le carnet de bord, le vrai livrable :
 
 ```bash
-python scripts/journal.py --brain llm -n 30 --thinking
+python scripts/journal.py -n 30 --thinking
 ```
 
 Voir uniquement ce que la couche de risque a refusé, et pourquoi :
@@ -76,10 +80,16 @@ Voir uniquement ce que la couche de risque a refusé, et pourquoi :
 python scripts/journal.py --refused
 ```
 
-Rapport de performance des deux cerveaux et du témoin :
+Claude face au repère :
 
 ```bash
 python scripts/report.py
+```
+
+Remettre l'expérience à zéro (paper uniquement, les bougies sont gardées) :
+
+```bash
+python scripts/reset_experiment.py --yes
 ```
 
 Tests, sans réseau :
@@ -91,80 +101,110 @@ python -m pytest tests -q
 ## Architecture
 
 ```
-config.yaml            tous les réglages, aucun chiffre magique dans le code
+config.yaml            tous les réglages
+docs/protocole.md      ce que l'on mesure, ce que l'on peut conclure
+docs/cles-api.md       créer les clés, pas à pas
 src/
-  config.py            chargement config + secrets (env uniquement)
+  config.py            chargement et validation de la config, secrets (env uniquement)
   exchange.py          accès Binance via ccxt (données, et ordres en live)
   indicators.py        EMA, RSI, ATR, momentum, en pandas pur
-  storage.py           SQLite : bougies, décisions, ordres, positions, equity, coûts
+  storage.py           SQLite : bougies, décisions, ordres, positions, equity, repère, coûts
   portfolio.py         reconstruction du book depuis le journal (le cash n'est jamais stocké)
   risk.py              la couche de risque : seule autorisée à dire non
   executor.py          exécution paper (simulée) ou live, même interface
-  engine.py            un cycle complet, identique en paper et en live
+  engine.py            un cycle complet, le repère, le chien de garde
+  alerts.py            notifications téléphone via ntfy
   brains/
     base.py            contrat : BrainContext -> list[Decision]
     llm_brain.py       Claude, sortie structurée, coût mesuré
-    rules_brain.py     suivi de tendance témoin
 scripts/               points d'entrée
-tests/                 couche de risque, moteur, cerveau règles
-data/trading.db        la base (créée automatiquement)
-logs/decisions.jsonl   copie lisible du journal des décisions
+tests/                 risque, moteur, cerveau, indicateurs, config, comptabilité des ordres
+data/trading.db        la base, seule source de vérité
+logs/decisions.jsonl   miroir lisible des décisions (pas un journal de secours)
+logs/loop.log          sortie de la boucle détachée
 ```
 
 ### Un cycle
 
-1. Rafraîchir bougies et prix.
-2. Coupe-circuit global : si le book total a perdu plus que le seuil, tout est
-   liquidé et plus rien ne repart jamais.
-3. Pour chaque cerveau :
-   - sorties forcées (stop de perte, objectif de gain), avant toute décision ;
-   - construction du dossier : book, positions, indicateurs, décisions passées
-     et leur résultat, budget restant ;
-   - le cerveau décide ;
-   - la couche de risque relit chaque décision, la redimensionne ou la refuse ;
-   - exécution des ventes puis des achats ;
-   - relevé d'equity.
-
-Les indicateurs sont calculés sur les bougies **clôturées** uniquement. La
-bougie en cours n'a que quelques minutes de vie au moment du cycle et ferait
-osciller les signaux.
+1. Rafraîchir bougies et prix. Les indicateurs sont calculés sur les bougies
+   **clôturées** uniquement.
+2. Relever le repère buy-and-hold. Au premier cycle, il est constitué :
+   capital divisé à parts égales entre les paires, frais et slippage
+   d'entrée déduits. Ensuite sa valeur de liquidation, frais et slippage de
+   sortie déduits, est relevée à chaque cycle.
+3. Coupe-circuit : si le book a perdu plus que le seuil, tout est liquidé et
+   plus rien ne repart jamais. C'est un garde-fou de catastrophe, pas un stop.
+4. Sorties forcées : stop de perte, objectif de gain.
+5. Construction du dossier : book, positions, indicateurs, décisions passées
+   et leur résultat, budget restant.
+6. Claude décide.
+7. La couche de risque relit chaque décision, la redimensionne ou la refuse.
+8. Exécution des ventes puis des achats. Ordre et position sont écrits dans
+   une seule transaction.
+9. Relevé d'equity et résumé.
 
 ### Entre deux cycles : le chien de garde
 
-Toutes les cinq minutes (`engine.watchdog_minutes`), la boucle vérifie les
-stops, les objectifs et le coupe-circuit sur les prix courants, sans appeler
-aucun cerveau. Sans lui, un stop à 8 % ne serait regardé que toutes les quatre
-heures, ce qui n'est pas un stop. Ces sorties apparaissent dans le journal avec
-un identifiant de cycle préfixé `WD`.
+Toutes les cinq minutes, la boucle vérifie les stops, les objectifs et le
+coupe-circuit sur les prix courants, sans appeler Claude. Si une paire ne
+répond pas, les autres sont quand même vérifiées. Ces sorties apparaissent
+dans le journal avec un identifiant de cycle préfixé `WD`.
 
 ### Les garde-fous, dans `config.yaml` sous `risk`
 
 | Réglage | Défaut | Effet |
 |---|---|---|
 | `max_position_pct` | 40 % | part du book maximale sur une position |
-| `max_open_positions` | 2 | positions simultanées par cerveau |
-| `max_round_trips_per_week` | 3 | nouvelles positions par semaine, le frein anti-frais |
+| `max_open_positions` | 2 | positions simultanées |
+| `max_round_trips_per_week` | 4 | nouvelles positions par semaine, le frein anti-frais |
 | `max_daily_loss_pct` | 6 % | au-delà, plus d'achats jusqu'au lendemain |
-| `kill_switch_drawdown_pct` | 25 % | coupe-circuit définitif sur le book total |
+| `kill_switch_drawdown_pct` | 20 % | coupe-circuit définitif, garde-fou de catastrophe |
 | `stop_loss_pct` / `take_profit_pct` | 8 % / 15 % | posés automatiquement sur chaque position |
 
-## Passage en live
+La configuration est validée au démarrage : une limite absurde (stop à 0 %,
+budget à 0, un seul stop qui dépasserait le coupe-circuit) empêche le
+programme de démarrer.
+
+### Alertes
+
+Avec `NTFY_TOPIC` dans `.env`, le téléphone reçoit : démarrage du bot,
+chaque stop ou objectif atteint, chaque cycle en échec, tout incident
+critique. Voir [docs/cles-api.md](docs/cles-api.md), étape 2.
+
+## Passage en réel
 
 Le live exige **deux serrures** volontairement séparées :
 
 1. `engine.mode: "live"` dans `config.yaml`, ou `--live` en ligne de commande.
 2. Un fichier `LIVE_ARMED` à la racine, créé à la main.
 
-Sans le fichier, le programme refuse de démarrer et l'explique. Avant de le
-créer :
+Sans le fichier, le programme refuse de démarrer et l'explique. Au démarrage
+en live, le bot **compare le compte Binance réel au book** et refuse de
+tourner s'ils ne correspondent pas.
 
-- créer des clés Binance **sans droit de retrait**, restreintes à votre IP ;
-- avoir converti le capital en USDT sur le compte spot ;
-- avoir laissé tourner le paper trading assez longtemps pour avoir vu des
-  achats, des ventes, un stop et au moins un refus de la couche de risque.
+Ce que le chemin réel fait pour protéger l'argent :
 
-Le testnet Binance (`engine.use_testnet: true`, clés dédiées) permet de valider
-le chemin des ordres réels sans argent.
+- chaque ordre porte un identifiant déterministe ; sur un délai réseau après
+  l'envoi, l'ordre est **retrouvé** au lieu d'être renvoyé en double ;
+- si le résultat d'un ordre reste inconnu malgré tout, le book est déclaré
+  **incertain** : alerte urgente, achats gelés jusqu'à ce que vous ayez
+  vérifié le compte à la main et acquitté avec `scripts/acquitter.py` ;
+- les frais prélevés par Binance sur la crypto reçue sont pris en compte : le
+  book reflète la quantité réellement détenue.
+
+Avant de créer `LIVE_ARMED` :
+
+- clés Binance **sans droit de retrait**, restreintes à votre IP, vérifiées
+  par `scripts/verifier_cles.py` ;
+- capital converti en USDT sur le compte spot ;
+- un achat et une vente réels réussis sur le **testnet** (`engine.use_testnet:
+  true`, clés dédiées) ;
+- assez de paper trading pour avoir vu des achats, des ventes, un stop et au
+  moins un refus de la couche de risque.
+
+Limite connue et assumée : les stops sont exécutés par le bot, pas déposés
+chez Binance. La protection dépend donc de la survie du processus. Ne pas
+engager d'argent réel depuis une machine qui peut s'éteindre.
 
 ## Ce que l'on ne fait pas ici
 
@@ -172,5 +212,5 @@ le chemin des ordres réels sans argent.
   recommande rien.
 - Pas de manipulation de clés ou d'ordres par l'assistant qui a écrit ce code.
   Les clés sont dans votre `.env`, le fichier `LIVE_ARMED` est le vôtre.
-- Pas d'optimisation des paramètres du cerveau `rules` sur le passé : c'est un
-  témoin, une courbe de backtest flatteuse le rendrait inutile.
+- Pas d'optimisation de paramètres sur le passé. Le repère est passif par
+  construction, il ne peut pas être sur-ajusté.

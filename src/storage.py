@@ -1,9 +1,11 @@
-"""Persistance SQLite : bougies, decisions, ordres, positions, equity.
+"""Persistance SQLite : bougies, decisions, ordres, positions, equity, repere.
 
-Le journal est le vrai livrable de l'experience. Chaque decision est
-enregistree avec son raisonnement complet, y compris les decisions
-refusees par la couche de risque. On doit pouvoir relire l'histoire
-entiere sans jamais consulter l'exchange.
+La base est la SEULE source de verite. Le journal JSONL est un miroir
+lisible ecrit apres coup, pas un journal de secours.
+
+Invariant : un ordre et la position qu'il ouvre ou ferme sont ecrits dans
+UNE transaction. Un crash entre les deux ne peut pas laisser de la crypto
+detenue mais inconnue de la base.
 """
 from __future__ import annotations
 
@@ -87,6 +89,14 @@ CREATE TABLE IF NOT EXISTS equity (
     total_quote     REAL NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS benchmark (
+    symbol      TEXT PRIMARY KEY,
+    start_ts    TEXT NOT NULL,
+    start_price REAL NOT NULL,
+    amount_base REAL NOT NULL,
+    cost_quote  REAL NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS api_costs (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     ts            TEXT    NOT NULL,
@@ -112,7 +122,10 @@ CREATE INDEX IF NOT EXISTS idx_positions_open  ON positions(brain, status);
 CREATE INDEX IF NOT EXISTS idx_orders_brain    ON orders(brain, ts);
 CREATE INDEX IF NOT EXISTS idx_equity_brain    ON equity(brain, ts);
 CREATE INDEX IF NOT EXISTS idx_costs_day       ON api_costs(day);
+CREATE INDEX IF NOT EXISTS idx_events_source   ON events(source, level, id);
 """
+
+EXPERIMENT_TABLES = ("decisions", "orders", "positions", "equity", "api_costs", "events", "benchmark")
 
 
 def utcnow_iso() -> str:
@@ -183,17 +196,9 @@ class Storage:
 
     # ---------------- decisions ----------------
     def record_decision(
-        self,
-        cycle_id: str,
-        brain: str,
-        symbol: str,
-        action: str,
-        *,
-        size_quote: float | None = None,
-        confidence: float | None = None,
-        reasoning: str = "",
-        accepted: bool = True,
-        reject_reason: str | None = None,
+        self, cycle_id: str, brain: str, symbol: str, action: str, *,
+        size_quote: float | None = None, confidence: float | None = None,
+        reasoning: str = "", accepted: bool = True, reject_reason: str | None = None,
         raw: dict[str, Any] | None = None,
     ) -> int:
         ts = utcnow_iso()
@@ -203,22 +208,23 @@ class Storage:
                 " (cycle_id, ts, brain, symbol, action, size_quote, confidence,"
                 "  reasoning, accepted, reject_reason, raw)"
                 " VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                (
-                    cycle_id, ts, brain, symbol, action, size_quote, confidence,
-                    reasoning, int(accepted), reject_reason,
-                    json.dumps(raw or {}, ensure_ascii=False),
-                ),
+                (cycle_id, ts, brain, symbol, action, size_quote, confidence,
+                 reasoning, int(accepted), reject_reason,
+                 json.dumps(raw or {}, ensure_ascii=False)),
             )
             decision_id = int(cur.lastrowid)
-        if self.journal_path:
+        if self.journal_path:  # miroir lisible, ecrit apres la base
             entry = {
                 "id": decision_id, "cycle_id": cycle_id, "ts": ts, "brain": brain,
                 "symbol": symbol, "action": action, "size_quote": size_quote,
                 "confidence": confidence, "accepted": accepted,
                 "reject_reason": reject_reason, "reasoning": reasoning,
             }
-            with open(self.journal_path, "a", encoding="utf-8") as fh:
-                fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+            try:
+                with open(self.journal_path, "a", encoding="utf-8") as fh:
+                    fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+            except OSError:
+                pass
         return decision_id
 
     def decisions_for_cycle(self, cycle_id: str) -> list:
@@ -234,74 +240,78 @@ class Storage:
         )
         return list(reversed(cur.fetchall()))
 
-    # ---------------- ordres ----------------
-    def record_order(
-        self, cycle_id: str, brain: str, symbol: str, side: str, mode: str,
-        price: float, amount_base: float, value_quote: float, fee_quote: float,
-        exchange_id: str | None = None, decision_id: int | None = None,
-    ) -> int:
+    # ---------------- remplissages : ordre + position, UNE transaction ----------------
+    def record_buy_fill(
+        self, *, cycle_id: str, brain: str, symbol: str, mode: str, price: float,
+        amount_base: float, value_quote: float, fee_quote: float, exchange_id: str | None,
+        decision_id: int | None, stop_loss: float, take_profit: float,
+    ) -> tuple[int, int]:
+        """Ecrit l'ordre d'achat ET ouvre la position atomiquement.
+        Retourne (order_id, position_id)."""
+        ts = utcnow_iso()
         with self.tx() as c:
             cur = c.execute(
                 "INSERT INTO orders (cycle_id, ts, brain, symbol, side, mode, price,"
                 " amount_base, value_quote, fee_quote, exchange_id, decision_id)"
-                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-                (cycle_id, utcnow_iso(), brain, symbol, side, mode, price,
-                 amount_base, value_quote, fee_quote, exchange_id, decision_id),
+                " VALUES (?,?,?,?,'buy',?,?,?,?,?,?,?)",
+                (cycle_id, ts, brain, symbol, mode, price, amount_base, value_quote,
+                 fee_quote, exchange_id, decision_id),
             )
-            return int(cur.lastrowid)
+            order_id = int(cur.lastrowid)
+            cur = c.execute(
+                "INSERT INTO positions (brain, symbol, status, opened_at, entry_price,"
+                " amount_base, cost_quote, fees_quote, stop_loss, take_profit)"
+                " VALUES (?,?,'open',?,?,?,?,?,?,?)",
+                (brain, symbol, ts, price, amount_base, value_quote + fee_quote,
+                 fee_quote, stop_loss, take_profit),
+            )
+            position_id = int(cur.lastrowid)
+        return order_id, position_id
+
+    def record_sell_fill(
+        self, *, cycle_id: str, brain: str, symbol: str, mode: str, price: float,
+        amount_base: float, value_quote: float, fee_quote: float, exchange_id: str | None,
+        decision_id: int | None, position_id: int, reason: str,
+    ) -> float:
+        """Ecrit l'ordre de vente ET ferme la position atomiquement.
+        Retourne le PnL net des frais des deux cotes."""
+        ts = utcnow_iso()
+        with self.tx() as c:
+            row = c.execute(
+                "SELECT cost_quote, fees_quote, status FROM positions WHERE id=?", (position_id,)
+            ).fetchone()
+            if row is None or row["status"] != "open":
+                raise ValueError(f"position {position_id} introuvable ou deja fermee")
+            c.execute(
+                "INSERT INTO orders (cycle_id, ts, brain, symbol, side, mode, price,"
+                " amount_base, value_quote, fee_quote, exchange_id, decision_id)"
+                " VALUES (?,?,?,?,'sell',?,?,?,?,?,?,?)",
+                (cycle_id, ts, brain, symbol, mode, price, amount_base, value_quote,
+                 fee_quote, exchange_id, decision_id),
+            )
+            proceeds = value_quote - fee_quote
+            pnl = proceeds - float(row["cost_quote"])
+            c.execute(
+                "UPDATE positions SET status='closed', closed_at=?, exit_price=?,"
+                " proceeds_quote=?, fees_quote=?, pnl_quote=?, close_reason=? WHERE id=?",
+                (ts, price, proceeds, float(row["fees_quote"]) + fee_quote, pnl, reason, position_id),
+            )
+        return pnl
 
     def orders_for(self, brain: str) -> list:
-        cur = self._conn.execute(
-            "SELECT * FROM orders WHERE brain=? ORDER BY id", (brain,)
-        )
+        cur = self._conn.execute("SELECT * FROM orders WHERE brain=? ORDER BY id", (brain,))
         return cur.fetchall()
 
     def total_fees(self, brain: str | None = None) -> float:
         if brain:
             cur = self._conn.execute(
-                "SELECT COALESCE(SUM(fee_quote),0) AS f FROM orders WHERE brain=?",
-                (brain,),
+                "SELECT COALESCE(SUM(fee_quote),0) AS f FROM orders WHERE brain=?", (brain,)
             )
         else:
             cur = self._conn.execute("SELECT COALESCE(SUM(fee_quote),0) AS f FROM orders")
         return float(cur.fetchone()["f"])
 
     # ---------------- positions ----------------
-    def open_position(
-        self, brain: str, symbol: str, entry_price: float, amount_base: float,
-        cost_quote: float, fees_quote: float, stop_loss: float, take_profit: float,
-    ) -> int:
-        with self.tx() as c:
-            cur = c.execute(
-                "INSERT INTO positions (brain, symbol, status, opened_at, entry_price,"
-                " amount_base, cost_quote, fees_quote, stop_loss, take_profit)"
-                " VALUES (?,?,'open',?,?,?,?,?,?,?)",
-                (brain, symbol, utcnow_iso(), entry_price, amount_base,
-                 cost_quote, fees_quote, stop_loss, take_profit),
-            )
-            return int(cur.lastrowid)
-
-    def close_position(
-        self, position_id: int, exit_price: float, proceeds_quote: float,
-        fee_quote: float, reason: str,
-    ) -> float:
-        with self.tx() as c:
-            row = c.execute(
-                "SELECT cost_quote, fees_quote FROM positions WHERE id=?", (position_id,)
-            ).fetchone()
-            if row is None:
-                raise ValueError(f"position {position_id} introuvable")
-            total_fees = float(row["fees_quote"]) + fee_quote
-            pnl = proceeds_quote - float(row["cost_quote"])
-            c.execute(
-                "UPDATE positions SET status='closed', closed_at=?, exit_price=?,"
-                " proceeds_quote=?, fees_quote=?, pnl_quote=?, close_reason=?"
-                " WHERE id=?",
-                (utcnow_iso(), exit_price, proceeds_quote, total_fees, pnl,
-                 reason, position_id),
-            )
-        return pnl
-
     def open_positions(self, brain: str | None = None) -> list:
         if brain:
             cur = self._conn.execute(
@@ -321,8 +331,8 @@ class Storage:
     def closed_positions(self, brain: str | None = None) -> list:
         if brain:
             cur = self._conn.execute(
-                "SELECT * FROM positions WHERE status='closed' AND brain=?"
-                " ORDER BY closed_at", (brain,)
+                "SELECT * FROM positions WHERE status='closed' AND brain=? ORDER BY closed_at",
+                (brain,),
             )
         else:
             cur = self._conn.execute(
@@ -332,8 +342,7 @@ class Storage:
 
     def round_trips_since(self, brain: str, since_iso: str) -> int:
         cur = self._conn.execute(
-            "SELECT COUNT(*) AS n FROM positions"
-            " WHERE brain=? AND opened_at >= ?",
+            "SELECT COUNT(*) AS n FROM positions WHERE brain=? AND opened_at >= ?",
             (brain, since_iso),
         )
         return int(cur.fetchone()["n"])
@@ -358,7 +367,7 @@ class Storage:
     def equity_curve(self, brain: str) -> list:
         cur = self._conn.execute(
             "SELECT ts, cash_quote, positions_value, total_quote FROM equity"
-            " WHERE brain=? ORDER BY ts", (brain,)
+            " WHERE brain=? ORDER BY id", (brain,)
         )
         return cur.fetchall()
 
@@ -368,10 +377,27 @@ class Storage:
         )
         return cur.fetchone()
 
+    def first_equity_ts(self, brain: str) -> str | None:
+        row = self._conn.execute(
+            "SELECT ts FROM equity WHERE brain=? ORDER BY id LIMIT 1", (brain,)
+        ).fetchone()
+        return row["ts"] if row else None
+
+    # ---------------- repere buy-and-hold ----------------
+    def benchmark_basket(self) -> list:
+        return self._conn.execute("SELECT * FROM benchmark ORDER BY symbol").fetchall()
+
+    def set_benchmark_basket(self, rows: list[tuple[str, str, float, float, float]]) -> None:
+        """rows : (symbol, start_ts, start_price, amount_base, cost_quote)."""
+        with self.tx() as c:
+            c.execute("DELETE FROM benchmark")
+            c.executemany(
+                "INSERT INTO benchmark (symbol, start_ts, start_price, amount_base, cost_quote)"
+                " VALUES (?,?,?,?,?)", rows,
+            )
+
     # ---------------- couts API ----------------
-    def record_api_cost(
-        self, model: str, input_tokens: int, output_tokens: int, cost_usd: float
-    ) -> None:
+    def record_api_cost(self, model: str, input_tokens: int, output_tokens: int, cost_usd: float) -> None:
         with self.tx() as c:
             c.execute(
                 "INSERT INTO api_costs (ts, day, model, input_tokens, output_tokens, cost_usd)"
@@ -381,8 +407,7 @@ class Storage:
 
     def api_cost_today(self) -> float:
         cur = self._conn.execute(
-            "SELECT COALESCE(SUM(cost_usd), 0) AS c FROM api_costs WHERE day=?",
-            (utcday(),),
+            "SELECT COALESCE(SUM(cost_usd), 0) AS c FROM api_costs WHERE day=?", (utcday(),)
         )
         return float(cur.fetchone()["c"])
 
@@ -390,26 +415,69 @@ class Storage:
         cur = self._conn.execute("SELECT COALESCE(SUM(cost_usd), 0) AS c FROM api_costs")
         return float(cur.fetchone()["c"])
 
-    # ---------------- evenements ----------------
-    def event(
-        self, level: str, source: str, message: str, payload: dict[str, Any] | None = None
-    ) -> None:
+    def api_calls_total(self) -> int:
+        return int(self._conn.execute("SELECT COUNT(*) AS n FROM api_costs").fetchone()["n"])
+
+    # ---------------- evenements et drapeaux ----------------
+    def event(self, level: str, source: str, message: str, payload: dict[str, Any] | None = None) -> None:
         with self.tx() as c:
             c.execute(
                 "INSERT INTO events (ts, level, source, message, payload) VALUES (?,?,?,?,?)",
-                (utcnow_iso(), level, source, message,
-                 json.dumps(payload or {}, ensure_ascii=False)),
+                (utcnow_iso(), level, source, message, json.dumps(payload or {}, ensure_ascii=False)),
             )
 
     def recent_events(self, limit: int = 20) -> list:
-        cur = self._conn.execute(
-            "SELECT * FROM events ORDER BY id DESC LIMIT ?", (limit,)
-        )
+        cur = self._conn.execute("SELECT * FROM events ORDER BY id DESC LIMIT ?", (limit,))
         return cur.fetchall()
 
+    def events_by_source(self, source: str) -> list:
+        cur = self._conn.execute("SELECT * FROM events WHERE source=? ORDER BY id", (source,))
+        return cur.fetchall()
+
+    def has_event_today(self, source: str) -> bool:
+        n = self._conn.execute(
+            "SELECT COUNT(*) AS n FROM events WHERE source=? AND ts >= ?", (source, utcday())
+        ).fetchone()["n"]
+        return int(n) > 0
+
     def kill_switch_tripped(self) -> bool:
+        """Le coupe-circuit est definitif : il ne s'acquitte pas."""
         cur = self._conn.execute(
-            "SELECT COUNT(*) AS n FROM events"
-            " WHERE level='critical' AND source='kill_switch'"
+            "SELECT COUNT(*) AS n FROM events WHERE level='critical' AND source='kill_switch'"
         )
         return int(cur.fetchone()["n"]) > 0
+
+    def is_flagged(self, source: str) -> bool:
+        """Vrai s'il existe un evenement critical de cette source posterieur
+        au dernier acquittement humain."""
+        ack = self._conn.execute(
+            "SELECT COALESCE(MAX(id), 0) AS a FROM events"
+            " WHERE source=? AND level='info' AND message='acquitte'", (source,)
+        ).fetchone()["a"]
+        n = self._conn.execute(
+            "SELECT COUNT(*) AS n FROM events WHERE source=? AND level='critical' AND id > ?",
+            (source, int(ack)),
+        ).fetchone()["n"]
+        return int(n) > 0
+
+    def acknowledge(self, source: str) -> None:
+        self.event("info", source, "acquitte")
+
+    # ---------------- remise a zero ----------------
+    def reset_experiment(self) -> dict[str, int]:
+        """Efface tout sauf les bougies. Retourne ce qui a ete efface."""
+        counts = {
+            t: int(self._conn.execute(f"SELECT COUNT(*) AS n FROM {t}").fetchone()["n"])
+            for t in EXPERIMENT_TABLES
+        }
+        with self.tx() as c:
+            for t in EXPERIMENT_TABLES:
+                c.execute(f"DELETE FROM {t}")
+            marks = ",".join("?" * len(EXPERIMENT_TABLES))
+            c.execute(f"DELETE FROM sqlite_sequence WHERE name IN ({marks})", EXPERIMENT_TABLES)
+        if self.journal_path and self.journal_path.exists():
+            try:
+                self.journal_path.unlink()
+            except OSError:
+                pass
+        return counts

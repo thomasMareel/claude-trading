@@ -1,4 +1,4 @@
-"""Cerveau LLM : Claude recoit un dossier de marche et rend des decisions
+"""Le trader : Claude recoit un dossier de marche et rend des decisions
 structurees, avec son raisonnement ecrit.
 
 Ce que ce cerveau NE fait PAS :
@@ -7,9 +7,10 @@ Ce que ce cerveau NE fait PAS :
   - il ne peut pas depasser les limites de la couche de risque, qui
     relit et tranche apres lui
 
-Cout : chaque appel est mesure et cumule. Au-dela du plafond journalier
-(config llm.max_daily_api_cost_usd), le cerveau rend "hold" sur tout et
-le journal l'indique clairement.
+Cout : chaque appel est mesure et cumule. Un appel plus cher que
+llm.alert_cost_per_call_usd declenche une alerte. Au-dela du plafond
+journalier (protection anti-emballement, volontairement large), le
+cerveau rend "hold" sur tout et le journal l'indique.
 """
 from __future__ import annotations
 
@@ -19,6 +20,7 @@ from typing import Any
 
 import anthropic
 
+from ..alerts import notify
 from .base import BrainContext, Decision
 
 # Schema de sortie impose au modele. Redige a la main pour garantir
@@ -37,6 +39,11 @@ OUTPUT_SCHEMA: dict[str, Any] = {
                 "properties": {
                     "symbol": {"type": "string"},
                     "action": {"type": "string", "enum": ["buy", "sell", "hold"]},
+                    "bias": {
+                        "type": "string",
+                        "enum": ["up", "down", "flat"],
+                        "description": "Ta prevision de direction du prix a 24 h pour ce symbole, obligatoire meme en hold. flat = variation attendue dans une bande de plus ou moins 0.3 %.",
+                    },
                     "size_pct_of_equity": {
                         "type": "number",
                         "description": "Pour buy uniquement : part du book a engager, entre 0 et la limite max_position_pct. 0 sinon.",
@@ -47,7 +54,7 @@ OUTPUT_SCHEMA: dict[str, Any] = {
                         "description": "Justification en francais, 2 a 5 phrases, concrete et chiffree.",
                     },
                 },
-                "required": ["symbol", "action", "size_pct_of_equity", "confidence", "reasoning"],
+                "required": ["symbol", "action", "bias", "size_pct_of_equity", "confidence", "reasoning"],
                 "additionalProperties": False,
             },
         },
@@ -56,7 +63,7 @@ OUTPUT_SCHEMA: dict[str, Any] = {
     "additionalProperties": False,
 }
 
-SYSTEM_PROMPT = """Tu es le gestionnaire d'un petit book de trading crypto spot, long-only, sur bougies de 4 heures. Tu es evalue sur un horizon de plusieurs semaines contre deux temoins : un bot a regles de suivi de tendance et la simple detention de bitcoin.
+SYSTEM_PROMPT = """Tu es le gestionnaire d'un petit book de trading crypto spot, long-only, sur bougies de 4 heures. Tu es evalue sur un horizon de plusieurs semaines contre un seul repere : la detention passive d'un panier equipondere des memes actifs, achete au premier jour et jamais touche, aux memes frais. Faire mieux que ce repere, net de tous les frais, est l'objectif. Faire moins bien que lui, c'est avoir detruit de la valeur en s'agitant.
 
 Regles du jeu, non negociables (une couche de risque deterministe relit chaque decision et refusera tout ce qui les viole) :
 - Spot uniquement. Pas de short, pas de levier. "sell" ne s'applique qu'a une position ouverte.
@@ -72,6 +79,8 @@ Ce que l'on attend de toi :
 - Un raisonnement concret, chiffre, en francais, qui cite les indicateurs et le contexte fournis. Ce texte est lu par un humain qui cherche a comprendre comment tu raisonnes. Pas de langue de bois, pas de "le marche est incertain" sans suite.
 - Tiens compte de tes decisions passees et de leur resultat : si tu as eu tort, dis pourquoi.
 - Une confiance calibree : 0.9 doit etre rare.
+- Pour chaque symbole, un `bias` : ta prevision de direction a 24 h (up, down, ou flat si tu attends moins de 0.3 % de variation), meme quand tu ne trades pas. C'est ta lecture du marche que l'on mesure ainsi, independamment de tes trades, et c'est la mesure qui aura le plus de poids statistique.
+- Un indicateur a `null` signifie qu'il n'est pas encore calculable. Ne l'invente pas.
 
 Tu ne connais ni l'avenir ni les news. Tu ne vois que les prix et les indicateurs fournis. Ne pretends pas savoir ce que tu ne sais pas."""
 
@@ -137,23 +146,29 @@ def build_packet(ctx: BrainContext) -> dict[str, Any]:
 
 class LLMBrain:
     name = "llm"
+    requires_api = True   # le repere attend son premier appel reussi (t0)
 
     def __init__(self, cfg, storage):
         self.cfg = cfg
         self.storage = storage
         self.model = str(cfg.get("llm.model", "claude-opus-5"))
         self.effort = str(cfg.get("llm.effort", "medium"))
-        self.max_tokens = int(cfg.get("llm.max_tokens", 4000))
-        self.max_daily_cost = float(cfg.get("llm.max_daily_api_cost_usd", 1.0))
+        self.max_tokens = int(cfg.get("llm.max_tokens", 8000))
+        self.timeout = float(cfg.get("llm.timeout_seconds", 90.0))
+        self.max_daily_cost = float(cfg.get("llm.max_daily_api_cost_usd", 2.0))
+        self.alert_cost = float(cfg.get("llm.alert_cost_per_call_usd", 0.30))
         self.p_in = float(cfg.get("llm.price_input_per_mtok", 5.0))
         self.p_out = float(cfg.get("llm.price_output_per_mtok", 25.0))
         self.max_position_pct = float(cfg.get("risk.max_position_pct", 0.4))
+        self.alerts_on = bool(cfg.get("alerts.enabled", True))
         self._client: anthropic.Anthropic | None = None
 
     @property
     def client(self) -> anthropic.Anthropic:
         if self._client is None:
-            self._client = anthropic.Anthropic()  # lit ANTHROPIC_API_KEY depuis l'env
+            # Lit ANTHROPIC_API_KEY depuis l'env. Le delai borne l'appel : sans
+            # lui, un appel bloque gelerait toute la boucle, chien de garde compris.
+            self._client = anthropic.Anthropic(timeout=self.timeout, max_retries=1)
         return self._client
 
     @staticmethod
@@ -164,13 +179,15 @@ class LLMBrain:
     def decide(self, ctx: BrainContext) -> list[Decision]:
         if not self._has_credentials():
             return self._fail(ctx, "cle API Claude absente : renseigne ANTHROPIC_API_KEY "
-                                   "dans .env pour activer ce cerveau")
+                                   "dans .env pour activer le trader (voir docs/cles-api.md)")
 
         spent = self.storage.api_cost_today()
         if spent >= self.max_daily_cost:
             msg = (f"plafond API journalier atteint ({spent:.2f} $ >= {self.max_daily_cost:.2f} $) : "
-                   f"aucune decision demandee au modele, hold force")
+                   f"protection anti-emballement, aucune decision demandee au modele, hold force")
             self.storage.event("warning", "llm_brain", msg)
+            if self.alerts_on:
+                notify("Plafond API atteint", msg, priority="high", tags="warning")
             return [Decision(s, "hold", reasoning=msg, raw={"skipped": "budget"}) for s in ctx.markets]
 
         packet = build_packet(ctx)
@@ -192,8 +209,12 @@ class LLMBrain:
                 },
                 messages=[{"role": "user", "content": user_msg}],
             )
+        except anthropic.AuthenticationError as e:
+            return self._fail(ctx, f"cle API refusee par Anthropic ({e.status_code}) : verifier ANTHROPIC_API_KEY")
         except anthropic.RateLimitError as e:
             return self._fail(ctx, f"rate limit API : {e}")
+        except anthropic.APITimeoutError:
+            return self._fail(ctx, f"appel API sans reponse apres {self.timeout:.0f} s")
         except anthropic.APIStatusError as e:
             return self._fail(ctx, f"erreur API {e.status_code} : {e.message}")
         except anthropic.APIConnectionError as e:
@@ -204,7 +225,16 @@ class LLMBrain:
         # --- cout ---
         u = response.usage
         cost = (u.input_tokens * self.p_in + u.output_tokens * self.p_out) / 1_000_000
-        self.storage.record_api_cost(self.model, u.input_tokens, u.output_tokens, cost)
+        # la chaine renvoyee par l'API, pas celle de la config : si le modele
+        # change sous nos pieds en cours de fenetre, on le verra
+        served_model = str(getattr(response, "model", None) or self.model)
+        self.storage.record_api_cost(served_model, u.input_tokens, u.output_tokens, cost)
+        if cost > self.alert_cost:
+            msg = (f"appel API couteux : {cost:.3f} $ (entree {u.input_tokens}, sortie {u.output_tokens} tokens), "
+                   f"seuil d'alerte {self.alert_cost:.2f} $")
+            self.storage.event("warning", "llm_brain", msg)
+            if self.alerts_on:
+                notify("Appel API couteux", msg, priority="default", tags="moneybag")
 
         if response.stop_reason == "refusal":
             detail = getattr(response, "stop_details", None)
@@ -242,6 +272,7 @@ class LLMBrain:
                 reasoning=str(d.get("reasoning", "")).strip(),
                 raw={
                     "market_view": market_view,
+                    "bias": d.get("bias"),
                     "size_pct_of_equity": pct,
                     "thinking": thinking,
                     "usage": {"input": u.input_tokens, "output": u.output_tokens, "cost_usd": round(cost, 4)},

@@ -60,3 +60,11 @@ def test_unfilled_order_raises():
 def test_orders_are_refused_without_trading_rights():
     with pytest.raises(ExchangeError):
         make_x().market_buy_quote("BTC/USDT", 20.0)
+
+
+def test_client_order_id_is_deterministic_and_binance_safe():
+    cid = Exchange.client_order_id("20260904T091345Z-B-BTC/USDT")
+    assert cid == "20260904T091345Z-B-BTCUSDT"       # le slash est retire
+    assert len(cid) <= 36
+    assert Exchange.client_order_id("20260904T091345Z-B-BTC/USDT") == cid   # meme tag, meme id
+    assert Exchange.client_order_id("WD20260904T091345Z-S-SOL/USDT") != cid

@@ -1,16 +1,17 @@
 # ==========================================================================
-#  Configuration du banc d'essai de trading automatise
-#  Tout ce qui compte se regle ici. Le code ne contient aucun chiffre magique.
+#  Configuration du banc d'essai : Claude trade seul, face a un repere.
+#  Tout ce qui compte se regle ici. Voir docs/protocole.md pour la methode.
 # ==========================================================================
 
 experiment:
-  name: "duel-llm-vs-rules"
-  # Capital total du banc d'essai, dans la devise de cotation (quote).
+  name: "claude-solo"
+  # Capital du book, dans la devise de cotation (quote). Tout va a Claude.
   total_capital: 100.0
-  # Repartition entre les deux cerveaux. Doit sommer a 1.0
-  allocation:
-    llm: 0.5
-    rules: 0.5
+  # Le repere de rentabilite : un panier equipondere des memes actifs,
+  # achete au premier cycle et jamais touche, avec les memes frais et le
+  # meme slippage des deux cotes. C'est "ce que vous auriez eu en ne
+  # faisant rien d'intelligent". Claude doit faire mieux que ca.
+  benchmark: "buy_and_hold"
 
 exchange:
   id: "binance"
@@ -21,83 +22,108 @@ exchange:
     - "ETH/USDT"
     - "SOL/USDT"
   timeframe: "4h"
-  # Nombre de bougies historiques chargees a chaque cycle pour les indicateurs.
+  # Bougies historiques chargees a chaque cycle. L'EMA200 en exige 200.
   lookback_candles: 300
-  # Frais reels appliques en paper trading (taker Binance spot standard).
+  # Frais taker Binance spot standard, appliques en paper ET au repere.
   fee_rate: 0.001
-  # Slippage simule en paper trading, en fraction du prix.
+  # Slippage simule en paper, applique aussi au repere pour rester equitable.
   slippage: 0.0005
 
 # --------------------------------------------------------------------------
 #  Couche de risque. Ces limites sont DETERMINISTES et non negociables.
-#  Aucun cerveau, LLM ou regles, ne peut les contourner.
+#  Claude ne peut pas les contourner : la couche relit chaque decision.
 # --------------------------------------------------------------------------
 risk:
-  # Part maximale du book d'un cerveau engagee sur une seule position.
+  # Part maximale du book engagee sur une seule position.
   max_position_pct: 0.40
-  # Nombre maximum de positions ouvertes simultanement, par cerveau.
+  # Nombre maximum de positions ouvertes simultanement.
   max_open_positions: 2
   # Taille minimale d'un ordre, en quote. Binance refuse en dessous de ~5 USDT.
   min_order_value: 12.0
-  # Budget de trades. C'est le garde-fou anti-frais le plus important.
-  max_round_trips_per_week: 3
-  # Perte journaliere maximale, en fraction du book du cerveau.
-  # Depassee, le cerveau est gele jusqu'au lendemain.
+  # Nouvelles positions autorisees par semaine. C'est le frein anti-frais,
+  # et aussi ce qui fixe la taille d'echantillon de l'experience :
+  # a 4 par semaine, positions de 40, l aller-retour coute 0.08, soit
+  # environ 1.4 % du capital par mois en frais si le budget est epuise.
+  # Le panel de protocole a tranche : 4, jamais 5, un plafond souvent
+  # atteint masquerait le comportement de Claude derriere le garde-fou.
+  max_round_trips_per_week: 4
+  # Perte journaliere maximale, en fraction du book. Depassee, plus aucun
+  # achat jusqu'au lendemain. Les ventes restent possibles.
   max_daily_loss_pct: 0.06
-  # Coupe-circuit global. Si le book total tombe sous ce seuil du capital
-  # initial, tout s'arrete definitivement et une alerte est ecrite.
-  kill_switch_drawdown_pct: 0.25
-  # Stop loss et take profit obligatoires sur chaque position, en fraction.
+  # Coupe-circuit definitif si le book perd cette fraction du capital.
+  # C'est un garde-fou de CATASTROPHE (trou de cotation, bug, ordre
+  # fantome), pas un stop ordinaire : les pertes normales sont bornees
+  # par les stops et le budget de trades bien avant ce seuil.
+  kill_switch_drawdown_pct: 0.20
+  # Stop de perte et objectif de gain, poses sur chaque position.
   stop_loss_pct: 0.08
   take_profit_pct: 0.15
-  # Aucun levier, aucun short. Spot uniquement.
+  # Spot uniquement. Le code refuse de demarrer autrement.
   allow_short: false
   allow_leverage: false
 
 # --------------------------------------------------------------------------
-#  Cerveau LLM
+#  Le trader : Claude
 # --------------------------------------------------------------------------
 llm:
   model: "claude-opus-5"
-  # low | medium | high | xhigh | max  -> pilote la profondeur de reflexion
-  # et donc le cout. medium est un bon compromis pour ce cas d'usage.
+  # low | medium | high | xhigh | max  -> profondeur de reflexion, donc cout.
   effort: "medium"
   # La reflexion du modele compte dans ce plafond : trop bas, la reponse
   # est tronquee et le cerveau rend hold avec un avertissement.
   max_tokens: 8000
-  # Plafond de depense API par jour, en dollars. Depasse, le cerveau LLM
-  # passe en "hold" et le journal l'indique. Protege contre une boucle folle.
-  max_daily_api_cost_usd: 1.00
-  # Tarifs utilises pour l'estimation du cout, en dollars par million de tokens.
+  # Delai maximal d'un appel, en secondes. Sans lui, un appel bloque gele
+  # toute la boucle, chien de garde compris.
+  timeout_seconds: 90
+  # Protection anti-emballement : au-dela, plus aucun appel jusqu'a minuit
+  # UTC. Volontairement large (le cout normal est de 0.30 a 0.60 $/jour)
+  # pour ne JAMAIS priver Claude de ses cycles du soir en fonctionnement
+  # normal, ce qui biaiserait la comparaison. Ne sert qu'en cas de bug.
+  max_daily_api_cost_usd: 2.00
+  # Un appel plus cher que cela declenche une alerte, sans bloquer.
+  alert_cost_per_call_usd: 0.30
+  # Tarifs pour l'estimation du cout, en dollars par million de tokens.
   price_input_per_mtok: 5.0
   price_output_per_mtok: 25.0
 
 # --------------------------------------------------------------------------
-#  Cerveau a regles. Strategie de suivi de tendance volontairement simple
-#  et NON optimisee : c'est un temoin, pas un candidat au surapprentissage.
+#  Indicateurs fournis a Claude dans son dossier. Il n'est pas oblige
+#  de les suivre, mais il les voit.
 # --------------------------------------------------------------------------
-rules:
+indicators:
   ema_fast: 50
   ema_slow: 200
   rsi_period: 14
-  rsi_overbought: 72
   atr_period: 14
 
 # --------------------------------------------------------------------------
 #  Moteur
 # --------------------------------------------------------------------------
 engine:
-  # Intervalle entre deux cycles de decision, en heures.
+  # Heures entre deux cycles. Doit diviser 24.
   cycle_hours: 4
-  # Entre deux cycles, un chien de garde verifie stops, objectifs et
-  # coupe-circuit a cet intervalle, sans appeler aucun cerveau. 0 = desactive.
+  # Entre deux cycles, le chien de garde verifie stops, objectifs et
+  # coupe-circuit a cet intervalle, sans appeler Claude. 0 = desactive.
   watchdog_minutes: 5
-  # "paper" ou "live". Le passage en live exige EN PLUS un fichier LIVE_ARMED
-  # a la racine du projet, cree a la main. Double securite volontaire.
+  # "paper" ou "live". Le live exige EN PLUS le fichier LIVE_ARMED a la
+  # racine, cree a la main. Double serrure volontaire.
   mode: "paper"
-  # Utiliser le testnet Binance plutot que le marche reel en mode live.
+  # Testnet Binance plutot que le marche reel, en mode live.
   use_testnet: false
+
+# --------------------------------------------------------------------------
+#  Alertes sortantes, via ntfy.sh : gratuit, sans compte.
+#  Installe l'application ntfy sur ton telephone, abonne-toi a un sujet
+#  secret (une longue chaine aleatoire), et mets ce sujet dans .env
+#  sous NTFY_TOPIC. Voir docs/cles-api.md.
+# --------------------------------------------------------------------------
+alerts:
+  enabled: true
+  # Aussi sur chaque stop ou objectif atteint, pas seulement les incidents.
+  on_forced_exit: true
 
 storage:
   db_path: "data/trading.db"
+  # Miroir lisible des decisions. Ce n'est PAS un journal de secours :
+  # il est ecrit apres la base, la base reste la seule source de verite.
   journal_path: "logs/decisions.jsonl"
