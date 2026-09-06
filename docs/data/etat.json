@@ -1,5 +1,5 @@
 {
-"genere_le": "2026-09-06T12:02:18+00:00",
+"genere_le": "2026-09-06T17:15:57+00:00",
 "mode": "paper",
 "phase": "paper",
 "capital": 100.0,
@@ -16,13 +16,13 @@
 "accroche": "Personne ne dit a Claude comment trader : il choisit sa methode, la redit a chaque cycle et doit s'y tenir, et il sert de point de comparaison aux autres."
 },
 "dernier_cycle": {
-"id": "20260906T120130Z",
-"ts": "2026-09-06T12:02:18+00:00"
+"id": "20260906T171459Z",
+"ts": "2026-09-06T17:15:56+00:00"
 },
-"prochain_cycle_ts": "2026-09-06T16:01:30+00:00",
+"prochain_cycle_ts": "2026-09-06T20:01:30+00:00",
 "cycle_hours": 4,
 "bot": {
-"dernier_releve": "2026-09-06T12:02:18+00:00",
+"dernier_releve": "2026-09-06T17:15:56+00:00",
 "age_min": 0.0,
 "vivant": true
 },
@@ -32,9 +32,9 @@
 },
 "alertes_configurees": false,
 "api": {
-"cout_total": 0.4046,
-"cout_jour": 0.317,
-"appels": 5
+"cout_total": 0.4878,
+"cout_jour": 0.4002,
+"appels": 6
 },
 "limites": {
 "max_position_pct": 0.4,
@@ -61,14 +61,14 @@
 },
 "fenetre": {
 "t0": "2026-09-05T22:28:45+00:00",
-"days": 0.56,
+"days": 0.78,
 "target_days": 14,
 "phase": "paper",
 "regime": "range",
-"basket_pct": 1.067,
-"api_calls": 5,
+"basket_pct": 0.598,
+"api_calls": 6,
 "models_served": {
-"claude-opus-5": 5
+"claude-opus-5": 6
 },
 "multiple_models": false,
 "config_drift": [],
@@ -80,23 +80,23 @@
 "bilan": {
 "capital": 100.0,
 "cash": 20.0701,
-"positions_liq": 81.2696,
-"equity": 101.3397,
-"perf_pct": 1.3397,
-"trading_brut": 1.3397,
-"api_cost": 0.4046,
-"api_calls": 5,
-"cost_per_call": 0.0809,
-"net": 0.9351,
+"positions_liq": 80.8517,
+"equity": 100.9218,
+"perf_pct": 0.9218,
+"trading_brut": 0.9218,
+"api_cost": 0.4878,
+"api_calls": 6,
+"cost_per_call": 0.0813,
+"net": 0.434,
 "fees_total": 0.0799,
 "open_positions": [
 {
 "symbol": "ETH/USDT",
 "entry": 2481.0399,
-"price": 2501.79,
+"price": 2485.86,
 "amount": 0.0161,
-"value": 40.2788,
-"pnl_pct": 0.836,
+"value": 40.0223,
+"pnl_pct": 0.194,
 "opened_at": "2026-09-05T22:28:45+00:00",
 "stop": 2282.556708,
 "target": 2853.195885
@@ -104,10 +104,10 @@
 {
 "symbol": "SOL/USDT",
 "entry": 103.381665,
-"price": 106.51,
+"price": 106.09,
 "amount": 0.386,
-"value": 41.1129,
-"pnl_pct": 3.026,
+"value": 40.9507,
+"pnl_pct": 2.62,
 "opened_at": "2026-09-05T22:28:45+00:00",
 "stop": 95.1111318,
 "target": 118.88891475
@@ -115,15 +115,15 @@
 ]
 },
 "reperes": {
-"perf_pct": 1.3397,
+"perf_pct": 0.9218,
 "b0_pct": 0.0,
-"b1_pct": 1.0665,
-"b2_pct": 1.0989,
-"excess_b0": 1.3397,
-"excess_b1": 0.2732,
-"excess_b2": 0.2408,
-"mean_exposure": 0.3639,
-"max_drawdown_pct": -0.239
+"b1_pct": 0.5982,
+"b2_pct": 0.6984,
+"excess_b0": 0.9218,
+"excess_b1": 0.3236,
+"excess_b2": 0.2234,
+"mean_exposure": 0.4003,
+"max_drawdown_pct": -0.446
 },
 "statut": {
 "is_verdict": false,
@@ -133,7 +133,7 @@
 {
 "id": "duree",
 "label": "Jours de decision (paper)",
-"value": 0.6,
+"value": 0.8,
 "target": ">= 14",
 "ok": false,
 "kind": "evaluable"
@@ -189,7 +189,7 @@
 {
 "id": "dd",
 "label": "Drawdown maximal",
-"value": "0.2 %",
+"value": "0.4 %",
 "target": "< 15 %",
 "ok": true,
 "kind": "signal"
@@ -197,7 +197,7 @@
 {
 "id": "brut",
 "label": "Trading brut",
-"value": "+1.34",
+"value": "+0.92",
 "target": "> 0",
 "ok": true,
 "kind": "signal"
