@@ -1,14 +1,14 @@
 {
 "fenetre": {
 "t0": "2026-09-05T22:28:45+00:00",
-"days": 0.0,
+"days": 0.19,
 "target_days": 14,
 "phase": "paper",
 "regime": "range",
-"basket_pct": -0.305,
-"api_calls": 1,
+"basket_pct": 0.415,
+"api_calls": 2,
 "models_served": {
-"claude-opus-5": 1
+"claude-opus-5": 2
 },
 "multiple_models": false,
 "config_drift": [],
@@ -31,7 +31,7 @@
 "all_cycles": {
 "scored": 0,
 "correct": 0,
-"pending": 3,
+"pending": 6,
 "accuracy": null,
 "n_eff": null,
 "se": null,
@@ -40,10 +40,10 @@
 }
 },
 "processus": {
-"decisions": 3,
-"cycles": 1,
-"all_hold_cycles": 0,
-"all_hold_share": 0.0,
+"decisions": 6,
+"cycles": 2,
+"all_hold_cycles": 1,
+"all_hold_share": 0.5,
 "active": 2,
 "refused": 0,
 "refusal_rate": 0.0,
@@ -72,14 +72,14 @@
 "daily_freezes": 0
 },
 "reperes": {
-"perf_pct": -0.2452,
+"perf_pct": 0.5647,
 "b0_pct": 0.0,
-"b1_pct": -0.3046,
-"b2_pct": 0.0,
-"excess_b0": -0.2452,
-"excess_b1": 0.0594,
-"excess_b2": -0.2452,
-"mean_exposure": 0.1141,
+"b1_pct": 0.4148,
+"b2_pct": 0.563,
+"excess_b0": 0.5647,
+"excess_b1": 0.1499,
+"excess_b2": 0.0017,
+"mean_exposure": 0.1999,
 "max_drawdown_pct": -0.239
 },
 "statut": {
@@ -90,7 +90,7 @@
 {
 "id": "duree",
 "label": "Jours de decision (paper)",
-"value": 0.0,
+"value": 0.2,
 "target": ">= 14",
 "ok": false,
 "kind": "evaluable"
@@ -154,9 +154,9 @@
 {
 "id": "brut",
 "label": "Trading brut",
-"value": "-0.25",
+"value": "+0.56",
 "target": "> 0",
-"ok": false,
+"ok": true,
 "kind": "signal"
 },
 {
