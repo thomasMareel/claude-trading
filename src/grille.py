@@ -198,6 +198,25 @@ class Cycle:
     heures: float
 
 
+@dataclass
+class Evenement:
+    """Un achat, une vente ou un abandon, situe sur la courbe de prix.
+
+    Le resume chiffre dit combien de cycles ont eu lieu ; il ne dit pas OU ils
+    ont eu lieu. Ce journal permet de poser chaque decision sur le graphique du
+    prix, seul moyen de voir la difference entre un cycle boucle en trois heures
+    et un cycle qui traine deux cents jours.
+    """
+
+    ts: int
+    genre: str          # "achat" | "vente" | "abandon"
+    prix: float
+    palier: int         # indice du barreau achete ; -1 pour une vente ou un abandon
+    euros: float        # engage a l'achat, recu a la vente, 0 a l'abandon
+    revient: float      # prix de revient moyen du lot au moment de l'evenement
+    gain: float         # non nul seulement a la vente
+
+
 def chemin_bougie(o: float, h: float, l: float, c: float) -> tuple[float, float]:
     """Dans quel ordre le prix a-t-il probablement parcouru la bougie ?
 
@@ -235,6 +254,8 @@ def rejouer(
     cycles: list[Cycle] = []
     equity: list[tuple[int, float]] = []
     deploiement: list[tuple[int, float, float, int, bool]] = []
+    journal: list[Evenement] = []
+    suivi: list[tuple[int, float, float, float, float]] = []
     abandons = 0
 
     for ts, o, h, l, c in bougies:
@@ -253,21 +274,30 @@ def rejouer(
                         det["recu"], det["gain"], det["gain_pct"], det["prix_revient"], px,
                         (ts - ouvert) / 3_600_000,
                     ))
+                    journal.append(Evenement(ts, "vente", px, -1, det["recu"],
+                                             det["prix_revient"], det["gain"]))
                     d = Descente(symbole, c, budget, reglages)   # on repart du prix du moment
                     d.abandonnee = False
             else:
                 if l <= d.seuil_abandon and not d.abandonnee:
                     d.abandonnee = True
                     abandons += 1
+                    journal.append(Evenement(ts, "abandon", d.seuil_abandon, -1, 0.0,
+                                             d.prix_revient, 0.0))
                 for i, prix, euros in d.barreaux_a_poser():
                     if l <= prix and cash >= euros - 1e-9:
                         d.acheter(i, prix, ts)
                         cash -= euros
+                        journal.append(Evenement(ts, "achat", prix, i, euros,
+                                                 d.prix_revient, 0.0))
         equity.append((ts, cash + d.valeur(c)))
         # combien d'argent travaille reellement, et combien dort : c'est ce qui
         # explique un rendement modeste sur le budget alors que chaque cycle
         # rapporte l'objectif plein sur la somme engagee
         deploiement.append((ts, cash, d.cumul_euros, len(d.remplis), d.abandonnee))
+        # de quoi redessiner l'echelle et la cible a n'importe quelle heure : la
+        # reference suffit a reconstruire les barreaux, puisqu'ils s'en deduisent
+        suivi.append((ts, d.reference, d.prix_revient, d.prix_sortie, d.seuil_abandon))
 
     fin = bougies[-1][4]
     return {
@@ -275,6 +305,8 @@ def rejouer(
         "cycles": cycles,
         "equity": equity,
         "deploiement": deploiement,
+        "journal": journal,
+        "suivi": suivi,
         "cash_final": cash,
         "lot_restant": d.cumul_unites,
         "valeur_lot": d.valeur(fin),

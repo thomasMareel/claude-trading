@@ -12,3 +12,4 @@ LIVE_ARMED
 logs/*.log
 data/*.db-*
 .claude/
+docs/simulations.json

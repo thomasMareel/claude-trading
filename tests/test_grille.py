@@ -184,3 +184,72 @@ def test_la_duree_d_un_cycle_est_reelle_et_non_nulle():
     c = r["cycles"][0]
     assert c.ouvert_le == 0 and c.ferme_le == 10 * H
     assert c.heures == pytest.approx(10.0)
+
+
+# ------------------------------------------------------------------ journal
+def test_le_journal_raconte_exactement_ce_que_les_cycles_resument():
+    """Un graphique se lit plus vite qu'un tableau, donc il ment plus vite.
+    Chaque vente dessinee doit etre la vente comptee, au meme instant, au
+    meme prix, pour le meme gain."""
+    b = [bougie(0, 100, 100, 89, 90), bougie(H, 90, 95, 90, 95),
+         bougie(2 * H, 95, 95, 84, 85), bougie(3 * H, 85, 99, 85, 99)]
+    r = rejouer("BTC/EUR", b, R, 1000.0, reference=100.0)
+    ventes = [e for e in r["journal"] if e.genre == "vente"]
+    assert len(ventes) == len(r["cycles"]) >= 2
+    for e, c in zip(ventes, r["cycles"]):
+        assert e.ts == c.ferme_le
+        assert e.prix == pytest.approx(c.prix_sortie)
+        assert e.gain == pytest.approx(c.gain)
+        assert e.euros == pytest.approx(c.recu)
+        assert e.revient == pytest.approx(c.prix_revient)
+
+
+def test_chaque_achat_du_journal_correspond_a_un_euro_reellement_sorti():
+    b = [bougie(0, 100, 100, 89, 90), bougie(H, 90, 95, 90, 95)]
+    r = rejouer("BTC/EUR", b, R, 1000.0, reference=100.0)
+    achats = [e for e in r["journal"] if e.genre == "achat"]
+    attendus = sum(c.paliers for c in r["cycles"]) + len(r["descente_en_cours"].remplis)
+    assert len(achats) == attendus == 5
+    assert sum(e.euros for e in achats) == pytest.approx(
+        sum(c.investi for c in r["cycles"]) + r["investi_bloque"])
+    assert [e.palier for e in achats] == [0, 1, 2, 3, 4], "du haut vers le bas"
+
+
+def test_le_prix_de_revient_du_journal_descend_a_chaque_achat():
+    """C'est le mecanisme meme de la strategie : il doit se voir a l'oeil."""
+    b = [bougie(0, 100, 100, 89, 90)]
+    r = rejouer("BTC/EUR", b, R, 1000.0, reference=100.0)
+    revients = [e.revient for e in r["journal"] if e.genre == "achat"]
+    assert revients == sorted(revients, reverse=True)
+    assert revients[-1] < revients[0]
+
+
+def test_le_journal_est_chronologique():
+    b = [bougie(0, 100, 100, 89, 90), bougie(H, 90, 95, 90, 95),
+         bougie(2 * H, 95, 95, 84, 85), bougie(3 * H, 85, 99, 85, 99)]
+    r = rejouer("BTC/EUR", b, R, 1000.0, reference=100.0)
+    ts = [e.ts for e in r["journal"]]
+    assert ts == sorted(ts)
+
+
+def test_l_abandon_est_inscrit_au_journal_une_seule_fois():
+    r0 = Reglages(profondeur=0.10, paliers=5, ratio=2.0, objectif_net=0.02,
+                  frais=0.001, abandon_sous=0.05)
+    b = [bougie(0, 100, 100, 84, 85), bougie(H, 85, 86, 83, 84)]
+    r = rejouer("BTC/EUR", b, r0, 1000.0, reference=100.0)
+    ab = [e for e in r["journal"] if e.genre == "abandon"]
+    assert len(ab) == 1 == r["abandons"], "un abandon par descente, pas un par bougie"
+    assert ab[0].prix == pytest.approx(85.5)
+
+
+def test_le_suivi_donne_une_ligne_par_bougie_et_de_quoi_redessiner_l_echelle():
+    """On n'exporte pas les 14 barreaux heure par heure : la reference suffit
+    a les reconstruire, et divise le poids du fichier par autant."""
+    b = [bougie(i * H, 100, 100, 99, 100) for i in range(5)]
+    r = rejouer("BTC/EUR", b, R, 1000.0, reference=100.0)
+    assert len(r["suivi"]) == len(b) == len(r["equity"])
+    ts, ref, revient, sortie, seuil = r["suivi"][0]
+    assert ts == 0 and ref == pytest.approx(100.0)
+    assert seuil == pytest.approx(90.0 * 0.85)
+    assert [p for p, _ in R.echelle(ref, 1000.0)][-1] == pytest.approx(90.0)
+    assert sortie == pytest.approx(revient * 1.02 / 0.999)
