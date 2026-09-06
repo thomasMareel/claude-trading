@@ -7,9 +7,9 @@
 "entry_price": 2481.0399,
 "amount_base": 0.0161,
 "cost_quote": 39.9847,
-"price": 2503.69,
-"value_quote": 40.3094,
-"pnl_pct": 0.913,
+"price": 2494.52,
+"value_quote": 40.1618,
+"pnl_pct": 0.543,
 "stop_loss": 2282.556708,
 "take_profit": 2853.195885
 },
@@ -20,9 +20,9 @@
 "entry_price": 103.381665,
 "amount_base": 0.386,
 "cost_quote": 39.9452,
-"price": 104.42,
-"value_quote": 40.3061,
-"pnl_pct": 1.004,
+"price": 105.11,
+"value_quote": 40.5725,
+"pnl_pct": 1.672,
 "stop_loss": 95.1111318,
 "take_profit": 118.88891475
 }
