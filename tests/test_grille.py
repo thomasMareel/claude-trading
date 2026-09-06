@@ -294,3 +294,84 @@ def test_le_plancher_ne_change_rien_quand_il_est_a_zero():
 def test_un_plancher_absurde_est_refuse():
     with pytest.raises(GrilleError, match="mise_min"):
         Reglages(mise_min=-1.0)
+
+
+# ------------------------------------------------------------------ suivi de hausse
+SUIT = Reglages(profondeur=0.10, paliers=5, ratio=2.0, objectif_net=0.02,
+                frais=0.001, suivre_hausse=True)
+FIXE = Reglages(profondeur=0.10, paliers=5, ratio=2.0, objectif_net=0.02,
+                frais=0.001, suivre_hausse=False)
+
+
+def test_sans_suivi_une_hausse_a_vide_endort_la_grille_pour_toujours():
+    """Le defaut que le suivi corrige. Le cours part AU-DESSUS de l'echelle,
+    donc rien n'est achete ; il monte de 30 %, puis retombe de 15 %. Sans
+    suivi, l'echelle est restee en bas : la rechute ne la rejoint jamais."""
+    b = [bougie(i * H, 110 + i, 111 + i, 109 + i, 110 + i) for i in range(30)]      # 110 -> 139
+    b += [bougie((30 + i) * H, 139 - i, 140 - i, 138 - i, 139 - i) for i in range(19)]  # -> 121
+    r = rejouer("BTC/EUR", b, FIXE, 1000.0, reference=100.0)
+    assert r["descente_en_cours"].reference == pytest.approx(100.0)
+    assert r["cycles"] == [] and not r["descente_en_cours"].remplis
+
+
+def test_avec_suivi_la_reference_monte_avec_le_marche_et_la_grille_reste_vivante():
+    b = [bougie(i * H, 110 + i, 111 + i, 109 + i, 110 + i) for i in range(30)]
+    b += [bougie((30 + i) * H, 139 - i, 140 - i, 138 - i, 139 - i) for i in range(19)]
+    r = rejouer("BTC/EUR", b, SUIT, 1000.0, reference=100.0)
+    achats = [e for e in r["journal"] if e.genre == "achat"]
+    assert achats, "la rechute qui suit doit declencher des achats"
+    assert max(e.prix for e in achats) > 130.0, "l'echelle a bien suivi le marche"
+
+
+def test_le_suivi_ne_bouge_jamais_l_echelle_sous_un_lot_deja_achete():
+    """Deplacer la reference en portant un lot recalculerait les barreaux sous
+    ses propres achats, donc rachterait les memes niveaux indefiniment."""
+    b = [bougie(0, 100, 100, 99, 99),          # rempli le barreau 0 a 100
+         bougie(H, 99, 120, 99, 120)]          # forte hausse, mais lot en main
+    r = rejouer("BTC/EUR", b, SUIT, 1000.0, reference=100.0)
+    d = r["descente_en_cours"]
+    if d.engagee:
+        assert d.reference == pytest.approx(100.0)
+
+
+def test_le_suivi_ne_descend_jamais_la_reference():
+    b = [bougie(0, 100, 100, 100, 100)] + [bougie(i * H, 95, 95, 95, 95) for i in range(1, 6)]
+    r = rejouer("BTC/EUR", b, SUIT, 1000.0, reference=100.0)
+    assert r["descente_en_cours"].reference >= 100.0 or r["descente_en_cours"].engagee
+
+
+def test_le_suivi_est_desactive_par_defaut():
+    """Regression : le comportement historique ne doit pas changer tout seul."""
+    assert Reglages().suivre_hausse is False
+    b = [bougie(i * H, 110 + i, 111 + i, 109 + i, 110 + i) for i in range(20)]
+    defaut = Reglages(profondeur=0.10, paliers=5, ratio=2.0, objectif_net=0.02, frais=0.001)
+    assert resume(rejouer("BTC/EUR", b, defaut, 1000.0, reference=100.0)) ==            resume(rejouer("BTC/EUR", b, FIXE, 1000.0, reference=100.0))
+
+
+# ------------------------------------------------------------- aller-retour intra-bougie
+def test_l_aller_retour_dans_la_meme_bougie_peut_etre_interdit():
+    """Une bougie haussiere permet d'acheter au bas puis de vendre au haut dans
+    la meme heure. C'est indemontrable a partir d'une bougie horaire : il faut
+    pouvoir mesurer le resultat sans ces cycles."""
+    r0 = Reglages(profondeur=0.10, paliers=5, ratio=2.0, objectif_net=0.02, frais=0.001)
+    b = [bougie(0, 90, 120, 89, 119)]                  # haussiere : bas puis haut
+    avec = rejouer("BTC/EUR", b, r0, 1000.0, reference=100.0)
+    assert len(avec["cycles"]) == 1 and avec["cycles"][0].heures == 0.0
+
+    sans = rejouer("BTC/EUR", b, Reglages(**{**r0.__dict__, "vente_meme_bougie": False}),
+                   1000.0, reference=100.0)
+    assert sans["cycles"] == [], "l'aller-retour instantane doit disparaitre"
+    assert sans["descente_en_cours"].engagee, "mais le lot reste detenu, il n'est pas efface"
+
+
+def test_interdire_l_aller_retour_ne_repousse_la_vente_que_d_une_bougie():
+    r0 = Reglages(profondeur=0.10, paliers=5, ratio=2.0, objectif_net=0.02,
+                  frais=0.001, vente_meme_bougie=False)
+    b = [bougie(0, 90, 120, 89, 100), bougie(H, 100, 120, 100, 119)]
+    r = rejouer("BTC/EUR", b, r0, 1000.0, reference=100.0)
+    assert len(r["cycles"]) == 1
+    assert r["cycles"][0].ferme_le == H, "vendue a la bougie suivante, pas jamais"
+
+
+def test_l_aller_retour_est_autorise_par_defaut():
+    assert Reglages().vente_meme_bougie is True

@@ -169,8 +169,10 @@ footer p + p{margin-top:.7rem}
     <h1>Anatomie d'une <em>descente</em></h1>
     <p class="chapo">Huit réglages de la stratégie du tableur, rejoués heure par heure sur BTC, ETH et SOL,
       du 2 août 2025 au 6 septembre 2026. Chaque achat et chaque vente est posé sur la courbe du prix.
-      Seuls les ordres qu'une plateforme accepterait vraiment sont comptés — <strong>un ordre de 2 centimes
-      n'existe pas</strong>. Sur cette fenêtre, ne rien faire faisait perdre 30 % : c'est le repère qui manquait.</p>
+      Seuls les ordres qu'une plateforme accepterait vraiment sont comptés, et aucun aller-retour bouclé dans
+      l'heure de son achat n'est retenu. Les réglages sont rangés <strong>de la cadence la plus soutenue à la
+      plus lente</strong> : sept cycles par semaine en haut, moins d'un en bas. Sur cette fenêtre, ne rien faire
+      faisait perdre 30 %.</p>
   </div>
 </header>
 
@@ -292,10 +294,10 @@ addEventListener("scroll", cache, { passive: true });
 
 /* ------------------------------------------------------------------ etat */
 let paire = D.meta.paires[0];
-//  on ouvre sur le meilleur reglage EXECUTABLE, calcule et non ecrit en dur :
-//  un indice fige designerait le mauvais reglage des que les donnees changent
+//  on ouvre sur le reglage le plus ACTIF, calcule et non ecrit en dur : la
+//  question posee est celle de la cadence, la page doit s'ouvrir sur sa reponse
 let iReg = D.reglages
-  .map((r, k) => [k, D.meta.paires.reduce((a, s) => a + r.sims[s].resume.perf_pct, 0)])
+  .map((r, k) => [k, D.meta.paires.reduce((a, s) => a + r.sims[s].cycles_par_semaine, 0)])
   .reduce((a, b) => b[1] > a[1] ? b : a)[0];
 const R = () => D.reglages[iReg];
 const S = () => D.reglages[iReg].sims[paire];
@@ -314,6 +316,7 @@ function stats() {
   const jourAband = s.jours.abandon.reduce((a, b) => a + b, 0);
   return {
     perf: s.resume.perf_pct, cycles: s.cycles.length, abandons: s.resume.abandons,
+    parSemaine: s.cycles_par_semaine,
     moy, pic, plusLong, engPct: heuresEng / NH, jourAband,
     surEngage: moy > 1e-9 ? s.resume.perf_pct / moy : 0,
     cinq, gainTot: tot, hold: D.paires[paire].hold_pct,
@@ -682,9 +685,10 @@ function planchePlancher() {
     box,
     `Le classement se retourne. <b>${cyP} cycles deviennent ${cyR}</b> : les quatre cinquièmes des opérations
      comptées n'auraient jamais pu être passées. ${inverses} réglages sur ${D.reglages.length} changent de signe —
-     et parmi eux, <b>le tableau d'origine cesse d'être une catastrophe</b> : le plancher l'empêche justement
-     d'acheter les barreaux superficiels qui le piégeaient. C'est le rappel le plus utile de cette page :
-     un backtest qui ignore les contraintes d'exécution ne mesure pas la stratégie, il mesure une fiction.`,
+     et le sens du changement dépend entièrement de la progression des mises : plus le ratio est fort, plus le
+     haut de l'échelle passe sous le plancher, et plus le premier achat est repoussé vers le fond. C'est le
+     rappel le plus utile de cette page : un backtest qui ignore les contraintes d'exécution ne mesure pas la
+     stratégie, il mesure une fiction.`,
     [["", "exécutable, en hausse"], ["a-blo", "exécutable, en baisse"], ["trait a-blo", "ne rien faire"]]);
 }
 
@@ -838,11 +842,13 @@ function plancheChoisir() {
 function tuiles() {
   const st = stats(), s = S();
   const T = [
+    ["Cycles par semaine", st.parSemaine.toLocaleString("fr-FR", { maximumFractionDigits: 2 }),
+      st.parSemaine >= 2 ? "pos" : "", `${st.cycles} cycles sur ${D.meta.jours} jours`],
     ["Performance", sgn(st.perf, 2), st.perf >= 0 ? "pos" : "neg", `sur ${eur(D.meta.budget, 0)} de budget`],
     ["Acheter et attendre", sgn(st.hold, 1), st.hold >= 0 ? "pos" : "neg", `le repère, sur la même fenêtre`],
     ["Engagé en moyenne", pct(st.moy, 2), "", `pic à ${pct(st.pic, 0)} du budget`],
     ["Rendu par l'argent au travail", sgn(st.surEngage, 0), st.surEngage >= 0 ? "pos" : "neg", "performance ÷ engagement moyen"],
-    ["Cycles bouclés", String(st.cycles), "", `médiane ${duree(st.medianeH)}`],
+    ["Durée médiane d'un cycle", duree(st.medianeH), "", `la plus longue : ${duree(st.plusLongCycle)}`],
     ["Plus long blocage", duree(st.plusLong), st.plusLong > 24 * 60 ? "neg" : "", `${pct(st.engPct, 0)} du temps avec de l'argent dehors`],
     ["Abandons", String(st.abandons), st.abandons ? "neg" : "", st.abandons ? `${st.jourAband} jours sous le seuil` : "jamais sous le seuil"],
   ];
@@ -871,8 +877,12 @@ function rendu() {
 }
 
 const selR = document.getElementById("sel-reglage");
-D.reglages.forEach((r, k) => selR.append(h("option", { value: String(k) },
-  `${r.nom} — prof ${pct(r.profondeur, 0)}, ${r.paliers} paliers, ×${r.ratio}, objectif ${pct(r.objectif, 0)}`)));
+D.reglages.forEach((r, k) => {
+  const cad = D.meta.paires.reduce((a, s) => a + r.sims[s].cycles_par_semaine, 0) / D.meta.paires.length;
+  selR.append(h("option", { value: String(k) },
+    `${cad.toFixed(1)} cycles/sem — ${r.nom} — prof ${pct(r.profondeur, 0)}, ${r.paliers} paliers, `
+    + `×${r.ratio}, objectif ${pct(r.objectif, 1)}${r.suivre_hausse ? ", suit la hausse" : ""}`));
+});
 selR.value = String(iReg);
 selR.addEventListener("change", () => { iReg = +selR.value; cycleChoisi = null; rendu(); });
 

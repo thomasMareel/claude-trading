@@ -49,6 +49,8 @@ class Reglages:
     frais: float = 0.001            # taux maker, par ordre
     abandon_sous: float = 0.15      # sous le dernier barreau, on n'ajoute plus rien
     mise_min: float = 0.0           # taille minimale d'un ordre, en quote
+    suivre_hausse: bool = False     # remonter la reference quand le marche monte a vide
+    vente_meme_bougie: bool = True  # autoriser l'aller-retour dans la meme bougie
     #  Une plateforme REFUSE un ordre trop petit, elle ne l'agrandit pas : c'est
     #  exactement ce que fait la couche de risque du systeme reel (src/risk.py,
     #  floor = max(min_order_value, min_notional)). Avec une progression forte,
@@ -285,7 +287,14 @@ def rejouer(
         for extreme in (premier, second):
             monte = extreme == h
             if monte:
-                if d.cumul_unites and h >= d.prix_sortie:
+                #  Un aller-retour dans la meme heure n'est pas observable dans une
+                #  bougie horaire : il suppose que le bas a ete visite avant le haut
+                #  ET que l'ordre limite de vente a ete servi au sommet de la meche.
+                #  Plus l'objectif est petit, plus ces cycles sont nombreux et plus
+                #  le resultat repose sur ce pari. Les interdire donne la borne basse.
+                trop_tot = (not reglages.vente_meme_bougie
+                            and d.ouverte_le is not None and ts <= d.ouverte_le)
+                if d.cumul_unites and h >= d.prix_sortie and not trop_tot:
                     px = d.prix_sortie
                     # lire l'ouverture AVANT de vendre : vendre() remet la descente a zero
                     ouvert = ts if d.ouverte_le is None else d.ouverte_le
@@ -312,6 +321,17 @@ def rejouer(
                         cash -= euros
                         journal.append(Evenement(ts, "achat", prix, i, euros,
                                                  d.prix_revient, 0.0))
+        #  Sans cette ligne, l'echelle reste plantee la ou la derniere vente l'a
+        #  laissee. Si le marche s'eleve de 20 % sans que rien ne soit achete, le
+        #  premier barreau est 20 % sous le cours et n'est jamais rejoint : la
+        #  grille s'endort. Un operateur humain, lui, repose son echelle sous le
+        #  prix du moment. On ne suit qu'a la HAUSSE et qu'a vide : suivre a la
+        #  baisse reviendrait a courir apres le marche en annulant ses achats, et
+        #  suivre en portant un lot deplacerait l'echelle sous ses propres achats.
+        #  On lit la cloture, jamais le haut de la bougie : la bougie doit etre
+        #  fermee au-dessus de l'ancienne reference pour deplacer l'echelle.
+        if reglages.suivre_hausse and not d.engagee and c > d.reference:
+            d = Descente(symbole, c, budget, reglages)
         equity.append((ts, cash + d.valeur(c)))
         # combien d'argent travaille reellement, et combien dort : c'est ce qui
         # explique un rendement modeste sur le budget alors que chaque cycle

@@ -45,17 +45,41 @@ GENRE = {"achat": 0, "vente": 1, "abandon": 2}
 PLANCHER = 12.0
 PLANCHERS_COMPARES = (0.0, 5.0)
 
-#  Les huit reglages compares. Le dernier est celui que l'utilisateur appliquait
-#  a la main sur son tableur : il sert de point de depart, pas de repoussoir.
+#  Les huit reglages compares, ranges de la cadence la plus soutenue a la plus
+#  lente. Le dernier est celui que l'utilisateur appliquait a la main sur son
+#  tableur : il sert de point de depart, pas de repoussoir.
+#
+#  TROIS MECANIQUES decident de la cadence, bien avant le choix des paliers :
+#    suivre_hausse    : reposer l'echelle sous le prix quand le marche monte a
+#                       vide. Sans lui l'echelle reste plantee et s'endort.
+#    objectif_net     : c'est le frein principal. Viser 3 % impose d'attendre un
+#                       rebond de 3 % ; viser 0,5 % declenche plusieurs fois par
+#                       jour. Il doit rester au-dessus de l'aller-retour de frais.
+#    ratio            : une progression forte fait passer le haut de l'echelle
+#                       sous le plancher de la plateforme, ce qui repousse le
+#                       premier achat tres bas et rarefie les cycles.
+#
+#  vente_meme_bougie=False partout : on refuse de compter un aller-retour boucle
+#  dans l'heure de son achat, car une bougie horaire ne peut pas le prouver.
 REGLAGES = [
-    ("p20-14-r22-o2", 0.20, 14, 2.2, 0.02, "Prudent profond"),
-    ("p12-10-r22-o1", 0.12, 10, 2.2, 0.01, "Prudent rapide"),
-    ("p15-14-r22-o3", 0.15, 14, 2.2, 0.03, "Equilibre"),
-    ("p20-14-r14-o2", 0.20, 14, 1.4, 0.02, "Mises plus egales"),
-    ("p15-14-r14-o3", 0.15, 14, 1.4, 0.03, "Mises egales, moins profond"),
-    ("p12-10-r14-o1", 0.12, 10, 1.4, 0.01, "Engage vite, peu profond"),
-    ("p20-14-r10-o2", 0.20, 14, 1.0, 0.02, "Mises identiques"),
-    ("p08-14-r18-o2", 0.08, 14, 1.8, 0.02, "Le tableau d'origine"),
+    dict(cle="actif-20-12", nom="Tres actif", profondeur=0.20, paliers=12, ratio=1.3,
+         objectif_net=0.005, suivre_hausse=True),
+    dict(cle="actif-20-8", nom="Actif", profondeur=0.20, paliers=8, ratio=1.5,
+         objectif_net=0.005, suivre_hausse=True),
+    dict(cle="deux-sem", nom="Deux par semaine", profondeur=0.20, paliers=8, ratio=1.5,
+         objectif_net=0.01, suivre_hausse=True),
+    dict(cle="equilibre-30", nom="Equilibre", profondeur=0.30, paliers=12, ratio=1.3,
+         objectif_net=0.02, suivre_hausse=True),
+    dict(cle="patient-30", nom="Patient", profondeur=0.30, paliers=12, ratio=1.3,
+         objectif_net=0.03, suivre_hausse=True),
+    #  le meme que le premier, suivi de hausse coupe : c'est la mesure isolee de
+    #  ce que cette seule ligne de code rapporte
+    dict(cle="actif-sans-suivi", nom="Tres actif, sans suivi de hausse", profondeur=0.20,
+         paliers=12, ratio=1.3, objectif_net=0.005, suivre_hausse=False),
+    dict(cle="p15-14-r22-o3", nom="L'ancien equilibre", profondeur=0.15, paliers=14,
+         ratio=2.2, objectif_net=0.03, suivre_hausse=False),
+    dict(cle="p08-14-r18-o2", nom="Le tableau d'origine", profondeur=0.08, paliers=14,
+         ratio=1.8, objectif_net=0.02, suivre_hausse=False),
 ]
 
 
@@ -173,16 +197,19 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
         raise SystemExit("aucun historique exploitable ; lance scripts/fetch_history.py")
 
     sorties = []
-    for cle, prof, npal, ratio, obj, nom in REGLAGES:
-        faire = lambda m: Reglages(profondeur=prof, paliers=npal, ratio=ratio,  # noqa: E731
-                                   objectif_net=obj, frais=frais, abandon_sous=0.15,
-                                   mise_min=m)
+    semaines = n / 24 / 7
+    for spec in REGLAGES:
+        cle, nom = spec["cle"], spec["nom"]
+        params = {k: v for k, v in spec.items() if k not in ("cle", "nom")}
+        faire = lambda m, _p=params: Reglages(  # noqa: E731
+            frais=frais, abandon_sous=0.15, mise_min=m, vente_meme_bougie=False, **_p)
         rg = faire(PLANCHER)
         # l'echelle est la meme a toute epoque, exprimee en fraction de la reference
         ech = rg.echelle(1.0, 1.0)
         bloc = {
-            "id": cle, "nom": nom, "profondeur": prof, "paliers": npal,
-            "ratio": ratio, "objectif": obj, "abandon_sous": rg.abandon_sous,
+            "id": cle, "nom": nom, "profondeur": rg.profondeur, "paliers": rg.paliers,
+            "ratio": rg.ratio, "objectif": rg.objectif_net, "abandon_sous": rg.abandon_sous,
+            "suivre_hausse": rg.suivre_hausse, "vente_meme_bougie": rg.vente_meme_bougie,
             "prix_pct": [arrondi(p, 6) for p, _ in ech],
             "mises_pct": [arrondi(e, 8) for _, e in ech],
             "mise_min": PLANCHER,
@@ -195,6 +222,7 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
             bloc["sims"][s] = {
                 "resume": {k: arrondi(v, 6) if isinstance(v, float) else v
                            for k, v in res.items()},
+                "cycles_par_semaine": arrondi(len(r["cycles"]) / semaines, 3),
                 # [indice horaire, genre, prix, palier, euros, revient, gain]
                 "journal": [[e.ts // HEURE - t0 // HEURE, GENRE[e.genre], arrondi(e.prix, 4),
                              e.palier, arrondi(e.euros, 4), arrondi(e.revient, 4),
