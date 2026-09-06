@@ -28,9 +28,9 @@ brief: |-
   Garde une unite de round_trips_restants_cette_semaine du vendredi au dimanche.
   Donne un bias a 24 h pour chaque symbole a chaque cycle, meme en hold. N'utilise flat que si tu attends moins de 0,3 % de variation ; en base c'est une fois sur cinq sur BTC et ETH, une fois sur huit sur SOL : ni refuge ni quota.
 univers:
-- BTC/USDT
-- ETH/USDT
-- SOL/USDT
+- BTC/EUR
+- ETH/EUR
+- SOL/EUR
 horizon_bougies: '6 bougies (le sixieme cycle apres l''achat, 23 a 24 h) par construction, 7 si un cycle
   saute ; estimation : toute detention plus longue serait un manquement a la consigne de vente, que la
   couche de risque n''applique pas'

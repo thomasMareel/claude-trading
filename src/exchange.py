@@ -15,6 +15,7 @@ from typing import Any
 
 import ccxt
 
+from . import venues
 from .config import Config, secret
 
 
@@ -29,13 +30,21 @@ class OrderUncertainError(ExchangeError):
     devient deux achats."""
 
 
+class FeesUnknownError(ExchangeError):
+    """Les frais reellement preleves n'ont pas pu etre lus. Sur une strategie
+    qui vise 2 % de marge, compter des frais estimes revient a fausser le prix
+    de revient, donc le prix de revente, donc le resultat. On refuse plutot
+    que de deviner."""
+
+
 class Exchange:
     def __init__(self, cfg: Config, *, trading: bool = False, testnet: bool = False):
         self.cfg = cfg
         self.trading = trading
         self.testnet = testnet
-        self.id = str(cfg.get("exchange.id", "binance"))
-        self.quote = str(cfg.get("exchange.quote", "USDT"))
+        self.id = str(cfg.get("exchange.id", "myokx"))
+        self.quote = str(cfg.get("exchange.quote", "EUR"))
+        self.venue = venues.get(self.id)
 
         params: dict[str, Any] = {
             "enableRateLimit": True,
@@ -43,18 +52,20 @@ class Exchange:
             "options": {"defaultType": "spot", "adjustForTimeDifference": True},
         }
         if trading:
-            if testnet:
-                key, sec = secret("BINANCE_TESTNET_API_KEY"), secret("BINANCE_TESTNET_API_SECRET")
-                label = "BINANCE_TESTNET_API_KEY / BINANCE_TESTNET_API_SECRET"
-            else:
-                key, sec = secret("BINANCE_API_KEY"), secret("BINANCE_API_SECRET")
-                label = "BINANCE_API_KEY / BINANCE_API_SECRET"
-            if not key or not sec:
+            prefix = self.venue.env_prefix + ("_TESTNET" if testnet else "")
+            manquants = []
+            for champ, nom in self.venue.env_names().items():
+                nom = nom.replace(self.venue.env_prefix, prefix, 1)
+                val = secret(nom)
+                if not val:
+                    manquants.append(nom)
+                else:
+                    params[champ] = val
+            if manquants:
                 raise ExchangeError(
-                    f"Mode trading demande mais {label} absent(s) du .env"
+                    f"Mode trading demande sur {self.venue.nom} mais {', '.join(manquants)} "
+                    f"absent(s) du .env. Lance scripts/coller_cles.bat."
                 )
-            params["apiKey"] = key
-            params["secret"] = sec
 
         klass = getattr(ccxt, self.id)
         self._x = klass(params)
@@ -141,31 +152,100 @@ class Exchange:
         return self.fetch_balances().get(self.quote, 0.0)
 
     # ---------------- ordres (live uniquement) ----------------
-    @staticmethod
-    def client_order_id(tag: str) -> str:
-        """Identifiant d'ordre deterministe accepte par Binance
-        (^[.A-Z:/a-z0-9_-]{1,36}$). Le meme tag redonne le meme id : si le
-        reseau coupe apres l'envoi, on RETROUVE l'ordre au lieu de le refaire."""
-        cleaned = "".join(ch for ch in tag if ch.isalnum() or ch in "-_")
-        return cleaned[:36]
+    def client_order_id(self, tag: str) -> str:
+        """Identifiant deterministe, au format accepte par CETTE plateforme."""
+        return self.venue.client_order_id(tag)
 
     def market_buy_quote(self, symbol: str, quote_amount: float, *, tag: str = "") -> dict[str, Any]:
-        """Achat au marche pour un montant en quote (ex: 40 USDT)."""
+        """Achat au marche pour un montant en quote. Paie le tarif taker."""
         self._require_trading()
-        cid = self.client_order_id(tag or f"B-{symbol}-{int(time.time())}")
+        cid = self.client_order_id(tag or f"B{symbol}{int(time.time())}")
         return self._submit(
-            lambda: self._x.create_market_buy_order_with_cost(symbol, quote_amount, {"newClientOrderId": cid}),
+            lambda: self._x.create_market_buy_order_with_cost(
+                symbol, quote_amount, {self.venue.cid_pose: cid}),
             symbol, "buy", cid,
         )
 
     def market_sell_base(self, symbol: str, base_amount: float, *, tag: str = "") -> dict[str, Any]:
         self._require_trading()
         amt = self.amount_to_precision(symbol, base_amount)
-        cid = self.client_order_id(tag or f"S-{symbol}-{int(time.time())}")
+        cid = self.client_order_id(tag or f"S{symbol}{int(time.time())}")
         return self._submit(
-            lambda: self._x.create_order(symbol, "market", "sell", amt, None, {"newClientOrderId": cid}),
+            lambda: self._x.create_order(
+                symbol, "market", "sell", amt, None, {self.venue.cid_pose: cid}),
             symbol, "sell", cid,
         )
+
+    # ---------------- ordres limites : le coeur de la grille ----------------
+    def limit_order(
+        self, symbol: str, side: str, amount_base: float, price: float, *,
+        tag: str = "", post_only: bool = True,
+    ) -> dict[str, Any]:
+        """Pose un ordre limite et RETOURNE SANS ATTENDRE son execution.
+
+        C'est la difference de fond avec un ordre au marche : l'ordre reste
+        dans le carnet jusqu'a ce que le prix vienne le chercher, et il paie
+        le tarif maker, moins cher. post_only garantit qu'il ne sera jamais
+        execute immediatement contre le carnet : si le prix a bouge au point
+        de rendre l'ordre preneur, la plateforme le REFUSE au lieu de le
+        passer au tarif taker. Sans cela, une grille peut payer le tarif fort
+        exactement quand le marche s'emballe.
+        """
+        self._require_trading()
+        if side not in ("buy", "sell"):
+            raise ExchangeError(f"sens invalide : {side!r}")
+        if post_only and not self.venue.post_only:
+            raise ExchangeError(f"{self.venue.nom} ne propose pas d'ordre strictement maker")
+        amt = self.amount_to_precision(symbol, amount_base)
+        px = float(self._x.price_to_precision(symbol, price))
+        cid = self.client_order_id(tag or f"L{side}{symbol}{int(time.time())}")
+        params: dict[str, Any] = {self.venue.cid_pose: cid}
+        if post_only:
+            params["postOnly"] = True
+        try:
+            order = self._x.create_order(symbol, "limit", side, amt, px, params)
+        except ccxt.OperationFailed as e:
+            order = self._recover_order(symbol, cid, e)
+        except ccxt.ExchangeError as e:
+            raise ExchangeError(str(e)) from e
+        return {
+            "exchange_id": str(order.get("id")),
+            "client_order_id": cid,
+            "symbol": symbol, "side": side,
+            "amount_base": float(order.get("amount") or amt),
+            "price": float(order.get("price") or px),
+            "status": str(order.get("status") or "open"),
+        }
+
+    def cancel(self, symbol: str, order_id: str | None = None, *, tag: str = "") -> bool:
+        """Annule un ordre. Vrai s'il n'est plus au carnet apres l'appel,
+        y compris s'il avait deja disparu (deja execute ou deja annule)."""
+        self._require_trading()
+        params = {} if order_id else {self.venue.cid_relecture: self.client_order_id(tag)}
+        try:
+            self._retry(self._x.cancel_order, order_id, symbol, params)
+            return True
+        except ccxt.OrderNotFound:
+            return True
+        except ExchangeError:
+            raise
+        except ccxt.BaseError as e:
+            raise ExchangeError(f"annulation impossible : {e}") from e
+
+    def open_orders(self, symbol: str | None = None) -> list[dict[str, Any]]:
+        """Les ordres encore au carnet. Source de verite pour reconstituer
+        une grille apres un redemarrage."""
+        self._require_trading()
+        out = []
+        for o in self._retry(self._x.fetch_open_orders, symbol) or []:
+            out.append({
+                "exchange_id": str(o.get("id")),
+                "client_order_id": o.get("clientOrderId"),
+                "symbol": o.get("symbol"), "side": o.get("side"),
+                "price": float(o.get("price") or 0), "amount_base": float(o.get("amount") or 0),
+                "filled": float(o.get("filled") or 0), "status": o.get("status"),
+            })
+        return out
 
     def _submit(self, create, symbol: str, side: str, cid: str) -> dict[str, Any]:
         """Envoi d'un ordre puis lecture de son remplissage.
@@ -205,7 +285,7 @@ class Exchange:
         for _ in range(4):
             time.sleep(2.0)
             try:
-                o = self._x.fetch_order(None, symbol, {"origClientOrderId": cid})
+                o = self._x.fetch_order(None, symbol, {self.venue.cid_relecture: cid})
             except ccxt.OrderNotFound:
                 not_found += 1
                 if not_found >= 2:
@@ -222,12 +302,22 @@ class Exchange:
         raise OrderUncertainError(f"ordre {cid} envoye, resultat inconnu apres relectures : {err}")
 
     def _fees_from_trades(self, oid, symbol: str) -> list[dict[str, Any]]:
-        """Un ordre relu par fetch_order n'a pas ses frais : on les cherche
-        dans les trades. En echec, liste vide et l'appelant estime."""
+        """Un ordre relu par fetch_order n'a pas toujours ses frais : on les
+        cherche dans les executions.
+
+        Un echec est signale, jamais avale : compter des frais faux sur une
+        strategie a 2 % de marge est pire qu'un plantage, car le prix de
+        revente calcule serait faux sans que rien ne l'indique.
+        """
+        if not self.venue.frais_lisibles:
+            raise FeesUnknownError(
+                f"{self.venue.nom} ne permet pas de relire les frais reellement preleves "
+                f"(ordre {oid}). Le prix de revient serait une estimation."
+            )
         try:
-            trades = self._x.fetch_order_trades(oid, symbol)
-        except Exception:
-            return []
+            trades = self._retry(self._x.fetch_order_trades, oid, symbol)
+        except ExchangeError as e:
+            raise FeesUnknownError(f"frais illisibles pour l'ordre {oid} : {e}") from e
         return [t["fee"] for t in (trades or []) if t.get("fee")]
 
     def _normalize_fill(self, order: dict[str, Any], symbol: str, side: str) -> dict[str, Any]:
@@ -260,10 +350,18 @@ class Exchange:
             raise OrderUncertainError(f"ordre {oid} sans remplissage lisible (statut {status!r})")
 
         fee_rate = float(self.cfg.get("exchange.fee_rate", 0.001))
+        estimation_ok = bool(self.cfg.get("exchange.autoriser_frais_estimes", False))
         fee_quote, fee_base, fee_other = 0.0, 0.0, 0.0
         fees = order.get("fees") or ([order["fee"]] if order.get("fee") else [])
         if not fees:
-            fees = self._fees_from_trades(oid, symbol)
+            try:
+                fees = self._fees_from_trades(oid, symbol)
+            except FeesUnknownError:
+                # plateforme incapable de les rendre, ou panne reseau : c'est
+                # fatal, sauf si l'utilisateur a explicitement accepte l'estimation
+                if not estimation_ok:
+                    raise
+                fees = []
         for f in fees:
             if not f:
                 continue
@@ -276,10 +374,15 @@ class Exchange:
                 # BNB ou autre : paye hors de ce book, estime prudemment
                 fee_other += cost * fee_rate
         if not fees:
-            # Aucun frais lisible (ordre relu par fetch_order) : on suppose le cas
-            # Binance standard, frais preleves sur l'actif recu au taux configure.
-            # Prudent : on sous-estime ce que l'on detient, la vente ne peut pas
-            # echouer pour solde insuffisant ; il restera un peu de poussiere.
+            # Aucun frais lisible malgre la relecture des executions. On applique
+            # le taux configure, mais on le DIT : sur une marge de 2 %, une erreur
+            # de frais se voit dans le resultat sans qu'on sache d'ou elle vient.
+            if not estimation_ok:
+                raise FeesUnknownError(
+                    f"ordre {oid} : aucun frais lisible, ni sur l'ordre ni sur ses executions. "
+                    f"Passer exchange.autoriser_frais_estimes a true pour accepter une estimation "
+                    f"au taux de {fee_rate:.3%}, en sachant que le prix de revient sera approximatif."
+                )
             if side == "buy":
                 fee_base = filled * fee_rate
             else:

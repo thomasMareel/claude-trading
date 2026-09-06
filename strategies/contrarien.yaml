@@ -34,9 +34,9 @@ brief: |-
   Donne un bias a 24 h (up, down ou flat) pour chacune des trois paires a chaque cycle, meme en hold.
   Aucune news : la capitulation se lit dans les indicateurs et les 12 bougies fournies.
 univers:
-- BTC/USDT
-- ETH/USDT
-- SOL/USDT
+- BTC/EUR
+- ETH/EUR
+- SOL/EUR
 horizon_bougies: 3 a 18 bougies (12 heures a 3 jours), estimation ; la sortie a 18 bougies (au moins 70
   h entre ouverte_le et horodatage_utc) est une consigne du brief, pas un garde-fou
 ouvertures_par_semaine_attendues: 'Estimation calibree sur 311 bougies d''un regime haussier : aucun signal

@@ -34,9 +34,9 @@ brief: |-
   Ouvre chaque reasoning par les signaux presents (a+c, ou aucun), puis dis qui pousse, qui lache, ou tu changerais d'avis.
   A chaque cycle, meme sans trade, donne ton bias a 24 h par paire, deduit des bougies seules.
 univers:
-- BTC/USDT
-- ETH/USDT
-- SOL/USDT
+- BTC/EUR
+- ETH/EUR
+- SOL/EUR
 horizon_bougies: 6 a 18 bougies (1 a 3 jours), estimation raisonnee
 ouvertures_par_semaine_attendues: 2 a 3 (estimation raisonnee ; le budget plafonne a 3)
 risque:

@@ -26,9 +26,9 @@ brief: |-
   Ne fais pas : acheter sans citer l'indicateur et le seuil qui declenchent ; decrire une methode et en pratiquer une autre ; inventer une news.
   Donne ton bias a 24 h pour chacune des trois paires a chaque cycle, meme sans trade.
 univers:
-- BTC/USDT
-- ETH/USDT
-- SOL/USDT
+- BTC/EUR
+- ETH/EUR
+- SOL/EUR
 horizon_bougies: au choix de Claude, annonce dans sa methode ; estimation entre 6 et 60 bougies de 4 h
   (1 a 10 jours), calibree sur 311 bougies d'un regime haussier
 ouvertures_par_semaine_attendues: 'estimation, sans regle du brief pour la soutenir : 2 a 3 sur un budget

@@ -29,9 +29,9 @@ brief: |-
   Donne un bias a 24 h pour chaque symbole a chaque cycle, meme en hold ; dans une tendance etablie, ton bias par defaut suit trend, et tu expliques quand tu t'en ecartes.
   N'invoque jamais une news ou un evenement : tu ne vois que les prix et les indicateurs fournis.
 univers:
-- BTC/USDT
-- ETH/USDT
-- SOL/USDT
+- BTC/EUR
+- ETH/EUR
+- SOL/EUR
 horizon_bougies: 30 a 120 bougies (5 a 20 jours), mediane estimee vers 9 jours ; classe long parce que
   les positions coupees a la cassure de ema_fast sont courtes et que celles qui suivent la tendance jusqu'a
   sa cassure ou a l'objectif durent deux semaines et plus ; estimation calibree sur 311 bougies d'un regime

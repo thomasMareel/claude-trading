@@ -26,9 +26,9 @@ brief: |-
   Une rotation, c'est une vente plus un achat : 0,3 % de frais et glissement, une unite de budget. Justifie-la toujours en une phrase chiffree.
   N'invente rien d'absent du dossier. Donne ton bias a 24 h pour chaque paire, a chaque cycle, meme sans trade.
 univers:
-- BTC/USDT
-- ETH/USDT
-- SOL/USDT
+- BTC/EUR
+- ETH/EUR
+- SOL/EUR
 horizon_bougies: '18 a 60 bougies (3 a 10 jours par paire detenue, jusqu''a deux semaines quand le leader
   ne change pas), estimation raisonnee : un leader stable allonge la detention, une rotation confirmee
   ou le stop a 10 % la raccourcit'

@@ -19,18 +19,29 @@ experiment:
   benchmark: "buy_and_hold"
 
 exchange:
-  id: "binance"
-  quote: "USDT"
+  # OKX Europe, entite maltaise agreee MiCA. NE PAS mettre "okx" : cet
+  # identifiant pointe sur le domaine mondial et refuse les comptes europeens.
+  id: "myokx"
+  quote: "EUR"
   # Les paires suivies. Garde-en peu : chaque paire ajoute du bruit et des frais.
   symbols:
-    - "BTC/USDT"
-    - "ETH/USDT"
-    - "SOL/USDT"
+    # Memes actifs qu'avant, cotes en EURO : plus de conversion en dollar.
+    # Mesure le 06/09/2026 sur eea.okx.com : ecarts de 0,004 % (BTC),
+    # 0,000 % (ETH) et 0,011 % (SOL), volumes de 1,0 a 3,7 M EUR par jour.
+    # BCH, TRX et AAVE sont ecartes : 327 EUR de volume et 0,865 % sur BCH.
+    - "BTC/EUR"
+    - "ETH/EUR"
+    - "SOL/EUR"
   timeframe: "4h"
   # Bougies historiques chargees a chaque cycle. L'EMA200 en exige 200.
   lookback_candles: 300
-  # Frais taker Binance spot standard, appliques en paper ET au repere.
+  # Frais MAKER, puisque la strategie pose des ordres limites. A MESURER sur
+  # un vrai aller-retour : trois sources donnent trois valeurs differentes
+  # pour la meme plateforme, la metadonnee de ccxt est peu fiable.
   fee_rate: 0.001
+  # Refuser d'estimer les frais quand ils ne sont pas lisibles. Sur une marge
+  # de 2 %, un prix de revient approximatif fausse tout sans le dire.
+  autoriser_frais_estimes: false
   # Slippage simule en paper, applique aussi au repere pour rester equitable.
   slippage: 0.0005
 

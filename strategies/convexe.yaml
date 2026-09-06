@@ -27,9 +27,9 @@ brief: |-
   A chaque cycle, compte dans ton raisonnement les stops et les objectifs parmi tes six derniers trades clos (motif_cloture) et dis honnetement si le ratio tient une reussite sur six.
   Donne ton bias a 24 h pour chaque paire, a chaque cycle, meme quand tu ne trades pas.
 univers:
-- BTC/USDT
-- ETH/USDT
-- SOL/USDT
+- BTC/EUR
+- ETH/EUR
+- SOL/EUR
 horizon_bougies: 'variable par construction (estimation) : au stop, 6 a 30 bougies (1 a 5 jours) ; a l''objectif,
   40 a 150 bougies (1 a 4 semaines) ; aucune sortie intermediaire'
 ouvertures_par_semaine_attendues: 'estimation : environ 1 par semaine en moyenne, soit 6 a 10 trades clos

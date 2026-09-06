@@ -33,9 +33,9 @@ brief: |-
   La plupart des cycles tu ne fais rien ; des semaines sans trade en tendance sont normales.
   Donne ton bias a 24 h pour chaque paire a chaque cycle, meme sans trade ; en fourchette il est souvent flat.
 univers:
-- BTC/USDT
-- ETH/USDT
-- SOL/USDT
+- BTC/EUR
+- ETH/EUR
+- SOL/EUR
 horizon_bougies: 6 a 18 bougies (1 a 3 jours), avec une sortie demandee au premier cycle apres 70 h de
   detention, soit 18 bougies (estimation)
 ouvertures_par_semaine_attendues: 'estimation : zero dans les semaines de tendance, 1 a 3 par grappes

@@ -31,9 +31,9 @@ brief: |-
   Donne un bias a 24 h pour chaque paire a chaque cycle, meme en hold.
   Pas de news : le repli se lit dans rsi, ema_fast, ema_slow et les bougies fournies.
 univers:
-- BTC/USDT
-- ETH/USDT
-- SOL/USDT
+- BTC/EUR
+- ETH/EUR
+- SOL/EUR
 horizon_bougies: 6 a 42 bougies (1 a 7 jours), le plus souvent 2 a 5 jours ; estimation calibree sur 311
   bougies d'un regime haussier, ou les deux trades rejoues ont dure 34 bougies chacun
 ouvertures_par_semaine_attendues: '1 a 2 (plafond 4). Estimation calibree sur 311 bougies d''un regime

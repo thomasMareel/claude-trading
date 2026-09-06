@@ -18,7 +18,7 @@ ce_que_claude_regarde:
 - 'Rien d''autre : rsi, vol_ratio, roc_5_pct, roc_20_pct, atr_pct et les distances aux extremes sont ignores
   par consigne'
 brief: |-
-  Tu appliques un filtre de regime, pas une gestion active. N'achete que BTC/USDT et ETH/USDT. SOL/USDT reste dans ton dossier pour le bias, mais ne l'achete jamais : trop volatil, il traverserait la ligne trop souvent pour un filtre aussi lent.
+  Tu appliques un filtre de regime, pas une gestion active. N'achete que BTC/EUR et ETH/EUR. SOL/EUR reste dans ton dossier pour le bias, mais ne l'achete jamais : trop volatil, il traverserait la ligne trop souvent pour un filtre aussi lent.
   La ligne est ema_slow. Achete une paire, a max_position_pct, quand close est superieur ou egal a 1,02 fois ema_slow, que trend vaut up et que le c de l'avant-derniere bougie de dernieres_bougies_4h depasse aussi 1,02 fois ema_slow (la meme valeur : elle bouge trop peu en 4 h pour changer la conclusion). Si les deux paires sont eligibles, ouvre les deux au meme cycle si round_trips_restants_cette_semaine le permet.
   Vends une paire seulement quand close est inferieur ou egal a 0,98 fois ema_slow et que le c de l'avant-derniere bougie l'est aussi. Une seule cloture sous la ligne, meme violente, n'est pas un signal.
   Commence chaque reasoning par l'ecart en pourcentage entre close et ema_slow.
@@ -26,11 +26,11 @@ brief: |-
   Si un stop ou un objectif automatique ferme une position (motif_cloture dans tes_trades_clotures_recents) alors que la condition d'achat tient encore, rachete au cycle suivant si le budget le permet.
   N'anticipe jamais un franchissement : tu agis apres la ligne, jamais avant. Chaque aller-retour coute 0,3 % (0,2 % de frais plus environ 0,1 % de glissement). Ne vends pas pour encaisser un gain, ne change pas de seuil.
   Attends-toi a passer des semaines sans rien faire : c'est le comportement normal de ce mandat, pas une anomalie a corriger.
-  A chaque cycle, meme sans trade, donne ton bias a 24 h pour chacune des trois paires, SOL/USDT compris.
+  A chaque cycle, meme sans trade, donne ton bias a 24 h pour chacune des trois paires, SOL/EUR compris.
 univers:
-- BTC/USDT
-- ETH/USDT
-- SOL/USDT
+- BTC/EUR
+- ETH/EUR
+- SOL/EUR
 horizon_bougies: 60 a 300 bougies et plus (plusieurs semaines), estimation ; une position peut durer toute
   la fenetre de 8 semaines, soit 336 bougies
 ouvertures_par_semaine_attendues: 'estimation raisonnee : 0 a 0,5 par semaine, soit 2 a 4 ouvertures sur

@@ -30,7 +30,7 @@ BOUNDS: dict[str, tuple[float, float]] = {
     "take_profit_pct": (0.06, 0.30),
     "max_round_trips_per_week": (1, 4),
 }
-ALLOWED_UNIVERSE = ("BTC/USDT", "ETH/USDT", "SOL/USDT")
+ALLOWED_UNIVERSE = ("BTC/EUR", "ETH/EUR", "SOL/EUR")
 REQUIRED = (
     "id", "nom", "famille", "accroche", "philosophie", "ce_que_claude_regarde", "brief", "univers",
     "horizon_bougies", "ouvertures_par_semaine_attendues", "risque", "quand_ca_marche", "quand_ca_casse",

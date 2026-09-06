@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import pytest  # noqa: E402
 
 from src.config import Config  # noqa: E402
-from src.exchange import Exchange, ExchangeError, OrderUncertainError  # noqa: E402
+from src.exchange import Exchange, ExchangeError, FeesUnknownError, OrderUncertainError  # noqa: E402
 
 CFG = Config(raw={"exchange": {"id": "binance", "quote": "USDT", "fee_rate": 0.001}})
 
@@ -62,12 +62,16 @@ def test_orders_are_refused_without_trading_rights():
         make_x().market_buy_quote("BTC/USDT", 20.0)
 
 
-def test_client_order_id_is_deterministic_and_binance_safe():
-    cid = Exchange.client_order_id("20260904T091345Z-B-BTC/USDT")
-    assert cid == "20260904T091345Z-B-BTCUSDT"       # le slash est retire
+def test_client_order_id_is_deterministic_and_venue_safe():
+    """L'identifiant depend maintenant de la PLATEFORME : chacune impose son
+    alphabet et sa longueur. C'est le correctif du defaut silencieux ou un
+    identifiant au format Binance etait ignore ailleurs."""
+    x = make_x()
+    cid = x.client_order_id("20260904T091345Z-B-BTC/USDT")
+    assert cid == "20260904T091345Z-B-BTCUSDT"       # Binance tolere le tiret, le slash part
     assert len(cid) <= 36
-    assert Exchange.client_order_id("20260904T091345Z-B-BTC/USDT") == cid   # meme tag, meme id
-    assert Exchange.client_order_id("WD20260904T091345Z-S-SOL/USDT") != cid
+    assert x.client_order_id("20260904T091345Z-B-BTC/USDT") == cid   # meme tag, meme id
+    assert x.client_order_id("WD20260904T091345Z-S-SOL/USDT") != cid
 
 
 # ------------------------------------------------------------ chemin d'envoi, sans reseau
@@ -143,12 +147,51 @@ def test_error_after_acceptance_is_uncertain_never_a_plain_failure(monkeypatch):
         x.market_buy_quote("BTC/USDT", 40.0, tag="C5-B-BTC/USDT")
 
 
-def test_recovered_order_without_fees_assumes_fee_on_received_asset(monkeypatch):
-    x = make_live(monkeypatch)
-    no_fee = {"id": "9", "status": "closed", "filled": 0.0004, "average": 100_000.0, "cost": 40.0}
+NO_FEE = {"id": "9", "status": "closed", "filled": 0.0004, "average": 100_000.0, "cost": 40.0}
+
+
+def _sans_frais_lisibles(monkeypatch, cfg=None):
+    x = Exchange(cfg or CFG, trading=True) if cfg else make_live(monkeypatch)
+    if cfg:
+        x.amount_to_precision = lambda s, a: a
     x._x.create_market_buy_order_with_cost = lambda *a, **k: (_ for _ in ()).throw(ccxt.RequestTimeout("t"))
-    x._x.fetch_order = lambda *a, **k: no_fee
+    x._x.fetch_order = lambda *a, **k: NO_FEE
     x._x.fetch_order_trades = lambda *a, **k: (_ for _ in ()).throw(ccxt.NetworkError("no trades"))
+    return x
+
+
+def test_frais_illisibles_refuses_plutot_qu_estimes_en_silence(monkeypatch):
+    """Sur une marge de 2 %, des frais estimes faussent le prix de revient donc
+    le prix de revente, sans que rien ne l'indique. On refuse bruyamment."""
+    x = _sans_frais_lisibles(monkeypatch)
+    with pytest.raises(FeesUnknownError, match="frais illisibles"):
+        x.market_buy_quote("BTC/USDT", 40.0, tag="C6-B-BTC/USDT")
+
+
+def test_frais_absents_sans_panne_reseau_refuses_aussi(monkeypatch):
+    """Cas distinct : l'ordre et ses executions se lisent, mais aucun frais
+    n'y figure. Refuse de la meme facon."""
+    x = make_live(monkeypatch)
+    x._x.create_market_buy_order_with_cost = lambda *a, **k: dict(NO_FEE)
+    x._x.fetch_order = lambda *a, **k: dict(NO_FEE)
+    x._x.fetch_order_trades = lambda *a, **k: []
+    with pytest.raises(FeesUnknownError, match="aucun frais lisible"):
+        x.market_buy_quote("BTC/USDT", 40.0, tag="C7-B-BTC/USDT")
+
+
+def test_estimation_possible_mais_seulement_si_elle_est_demandee(monkeypatch):
+    monkeypatch.setenv("BINANCE_API_KEY", "k"); monkeypatch.setenv("BINANCE_API_SECRET", "s")
+    monkeypatch.setattr("src.exchange.time.sleep", lambda *_: None)
+    cfg = Config(raw={"exchange": {**CFG.raw["exchange"], "autoriser_frais_estimes": True}})
+    x = _sans_frais_lisibles(monkeypatch, cfg)
     f = x.market_buy_quote("BTC/USDT", 40.0, tag="C6-B-BTC/USDT")
     assert f["amount_base"] == pytest.approx(0.0004 * 0.999)   # prudent : la vente ne peut pas echouer
     assert f["fee_quote"] == pytest.approx(0.04)
+
+
+def test_une_plateforme_sans_frais_lisibles_est_refusee_d_emblee(monkeypatch):
+    monkeypatch.setenv("BITVAVO_API_KEY", "k"); monkeypatch.setenv("BITVAVO_API_SECRET", "s")
+    cfg = Config(raw={"exchange": {"id": "bitvavo", "quote": "EUR", "fee_rate": 0.001}})
+    x = Exchange(cfg, trading=True)
+    with pytest.raises(FeesUnknownError, match="ne permet pas de relire"):
+        x._fees_from_trades("9", "BTC/EUR")

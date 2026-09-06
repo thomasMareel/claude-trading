@@ -18,7 +18,7 @@ ce_que_claude_regarde:
 - 'En position : close sous ema_fast de plus de 3 %, trend down, bougie rouge de plus de deux atr_pct,
   ou 30 bougies (118 h) entre ouverte_le et horodatage_utc sans gain : il vend, meme gagnant'
 brief: |-
-  Tu gardes ce book comme un capital que tu n'as pas le droit d'entamer. La reponse par defaut est hold. N'achete que BTC/USDT et ETH/USDT ; SOL/USDT reste en hold mais recoit son bias.
+  Tu gardes ce book comme un capital que tu n'as pas le droit d'entamer. La reponse par defaut est hold. N'achete que BTC/EUR et ETH/EUR ; SOL/EUR reste en hold mais recoit son bias.
   Un achat exige quatre conditions a la fois : trend vaut up et close depasse ema_slow d'au moins 3 % ; atr_pct est sous 1.5 % (pas de marche agite) ; rsi est entre 38 et 50 ; close est sous ema_fast, de 0 a 2 %. S'il en manque une, n'achete pas et nomme-la.
   Taille : 20 % du book, une seule position a la fois. Si BTC et ETH sont eligibles le meme cycle, prends celle dont atr_pct est le plus bas.
   N'achete pas si pnl_du_jour_pct est negatif, ni dans les 7 jours qui suivent un trade clos avec motif_cloture stop_loss (lis fermee dans tes_trades_clotures_recents).
@@ -28,9 +28,9 @@ brief: |-
   Ne fais pas : acheter parce que cela a rebondi ; garder une position gagnante alors qu'un signal de sortie a parle ; monter la taille pour rattraper le repere. Chaque aller-retour coute 0.3 %.
   A chaque cycle, meme sans trade, donne ton bias a 24 h pour chacune des trois paires, et ecris en premiere phrase du reasoning la condition qui manque ou la sortie qui a parle.
 univers:
-- BTC/USDT
-- ETH/USDT
-- SOL/USDT
+- BTC/EUR
+- ETH/EUR
+- SOL/EUR
 horizon_bougies: 'estimation : 6 a 60 bougies (1 a 10 jours) ; sans gain apres 30 bougies (118 h, 5 jours
   entre ouverte_le et horodatage_utc), la position est vendue ; gagnante, elle court jusqu''a un signal
   de doute, +6 % avec rsi au-dessus de 65, ou l''objectif a +10 %'

@@ -27,9 +27,9 @@ brief: |-
   Chaque aller-retour coute environ 0,3 %. Les cassures avec volume sont rares : certaines semaines n'en offrent aucune.
   Donne ton bias a 24 h pour chaque paire a chaque cycle, meme en hold. Tu ne vois ni news ni carnet d'ordres : une cassure se lit dans le prix et le volume fournis.
 univers:
-- BTC/USDT
-- ETH/USDT
-- SOL/USDT
+- BTC/EUR
+- ETH/EUR
+- SOL/EUR
 horizon_bougies: 1 a 6 bougies (4 a 24 h) pour les echecs, qui sont la majorite ; 12 a 60 bougies (2 a
   10 jours) pour les cassures qui tiennent ; mediane sous 24 h ; estimation calibree sur 311 bougies d'un
   regime haussier

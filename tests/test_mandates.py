@@ -13,7 +13,7 @@ from src import mandates  # noqa: E402
 
 GOOD = {
     "id": "test", "nom": "Test", "famille": "F", "accroche": "a", "philosophie": "p",
-    "ce_que_claude_regarde": ["x"], "brief": "b" * 300, "univers": ["BTC/USDT"],
+    "ce_que_claude_regarde": ["x"], "brief": "b" * 300, "univers": ["BTC/EUR"],
     "horizon_bougies": "6", "ouvertures_par_semaine_attendues": "1",
     "risque": {"max_position_pct": 0.3, "stop_loss_pct": 0.06, "take_profit_pct": 0.12, "max_round_trips_per_week": 2},
     "quand_ca_marche": "m", "quand_ca_casse": "c", "pour_qui": ["prudent"], "axes": {"style": "s"},
@@ -52,7 +52,7 @@ def test_unknown_risk_key_and_bad_universe_are_refused(tmp_path):
     with pytest.raises(mandates.MandateError, match="ne peut fixer"):
         mandates.load_all(d)
     (d / "x.yaml").unlink()
-    write(d, "y", univers=["DOGE/USDT"])
+    write(d, "y", univers=["DOGE/EUR"])
     with pytest.raises(mandates.MandateError, match="univers"):
         mandates.load_all(d)
 
@@ -76,21 +76,21 @@ def test_missing_control_mandate_is_refused(tmp_path):
 
 def test_apply_to_config_overrides_risk_and_restricts_universe(tmp_path):
     d = with_libre(tmp_path)
-    write(d, "btc", univers=["BTC/USDT"])
+    write(d, "btc", univers=["BTC/EUR"])
     raw = {"experiment": {"mandate": "btc"}, "risk": {"max_position_pct": 0.4, "kill_switch_drawdown_pct": 0.2},
-           "exchange": {"symbols": ["BTC/USDT", "ETH/USDT", "SOL/USDT"]}}
+           "exchange": {"symbols": ["BTC/EUR", "ETH/EUR", "SOL/EUR"]}}
     out = mandates.apply_to_config(raw, d)
     assert out["risk"]["max_position_pct"] == 0.3            # ecrase par le mandat
     assert out["risk"]["stop_loss_pct"] == 0.06
     assert out["risk"]["kill_switch_drawdown_pct"] == 0.2    # hors mandat : inchange
-    assert out["exchange"]["symbols"] == ["BTC/USDT"]
+    assert out["exchange"]["symbols"] == ["BTC/EUR"]
     assert out["experiment"]["mandate_nom"] == "Test"
 
 
 def test_apply_defaults_to_libre_and_rejects_unknown(tmp_path):
     d = with_libre(tmp_path)
-    out = mandates.apply_to_config({"exchange": {"symbols": ["BTC/USDT", "ETH/USDT"]}}, d)
-    assert out["experiment"]["mandate"] == "libre" and out["exchange"]["symbols"] == ["BTC/USDT", "ETH/USDT"]
+    out = mandates.apply_to_config({"exchange": {"symbols": ["BTC/EUR", "ETH/EUR"]}}, d)
+    assert out["experiment"]["mandate"] == "libre" and out["exchange"]["symbols"] == ["BTC/EUR", "ETH/EUR"]
     with pytest.raises(mandates.MandateError, match="inconnu"):
         mandates.apply_to_config({"experiment": {"mandate": "nexistepas"}}, d)
 
@@ -98,4 +98,4 @@ def test_apply_defaults_to_libre_and_rejects_unknown(tmp_path):
 def test_prompt_section_carries_the_exact_brief():
     m = mandates.get("libre")
     s = mandates.prompt_section(m)
-    assert m.brief.strip() in s and "TON MANDAT" in s and "BTC/USDT" in s
+    assert m.brief.strip() in s and "TON MANDAT" in s and "BTC/EUR" in s

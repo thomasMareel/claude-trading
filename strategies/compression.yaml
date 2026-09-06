@@ -31,9 +31,9 @@ brief: |-
   Un cycle sur huit environ remplit toutes les conditions : la plupart des cycles restent des hold, et le budget de la semaine sera souvent epuise avant la fin. Chaque aller-retour coute 0,3 % : ne force aucun achat pour le depenser.
   Donne un bias a 24 h pour chaque symbole a chaque cycle, meme en hold.
 univers:
-- BTC/USDT
-- ETH/USDT
-- SOL/USDT
+- BTC/EUR
+- ETH/EUR
+- SOL/EUR
 horizon_bougies: 3 a 30 bougies (12 h a 5 jours), le plus souvent 1 a 3 jours ; estimation calibree sur
   311 bougies d'un regime haussier, ou la duree mediane d'un trade rejoue va de 12 h a 2 jours selon la
   fenetre et ou un trade sur quatre environ sort par la limite des 30 bougies
