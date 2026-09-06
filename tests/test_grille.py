@@ -253,3 +253,44 @@ def test_le_suivi_donne_une_ligne_par_bougie_et_de_quoi_redessiner_l_echelle():
     assert seuil == pytest.approx(90.0 * 0.85)
     assert [p for p, _ in R.echelle(ref, 1000.0)][-1] == pytest.approx(90.0)
     assert sortie == pytest.approx(revient * 1.02 / 0.999)
+
+
+# ------------------------------------------------------------------ plancher
+MIN = Reglages(profondeur=0.10, paliers=5, ratio=2.0, objectif_net=0.02,
+               frais=0.001, abandon_sous=0.15, mise_min=100.0)
+
+
+def test_un_barreau_sous_le_minimum_n_est_jamais_pose():
+    """Une plateforme refuse un ordre trop petit, elle ne l'agrandit pas.
+    Le rejeu doit refuser de la meme facon, sinon il compte des operations
+    qui n'auraient jamais eu lieu."""
+    d = Descente("BTC/EUR", 100.0, 1000.0, MIN)
+    mises = [e for _, e in d.echelle]                    # 32.3, 64.5, 129, 258, 516
+    assert mises[0] < 100 < mises[2]
+    assert d.barreaux_morts == [0, 1]
+    assert [i for i, _, _ in d.barreaux_a_poser()] == [2, 3, 4]
+
+
+def test_le_budget_des_barreaux_morts_reste_en_caisse():
+    """On ne le redistribue pas : redistribuer changerait en douce l'echelle
+    que l'on pretend tester."""
+    b = [bougie(0, 100, 100, 89, 90)]
+    r = rejouer("BTC/EUR", b, MIN, 1000.0, reference=100.0)
+    d = r["descente_en_cours"]
+    assert d.remplis == [2, 3, 4]
+    ech = MIN.echelle(100.0, 1000.0)
+    assert d.cumul_euros == pytest.approx(sum(e for _, e in ech[2:]))
+    assert r["cash_final"] == pytest.approx(sum(e for _, e in ech[:2]))
+
+
+def test_le_plancher_ne_change_rien_quand_il_est_a_zero():
+    """Regression : le comportement par defaut doit rester celui du papier."""
+    b = [bougie(0, 100, 100, 89, 90), bougie(H, 90, 95, 90, 95)]
+    a = rejouer("BTC/EUR", b, R, 1000.0, reference=100.0)
+    z = rejouer("BTC/EUR", b, Reglages(**{**R.__dict__, "mise_min": 0.0}), 1000.0, reference=100.0)
+    assert resume(a) == resume(z)
+
+
+def test_un_plancher_absurde_est_refuse():
+    with pytest.raises(GrilleError, match="mise_min"):
+        Reglages(mise_min=-1.0)

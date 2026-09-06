@@ -13,3 +13,4 @@ logs/*.log
 data/*.db-*
 .claude/
 docs/simulations.json
+docs/simulations.html

@@ -36,6 +36,15 @@ from src.storage import Storage  # noqa: E402
 HEURE = 3_600_000
 GENRE = {"achat": 0, "vente": 1, "abandon": 2}
 
+#  Le plancher qui compte : la couche de risque reelle refuse tout ordre sous
+#  max(risk.min_order_value, minimum de la plateforme). Avec une progression
+#  geometrique forte, la moitie haute de l'echelle passe sous ce plancher et
+#  n'aurait jamais ete posee. Rejouer sans ce plancher compte des operations de
+#  deux centimes comme des trades : c'est la difference entre la strategie sur
+#  le papier et la strategie executable.
+PLANCHER = 12.0
+PLANCHERS_COMPARES = (0.0, 5.0)
+
 #  Les huit reglages compares. Le dernier est celui que l'utilisateur appliquait
 #  a la main sur son tableur : il sert de point de depart, pas de repoussoir.
 REGLAGES = [
@@ -165,8 +174,10 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
 
     sorties = []
     for cle, prof, npal, ratio, obj, nom in REGLAGES:
-        rg = Reglages(profondeur=prof, paliers=npal, ratio=ratio, objectif_net=obj,
-                      frais=frais, abandon_sous=0.15)
+        faire = lambda m: Reglages(profondeur=prof, paliers=npal, ratio=ratio,  # noqa: E731
+                                   objectif_net=obj, frais=frais, abandon_sous=0.15,
+                                   mise_min=m)
+        rg = faire(PLANCHER)
         # l'echelle est la meme a toute epoque, exprimee en fraction de la reference
         ech = rg.echelle(1.0, 1.0)
         bloc = {
@@ -174,6 +185,8 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
             "ratio": ratio, "objectif": obj, "abandon_sous": rg.abandon_sous,
             "prix_pct": [arrondi(p, 6) for p, _ in ech],
             "mises_pct": [arrondi(e, 8) for _, e in ech],
+            "mise_min": PLANCHER,
+            "morts": [i for i, (_, e) in enumerate(ech) if e * budget < PLANCHER],
             "sims": {},
         }
         for s, b in brut.items():
@@ -194,6 +207,16 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
                             c.paliers, arrondi(c.investi, 2), arrondi(c.gain, 4),
                             arrondi(c.gain_pct, 6)] for c in r["cycles"]],
                 "jours": journalier(r["deploiement"], r["equity"], budget),
+                # ce que le meme reglage aurait donne sous d'autres planchers :
+                # sans cette colonne, la page ne pourrait pas montrer combien du
+                # resultat tenait a des ordres irrecevables
+                "planchers": {
+                    f"{m:g}": {
+                        "perf_pct": arrondi(resume(rejouer(s, b, faire(m), budget))["perf_pct"], 6),
+                        "cycles": len(rejouer(s, b, faire(m), budget)["cycles"]),
+                        "vivants": sum(1 for _, e in rg.echelle(1.0, budget) if e >= m),
+                    } for m in PLANCHERS_COMPARES
+                },
             }
         sorties.append(bloc)
 
@@ -207,10 +230,28 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
     }
 
 
+def batir_page(json_texte: str, gabarit: Path, sortie: Path) -> Path:
+    """Injecte les donnees dans le gabarit pour obtenir une page autonome.
+
+    Une page qui va chercher son JSON par le reseau ne s'ouvre pas depuis un
+    fichier local et ne survit pas a un hebergement qui bloque la requete. Une
+    seule page qui se suffit a elle-meme s'ouvre partout.
+    """
+    modele = gabarit.read_text(encoding="utf-8")
+    jeton = "/*__DONNEES__*/"
+    if jeton not in modele:
+        raise SystemExit(f"{gabarit} ne contient pas le jeton {jeton}")
+    # </script> a l'interieur d'une balise script fermerait la balise : c'est la
+    # seule sequence a neutraliser dans du JSON injecte tel quel.
+    sortie.write_text(modele.replace(jeton, json_texte.replace("</", "<\\/")), encoding="utf-8")
+    return sortie
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--budget", type=float, default=1000.0)
     ap.add_argument("--sortie", default="docs/simulations.json")
+    ap.add_argument("--page", action="store_true", help="fabrique aussi la page autonome")
     args = ap.parse_args()
 
     cfg = load_config()
@@ -220,11 +261,17 @@ def main() -> int:
 
     chemin = Path(args.sortie)
     chemin.parent.mkdir(parents=True, exist_ok=True)
-    chemin.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
+    texte = json.dumps(data, separators=(",", ":"))
+    chemin.write_text(texte, encoding="utf-8")
     poids = chemin.stat().st_size / 1e6
     ev = sum(len(sim["journal"]) for r in data["reglages"] for sim in r["sims"].values())
     print(f"{chemin} : {poids:.2f} Mo, {len(data['reglages'])} reglages x "
           f"{len(data['paires'])} paires, {ev} evenements, {data['meta']['jours']} jours")
+
+    if args.page:
+        p = batir_page(texte, chemin.parent / "simulations.template.html",
+                       chemin.parent / "simulations.html")
+        print(f"{p} : {p.stat().st_size / 1e6:.2f} Mo, autonome")
     return 0
 
 

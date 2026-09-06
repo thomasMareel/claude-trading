@@ -1,0 +1,888 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Anatomie d'une descente</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#EDF0EF; --surface:#FFFFFF; --surface-2:#F6F8F7;
+  --ink:#16201F; --ink-2:#55625F; --ink-3:#8A9694;
+  --rule:#D2DAD8; --rule-fort:#B4C0BD;
+  --achat:#0E7C86; --achat-doux:#0E7C8622;
+  --vente:#B5730B; --vente-doux:#B5730B22;
+  --blocage:#A34A3A; --blocage-doux:#A34A3A1A;
+  --dort:#C3CDCA; --prix:#48544F;
+  --ombre:0 1px 2px rgba(22,32,31,.05), 0 8px 24px -12px rgba(22,32,31,.18);
+  --focus:#0E7C86;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F1514; --surface:#171F1E; --surface-2:#1D2726;
+    --ink:#E4EAE8; --ink-2:#9CAAA6; --ink-3:#6A7874;
+    --rule:#293432; --rule-fort:#3A4845;
+    --achat:#4FC5D0; --achat-doux:#4FC5D022;
+    --vente:#E0A544; --vente-doux:#E0A54422;
+    --blocage:#DB7A63; --blocage-doux:#DB7A631F;
+    --dort:#333F3D; --prix:#94A29E;
+    --ombre:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6);
+    --focus:#4FC5D0;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F1514; --surface:#171F1E; --surface-2:#1D2726;
+  --ink:#E4EAE8; --ink-2:#9CAAA6; --ink-3:#6A7874;
+  --rule:#293432; --rule-fort:#3A4845;
+  --achat:#4FC5D0; --achat-doux:#4FC5D022;
+  --vente:#E0A544; --vente-doux:#E0A54422;
+  --blocage:#DB7A63; --blocage-doux:#DB7A631F;
+  --dort:#333F3D; --prix:#94A29E;
+  --ombre:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6);
+  --focus:#4FC5D0;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:16px; line-height:1.62; -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:"Newsreader",Georgia,"Times New Roman",serif; font-weight:500;
+  text-wrap:balance; margin:0; line-height:1.18; letter-spacing:-.005em}
+p{margin:0}
+a{color:var(--achat)}
+:focus-visible{outline:2px solid var(--focus); outline-offset:2px; border-radius:2px}
+
+/* ---------------------------------------------------------------- trame */
+.large{width:min(1160px,100% - 2.5rem); margin-inline:auto}
+.texte{width:min(66ch,100% - 2.5rem); margin-inline:auto}
+@media (max-width:640px){ .large,.texte{width:calc(100% - 1.75rem)} }
+
+/* ---------------------------------------------------------------- entete */
+header.tete{padding:clamp(2.5rem,7vw,5rem) 0 clamp(1.5rem,4vw,2.5rem)}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.7rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-3); margin-bottom:1rem}
+h1{font-size:clamp(2.3rem,6.5vw,3.9rem); letter-spacing:-.02em}
+h1 em{font-style:italic; color:var(--achat)}
+.chapo{margin-top:1.4rem; font-size:clamp(1.02rem,2.2vw,1.16rem); color:var(--ink-2); max-width:60ch}
+.chapo strong{color:var(--ink); font-weight:600}
+
+/* ---------------------------------------------------------------- barre */
+.barre{position:sticky; top:0; z-index:20; background:color-mix(in srgb,var(--ground) 88%,transparent);
+  backdrop-filter:blur(10px); border-block:1px solid var(--rule); margin-top:2rem}
+.barre-in{display:flex; flex-wrap:wrap; gap:.75rem 1.5rem; align-items:center; padding:.7rem 0}
+.groupe{display:flex; align-items:center; gap:.5rem; min-width:0}
+.groupe > .lab{font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--ink-3); white-space:nowrap}
+select{font-family:"IBM Plex Mono",monospace; font-size:.82rem; color:var(--ink);
+  background:var(--surface); border:1px solid var(--rule-fort); border-radius:3px;
+  padding:.34rem 1.9rem .34rem .55rem; max-width:100%;
+  appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:calc(100% - 15px) calc(50% + 1px),calc(100% - 10px) calc(50% + 1px);
+  background-size:5px 5px,5px 5px; background-repeat:no-repeat}
+.puces{display:flex; gap:.3rem; flex-wrap:wrap}
+.puce{font-family:"IBM Plex Mono",monospace; font-size:.76rem; color:var(--ink-2);
+  background:var(--surface); border:1px solid var(--rule); border-radius:3px;
+  padding:.3rem .6rem; cursor:pointer; white-space:nowrap}
+.puce[aria-pressed="true"]{background:var(--achat); border-color:var(--achat); color:var(--surface); font-weight:500}
+.puce:hover{border-color:var(--rule-fort)}
+
+/* ---------------------------------------------------------------- tuiles */
+.tuiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(148px,1fr)); gap:1px;
+  background:var(--rule); border:1px solid var(--rule); margin:2.2rem 0 0}
+.tuile{background:var(--surface); padding:.85rem .95rem 1rem}
+.tuile .k{font-family:"IBM Plex Mono",monospace; font-size:.63rem; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--ink-3); display:block; margin-bottom:.35rem}
+.tuile .v{font-family:"IBM Plex Mono",monospace; font-size:1.42rem; font-weight:500;
+  letter-spacing:-.02em; display:block; line-height:1.1}
+.tuile .n{font-size:.76rem; color:var(--ink-3); display:block; margin-top:.2rem; line-height:1.35}
+.v.pos{color:var(--achat)} .v.neg{color:var(--blocage)}
+
+/* ---------------------------------------------------------------- planches */
+.planche{margin-top:clamp(3rem,7vw,4.6rem); border-top:1px solid var(--rule-fort); padding-top:1.1rem}
+.pl-tete{display:flex; gap:1.1rem; align-items:baseline; flex-wrap:wrap; margin-bottom:.15rem}
+.pl-num{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-3); white-space:nowrap}
+.pl-tete h2{font-size:clamp(1.35rem,3.2vw,1.72rem); flex:1 1 18ch}
+.pl-q{color:var(--ink-2); font-size:.95rem; margin:.35rem 0 1.1rem; max-width:72ch}
+.cadre{background:var(--surface); border:1px solid var(--rule); box-shadow:var(--ombre)}
+.cadre svg{display:block; width:100%; height:auto}
+.legende{display:flex; flex-wrap:wrap; gap:.35rem 1.15rem; padding:.6rem .9rem;
+  border-top:1px solid var(--rule); font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--ink-2)}
+.cle{display:inline-flex; align-items:center; gap:.4rem}
+.pastille{width:9px; height:9px; border-radius:50%; flex:none}
+.pastille.carre{border-radius:1px} .pastille.trait{height:2px; width:16px; border-radius:0}
+.alire{margin-top:.85rem; font-size:.93rem; color:var(--ink-2); max-width:76ch;
+  border-left:2px solid var(--achat); padding-left:.85rem}
+.alire b{color:var(--ink); font-weight:600}
+.souscadre{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--rule);
+  border:1px solid var(--rule); box-shadow:var(--ombre)}
+@media (max-width:760px){ .souscadre{grid-template-columns:1fr} }
+.souscadre > div{background:var(--surface)}
+.sous-t{font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--ink-3); padding:.7rem .9rem .1rem}
+
+/* ---------------------------------------------------------------- dessin */
+.axe{stroke:var(--rule); stroke-width:1}
+.axe-fort{stroke:var(--rule-fort); stroke-width:1}
+.tick{fill:var(--ink-3); font-family:"IBM Plex Mono",monospace; font-size:10px}
+.tick-t{fill:var(--ink-2); font-family:"IBM Plex Mono",monospace; font-size:10px; font-weight:500}
+.prix-l{fill:none; stroke:var(--prix); stroke-width:1.1; stroke-linejoin:round}
+.rung{stroke:var(--achat); stroke-width:1; opacity:.32; stroke-dasharray:2 3}
+.rung-plein{stroke:var(--achat); stroke-width:1.4; opacity:.85}
+.revient-l{fill:none; stroke:var(--vente); stroke-width:1.6}
+.sortie-l{fill:none; stroke:var(--vente); stroke-width:1.3; stroke-dasharray:4 3; opacity:.75}
+.m-achat{fill:var(--achat); fill-opacity:.72; stroke:var(--surface); stroke-width:.6}
+.m-vente{fill:var(--vente); stroke:var(--surface); stroke-width:.7}
+.bande-bloc{fill:var(--blocage-doux)}
+.bande-aband{fill:var(--blocage); opacity:.2}
+.aire-dort{fill:var(--dort)}
+.aire-eng{fill:var(--achat); fill-opacity:.85}
+.barre-m{fill:var(--achat)}
+.piste{fill:var(--surface-2)}
+.piste-bloc{fill:var(--blocage); opacity:.55}
+.piste-aband{fill:var(--blocage)}
+.pt{stroke:var(--surface); stroke-width:1}
+.etiq{fill:var(--ink-2); font-family:"IBM Plex Mono",monospace; font-size:10px}
+.etiq-f{fill:var(--ink); font-family:"IBM Plex Mono",monospace; font-size:10px; font-weight:600}
+.ref-l{stroke:var(--ink-3); stroke-width:1; stroke-dasharray:3 3; opacity:.7}
+
+/* ---------------------------------------------------------------- infobulle */
+#bulle{position:fixed; z-index:60; pointer-events:none; opacity:0; transition:opacity .1s;
+  background:var(--surface); border:1px solid var(--rule-fort); box-shadow:var(--ombre);
+  padding:.5rem .65rem; font-family:"IBM Plex Mono",monospace; font-size:.73rem;
+  line-height:1.5; color:var(--ink); max-width:19rem; border-radius:3px}
+#bulle b{color:var(--ink); font-weight:600}
+#bulle .t{color:var(--ink-3)}
+
+footer{margin:clamp(3.5rem,8vw,6rem) 0 4rem; border-top:1px solid var(--rule); padding-top:1.3rem;
+  color:var(--ink-3); font-size:.84rem}
+footer p + p{margin-top:.7rem}
+@media (prefers-reduced-motion:reduce){ *{transition:none !important; animation:none !important} }
+</style>
+
+<header class="tete">
+  <div class="texte">
+    <div class="eyebrow">Banc d'essai · rejeu sur 400 jours d'historique horaire réel</div>
+    <h1>Anatomie d'une <em>descente</em></h1>
+    <p class="chapo">Huit réglages de la stratégie du tableur, rejoués heure par heure sur BTC, ETH et SOL,
+      du 2 août 2025 au 6 septembre 2026. Chaque achat et chaque vente est posé sur la courbe du prix.
+      Seuls les ordres qu'une plateforme accepterait vraiment sont comptés — <strong>un ordre de 2 centimes
+      n'existe pas</strong>. Sur cette fenêtre, ne rien faire faisait perdre 30 % : c'est le repère qui manquait.</p>
+  </div>
+</header>
+
+<div class="barre">
+  <div class="large barre-in">
+    <div class="groupe" style="flex:1 1 22rem">
+      <span class="lab">Réglage</span>
+      <select id="sel-reglage" style="flex:1"></select>
+    </div>
+    <div class="groupe">
+      <span class="lab">Paire</span>
+      <div class="puces" id="sel-paire"></div>
+    </div>
+  </div>
+</div>
+
+<main class="large" id="app"></main>
+
+<footer class="texte">
+  <p><b>Ce que ce rejeu ne dit pas.</b> Le carnet d'ordres est supposé infiniment profond, aucun ordre
+    n'est jamais refusé, la plateforme est supposée toujours disponible, et les frais sont ceux de la
+    configuration et non ceux réellement prélevés. Ces quatre biais vont tous dans le sens optimiste.
+    Surtout : ces 400 jours sont <em>une</em> réalisation du marché, pas la distribution des futurs possibles.
+    Un réglage qui gagne ici n'est pas un réglage qui gagnera.</p>
+  <p>Les ordres d'achat sont des ordres limites : ils sont exécutés à leur prix exact, sans glissement,
+    au tarif maker. Dans une bougie baissière, le haut est visité avant le bas, ce qui interdit de revendre
+    dans l'heure un achat fait plus bas — la convention la moins flatteuse a été retenue à dessein.</p>
+</footer>
+
+<div id="bulle" role="status" aria-live="polite"></div>
+
+<script id="donnees" type="application/json">/*__DONNEES__*/</script>
+<script>
+"use strict";
+const D = JSON.parse(document.getElementById("donnees").textContent);
+const NS = "http://www.w3.org/2000/svg";
+const HEURE = D.meta.pas, T0 = D.meta.t0, NH = D.meta.heures;
+
+/* ------------------------------------------------------------------ outils */
+const el = (t, a = {}, p) => {
+  const n = document.createElementNS(NS, t);
+  for (const k in a) if (a[k] !== null && a[k] !== undefined) n.setAttribute(k, a[k]);
+  if (p) p.appendChild(n);
+  return n;
+};
+const h = (t, a = {}, ...kids) => {
+  const n = document.createElement(t);
+  for (const k in a) {
+    if (k === "class") n.className = a[k];
+    else if (k === "html") n.innerHTML = a[k];
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), a[k]);
+    else n.setAttribute(k, a[k]);
+  }
+  for (const c of kids) if (c != null) n.append(c.nodeType ? c : String(c));
+  return n;
+};
+const dateDe = i => new Date(T0 + i * HEURE);
+const jj = i => dateDe(i).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit" });
+const jjh = i => dateDe(i).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })
+  + " " + String(dateDe(i).getUTCHours()).padStart(2, "0") + "h";
+const eur = (v, d = 2) => v.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d }) + " €";
+const pct = (v, d = 1) => (v * 100).toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d }) + " %";
+const sgn = (v, d = 1) => (v >= 0 ? "+" : "") + pct(v, d);
+const duree = hh => hh < 48 ? `${Math.round(hh)} h` : hh < 24 * 90 ? `${Math.round(hh / 24)} j` : `${(hh / 24 / 30.4).toFixed(1)} mois`;
+
+/** Valeur d'une serie en escalier a l'indice i. Les series de reference, de
+ *  revient et de sortie ne sont exportees qu'a leurs marches : on retrouve la
+ *  valeur en vigueur par dichotomie. */
+function marche(serie, i) {
+  let a = 0, b = serie.length - 1, r = null;
+  while (a <= b) { const m = (a + b) >> 1; if (serie[m][0] <= i) { r = serie[m][1]; a = m + 1; } else b = m - 1; }
+  return r;
+}
+
+/** Reduit une serie dense a deux points par colonne de pixels, le minimum et
+ *  le maximum, dans l'ordre du temps. Une decimation par simple pas ferait
+ *  disparaitre les meches, donc les creux qui declenchent les achats. */
+function decimer(vals, i0, i1, colonnes) {
+  const n = i1 - i0 + 1, pas = n / colonnes;
+  if (pas <= 1.5) { const o = []; for (let i = i0; i <= i1; i++) o.push([i, vals[i]]); return o; }
+  const out = [];
+  for (let c = 0; c < colonnes; c++) {
+    const a = i0 + Math.floor(c * pas), b = Math.min(i1, i0 + Math.floor((c + 1) * pas) - 1);
+    if (b < a) continue;
+    let iMin = a, iMax = a;
+    for (let i = a; i <= b; i++) { if (vals[i] < vals[iMin]) iMin = i; if (vals[i] > vals[iMax]) iMax = i; }
+    const [p, q] = iMin < iMax ? [iMin, iMax] : [iMax, iMin];
+    out.push([p, vals[p]]); if (q !== p) out.push([q, vals[q]]);
+  }
+  return out;
+}
+
+const ticksJolis = (lo, hi, n = 5) => {
+  if (!(hi > lo)) return [lo];
+  const brut = (hi - lo) / n, e = Math.pow(10, Math.floor(Math.log10(brut))), r = brut / e;
+  const pas = (r >= 5 ? 10 : r >= 2 ? 5 : r >= 1 ? 2 : 1) * e;
+  const out = []; for (let v = Math.ceil(lo / pas) * pas; v <= hi + 1e-9; v += pas) out.push(v);
+  return out;
+};
+
+/* ------------------------------------------------------------------ bulle */
+const bulle = document.getElementById("bulle");
+function montre(evt, html) {
+  bulle.innerHTML = html; bulle.style.opacity = "1";
+  const r = bulle.getBoundingClientRect();
+  let x = evt.clientX + 14, y = evt.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = evt.clientX - r.width - 14;
+  if (y + r.height > innerHeight - 8) y = evt.clientY - r.height - 14;
+  bulle.style.left = Math.max(8, x) + "px"; bulle.style.top = Math.max(8, y) + "px";
+}
+const cache = () => { bulle.style.opacity = "0"; };
+function survol(node, html) {
+  node.addEventListener("pointerenter", e => montre(e, html));
+  node.addEventListener("pointermove", e => montre(e, html));
+  node.addEventListener("pointerleave", cache);
+  node.style.cursor = "crosshair";
+}
+addEventListener("scroll", cache, { passive: true });
+
+/* ------------------------------------------------------------------ etat */
+let paire = D.meta.paires[0];
+//  on ouvre sur le meilleur reglage EXECUTABLE, calcule et non ecrit en dur :
+//  un indice fige designerait le mauvais reglage des que les donnees changent
+let iReg = D.reglages
+  .map((r, k) => [k, D.meta.paires.reduce((a, s) => a + r.sims[s].resume.perf_pct, 0)])
+  .reduce((a, b) => b[1] > a[1] ? b : a)[0];
+const R = () => D.reglages[iReg];
+const S = () => D.reglages[iReg].sims[paire];
+
+/** Les chiffres derives, recalcules a chaque selection : jamais ecrits en dur
+ *  dans le texte, pour qu'une legende ne puisse pas contredire son graphique. */
+function stats() {
+  const s = S(), seg = s.segments;
+  const heuresEng = seg.reduce((n, [a, b]) => n + (b - a + 1), 0);
+  const plusLong = seg.length ? Math.max(...seg.map(([a, b]) => b - a + 1)) : 0;
+  const moy = s.jours.engage_moyen.reduce((a, b) => a + b, 0) / s.jours.engage_moyen.length;
+  const pic = Math.max(...s.jours.engage_max);
+  const gains = s.cycles.map(c => c[4]).sort((a, b) => b - a);
+  const tot = gains.reduce((a, b) => a + b, 0);
+  const cinq = tot > 0 ? gains.slice(0, 5).reduce((a, b) => a + b, 0) / tot : 0;
+  const jourAband = s.jours.abandon.reduce((a, b) => a + b, 0);
+  return {
+    perf: s.resume.perf_pct, cycles: s.cycles.length, abandons: s.resume.abandons,
+    moy, pic, plusLong, engPct: heuresEng / NH, jourAband,
+    surEngage: moy > 1e-9 ? s.resume.perf_pct / moy : 0,
+    cinq, gainTot: tot, hold: D.paires[paire].hold_pct,
+    medianeH: s.cycles.length ? s.cycles.map(c => c[1] - c[0]).sort((a, b) => a - b)[s.cycles.length >> 1] : 0,
+    plusLongCycle: s.cycles.length ? Math.max(...s.cycles.map(c => c[1] - c[0])) : 0,
+  };
+}
+
+/* ================================================================== PLANCHES */
+function planche(n, titre, question, corps, alire, legende) {
+  const c = h("section", { class: "planche" });
+  const t = h("div", { class: "pl-tete" }, h("span", { class: "pl-num" }, "Planche " + n), h("h2", {}, titre));
+  c.append(t, h("p", { class: "pl-q" }, question));
+  c.append(corps);
+  if (legende) {
+    const L = h("div", { class: "legende" });
+    for (const [cls, txt] of legende) L.append(h("span", { class: "cle" },
+      h("span", { class: "pastille " + cls }), txt));
+    corps.append(L);
+  }
+  if (alire) c.append(h("p", { class: "alire", html: alire }));
+  return c;
+}
+
+const cadre = (vb, hAuto) => {
+  const d = h("div", { class: "cadre" });
+  const s = el("svg", { viewBox: vb, preserveAspectRatio: "xMidYMid meet", role: "img" });
+  d.appendChild(s); return [d, s];
+};
+
+/* ------------------------------------------------- 1 : le prix et les ordres */
+function plancheOrdres() {
+  const W = 1160, H = 430, ML = 62, MR = 16, MT = 16, MB = 30;
+  const [box, svg] = cadre(`0 0 ${W} ${H}`);
+  const s = S(), P = D.paires[paire], iw = W - ML - MR, ih = H - MT - MB;
+  const close = P.close;
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 0; i < NH; i++) { if (close[i] < lo) lo = close[i]; if (close[i] > hi) hi = close[i]; }
+  const pad = (hi - lo) * .06; lo -= pad; hi += pad;
+  const X = i => ML + i / (NH - 1) * iw, Y = v => MT + (1 - (v - lo) / (hi - lo)) * ih;
+
+  for (const [a, b] of s.segments) {
+    const r = el("rect", { x: X(a), y: MT, width: Math.max(1.2, X(b) - X(a)), height: ih, class: "bande-bloc" }, svg);
+    survol(r, `<b>Capital immobilisé</b><br><span class="t">du</span> ${jj(a)} <span class="t">au</span> ${jj(b)}<br>
+      <span class="t">durée</span> ${duree(b - a + 1)}`);
+  }
+  for (const [v, y] of ticksJolis(lo, hi, 5).map(v => [v, Y(v)])) {
+    el("line", { x1: ML, x2: W - MR, y1: y, y2: y, class: "axe" }, svg);
+    el("text", { x: ML - 7, y: y + 3.5, "text-anchor": "end", class: "tick" }, svg)
+      .textContent = v >= 1000 ? Math.round(v / 1000) + "k" : v.toFixed(v < 10 ? 1 : 0);
+  }
+  const pas = Math.ceil(NH / 8 / 24) * 24;
+  for (let i = 0; i < NH; i += pas) {
+    el("line", { x1: X(i), x2: X(i), y1: MT, y2: MT + ih, class: "axe" }, svg);
+    el("text", { x: X(i), y: H - 10, "text-anchor": "middle", class: "tick" }, svg).textContent = jj(i);
+  }
+  const pts = decimer(close, 0, NH - 1, iw);
+  el("path", { class: "prix-l", d: pts.map((p, k) => (k ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(" ") }, svg);
+
+  const mises = R().mises_pct, mMax = Math.max(...mises);
+  const gAch = el("g", {}, svg), gVen = el("g", {}, svg);
+  for (const [i, g, prix, pal, euros, revient, gain] of s.journal) {
+    if (g === 0) {
+      const r = 1.5 + 4.2 * Math.sqrt(euros / (mMax * D.meta.budget));
+      const c = el("circle", { cx: X(i), cy: Y(prix), r: r.toFixed(2), class: "m-achat" }, gAch);
+      survol(c, `<b>Achat · barreau ${pal + 1}</b><br><span class="t">${jjh(i)}</span><br>
+        ${eur(euros)} <span class="t">à</span> ${eur(prix, prix < 10 ? 3 : 2)}<br>
+        <span class="t">prix de revient après :</span> ${eur(revient, revient < 10 ? 3 : 2)}`);
+    } else if (g === 1) {
+      const y = Y(prix), x = X(i);
+      const t = el("path", { d: `M${x} ${y - 5.4}L${x + 4.7} ${y + 2.7}L${x - 4.7} ${y + 2.7}Z`, class: "m-vente" }, gVen);
+      survol(t, `<b>Vente du lot entier</b><br><span class="t">${jjh(i)}</span><br>
+        ${eur(euros)} <span class="t">reçus, gain</span> <b>${eur(gain)}</b><br>
+        <span class="t">revient</span> ${eur(revient, revient < 10 ? 3 : 2)} <span class="t">→ sortie</span> ${eur(prix, prix < 10 ? 3 : 2)}`);
+    } else {
+      el("line", { x1: X(i), x2: X(i), y1: MT, y2: MT + ih, stroke: "var(--blocage)", "stroke-width": 1.4, "stroke-dasharray": "3 2" }, svg);
+    }
+  }
+  const st = stats(), s2 = S();
+  const nAch = s2.journal.filter(e => e[1] === 0).length;
+  return planche(1, "Où tombent les ordres",
+    `Chaque point est un ordre réellement exécuté. Le diamètre du point est la mise : les barreaux du haut sont des centimes, ceux du bas des centaines d'euros.`,
+    box,
+    `<b>${nAch} achats, ${st.cycles} ventes</b> sur ${D.meta.jours} jours. Les points s'agglutinent dans les creux et
+     disparaissent dans les montées : la grille n'achète que ce qui tombe. Les bandes rouges sont les périodes
+     où l'argent n'était pas ressorti — <b>la plus longue a duré ${duree(st.plusLong)}</b>.
+     Regardez la taille des points : les gros, ceux qui portent l'argent, sont rarissimes.`,
+    [["a-ach", "achat (aire ∝ mise)"], ["carre a-ven", "vente du lot entier"],
+     ["carre a-blo-clair", "capital immobilisé"], ["trait a-prix", "prix"]]);
+}
+
+/* --------------------------------------------- 2 : la mecanique d'un cycle */
+let cycleChoisi = null;
+function plancheCycle() {
+  const s = S(), cy = s.cycles;
+  const wrap = h("div");
+  if (!cy.length) { wrap.append(h("div", { class: "cadre", style: "padding:2rem;color:var(--ink-3)" },
+    "Aucun cycle ne s'est bouclé avec ce réglage sur cette paire.")); return planche(2, "La mécanique d'un cycle",
+    "Comment le prix de sortie descend à la rencontre du marché.", wrap, null, null); }
+
+  const parPal = [...cy].sort((a, b) => b[2] - a[2]);
+  const parDur = [...cy].sort((a, b) => (b[1] - b[0]) - (a[1] - a[0]));
+  const choix = [];
+  const pousse = (c, nom) => { if (c && !choix.some(x => x.c === c)) choix.push({ c, nom }); };
+  pousse(parPal[0], "le plus profond");
+  pousse(parDur[0], "le plus long");
+  pousse([...cy].sort((a, b) => (a[1] - a[0]) - (b[1] - b[0]))[0], "le plus rapide");
+  pousse([...cy].sort((a, b) => b[4] - a[4])[0], "le plus rentable");
+  if (!cycleChoisi || !choix.some(x => x.c === cycleChoisi)) cycleChoisi = choix[0].c;
+
+  const puces = h("div", { class: "puces", style: "margin-bottom:.8rem" });
+  for (const { c, nom } of choix) {
+    const b = h("button", { class: "puce", type: "button", "aria-pressed": String(c === cycleChoisi),
+      onclick: () => { cycleChoisi = c; rendu(); } },
+      `${nom} · ${c[2]} palier${c[2] > 1 ? "s" : ""} · ${duree(c[1] - c[0])}`);
+    puces.append(b);
+  }
+  wrap.append(puces);
+
+  const c = cycleChoisi, marge = Math.max(6, Math.round((c[1] - c[0]) * .12));
+  const i0 = Math.max(0, c[0] - marge), i1 = Math.min(NH - 1, c[1] + marge);
+  const W = 1160, H = 420, ML = 74, MR = 128, MT = 16, MB = 30;
+  const [box, svg] = cadre(`0 0 ${W} ${H}`);
+  const iw = W - ML - MR, ih = H - MT - MB, P = D.paires[paire];
+  const ref = marche(s.references, c[0]), rungs = R().prix_pct.map(p => ref * p);
+  const evs = s.journal.filter(e => e[0] >= i0 && e[0] <= i1);
+  let lo = Infinity, hi = -Infinity;
+  for (let i = i0; i <= i1; i++) { lo = Math.min(lo, P.bas[i]); hi = Math.max(hi, P.haut[i]); }
+  const touches = new Set(evs.filter(e => e[1] === 0).map(e => e[3]));
+  for (const k of touches) { lo = Math.min(lo, rungs[k]); hi = Math.max(hi, rungs[k]); }
+  const sortieFin = evs.find(e => e[1] === 1);
+  if (sortieFin) hi = Math.max(hi, sortieFin[2]);
+  const pad = (hi - lo) * .08 || 1; lo -= pad; hi += pad;
+  const X = i => ML + (i - i0) / Math.max(1, i1 - i0) * iw, Y = v => MT + (1 - (v - lo) / (hi - lo)) * ih;
+  const dec = v => v < 10 ? 3 : v < 1000 ? 2 : 0;
+
+  for (const v of ticksJolis(lo, hi, 5)) {
+    el("line", { x1: ML, x2: W - MR, y1: Y(v), y2: Y(v), class: "axe" }, svg);
+    el("text", { x: ML - 7, y: Y(v) + 3.5, "text-anchor": "end", class: "tick" }, svg)
+      .textContent = v >= 1000 ? Math.round(v / 1000) + "k" : v.toFixed(dec(v));
+  }
+  const nT = Math.min(7, i1 - i0), pasT = Math.max(1, Math.floor((i1 - i0) / nT));
+  for (let i = i0; i <= i1; i += pasT)
+    el("text", { x: X(i), y: H - 10, "text-anchor": "middle", class: "tick" }, svg)
+      .textContent = (i1 - i0) > 24 * 10 ? jj(i) : jjh(i);
+
+  rungs.forEach((p, k) => {
+    if (p < lo || p > hi) return;
+    const pris = touches.has(k);
+    el("line", { x1: ML, x2: W - MR, y1: Y(p), y2: Y(p), class: pris ? "rung-plein" : "rung" }, svg);
+    el("text", { x: W - MR + 6, y: Y(p) + 3.4, class: pris ? "etiq-f" : "etiq" }, svg)
+      .textContent = `${k + 1} · ${eur(R().mises_pct[k] * D.meta.budget)}`;
+  });
+
+  const pts = decimer(P.close, i0, i1, iw);
+  el("path", { class: "prix-l", d: pts.map((p, k) => (k ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(" ") }, svg);
+
+  const esc = (serie, cls) => {
+    let d = "", ouvert = false;
+    for (let i = i0; i <= i1; i++) {
+      const v = marche(serie, i);
+      if (!v) { ouvert = false; continue; }
+      d += (ouvert ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1) + " ";
+      ouvert = true;
+    }
+    if (d) el("path", { class: cls, d }, svg);
+  };
+  esc(s.sorties, "sortie-l"); esc(s.revients, "revient-l");
+
+  for (const [i, g, prix, pal, euros, revient, gain] of evs) {
+    if (g === 0) {
+      const n = el("circle", { cx: X(i), cy: Y(prix), r: 4, class: "m-achat pt" }, svg);
+      survol(n, `<b>Achat · barreau ${pal + 1}</b><br><span class="t">${jjh(i)}</span><br>
+        ${eur(euros)} <span class="t">à</span> ${eur(prix, dec(prix))}<br>
+        <span class="t">revient après :</span> <b>${eur(revient, dec(revient))}</b>`);
+    } else if (g === 1) {
+      const x = X(i), y = Y(prix);
+      const n = el("path", { d: `M${x} ${y - 7}L${x + 6} ${y + 3.5}L${x - 6} ${y + 3.5}Z`, class: "m-vente pt" }, svg);
+      survol(n, `<b>Vente du lot entier</b><br><span class="t">${jjh(i)}</span><br>
+        <span class="t">revient</span> ${eur(revient, dec(revient))} <span class="t">→ sortie</span> ${eur(prix, dec(prix))}<br>
+        <b>${eur(gain)}</b> <span class="t">soit</span> ${sgn(c[5], 2)}`);
+    }
+  }
+  wrap.append(box);
+  const remonte = sortieFin ? (sortieFin[2] / P.close[c[1]] - 1) : 0;
+  const bas = Math.min(...evs.filter(e => e[1] === 0).map(e => e[2]));
+  const rebondRequis = sortieFin ? sortieFin[2] / bas - 1 : 0;
+  return planche(2, "La mécanique d'un cycle",
+    "Ce n'est pas le prix qui remonte vous chercher : c'est votre prix de sortie qui descend à sa rencontre.",
+    wrap,
+    `Chaque achat plus bas tire le trait orange plein — le prix de revient — vers le bas, et avec lui le trait
+     pointillé, la sortie visée. Sur ce cycle, la vente s'est faite à ${eur(sortieFin ? sortieFin[2] : 0, dec(hi))},
+     <b>soit ${sgn(rebondRequis, 1)} au-dessus du plus bas acheté</b>, alors que le premier barreau était
+     ${eur(rungs[0], dec(rungs[0]))}. Il n'a jamais fallu que le cours revienne à son point de départ.
+     Les barreaux en trait plein ont été touchés, ceux en pointillé sont restés au carnet.`,
+    [["a-ach", "achat"], ["a-ven", "vente"], ["trait a-ven", "prix de revient"], ["trait a-prix", "prix"]]);
+}
+
+/* --------------------------------------------------- 3 : ou dort l'argent */
+function plancheArgent() {
+  const W = 1160, H = 300, ML = 62, MR = 16, MT = 16, MB = 30;
+  const [box, svg] = cadre(`0 0 ${W} ${H}`);
+  const s = S(), j = s.jours.engage_max, n = j.length, iw = W - ML - MR, ih = H - MT - MB;
+  const X = d => ML + d / (n - 1) * iw, Y = f => MT + (1 - f) * ih;
+  for (const f of [0, .25, .5, .75, 1]) {
+    el("line", { x1: ML, x2: W - MR, y1: Y(f), y2: Y(f), class: f === 0 ? "axe-fort" : "axe" }, svg);
+    el("text", { x: ML - 7, y: Y(f) + 3.5, "text-anchor": "end", class: "tick" }, svg).textContent = (f * 100) + " %";
+  }
+  let d = `M${ML} ${Y(0)}`;
+  for (let k = 0; k < n; k++) d += `L${X(k).toFixed(1)} ${Y(j[k]).toFixed(1)}`;
+  d += `L${W - MR} ${Y(0)}Z`;
+  el("path", { d, class: "aire-eng" }, svg);
+  const st = stats();
+  el("line", { x1: ML, x2: W - MR, y1: Y(st.moy), y2: Y(st.moy), class: "ref-l" }, svg);
+  el("text", { x: ML + 6, y: Y(st.moy) - 5, class: "etiq-f" }, svg)
+    .textContent = `moyenne réelle : ${pct(st.moy, 2)}`;
+  for (let k = 0; k < n; k += Math.ceil(n / 8))
+    el("text", { x: X(k), y: H - 10, "text-anchor": "middle", class: "tick" }, svg).textContent = jj(k * 24);
+  const zone = el("rect", { x: ML, y: MT, width: iw, height: ih, fill: "transparent" }, svg);
+  zone.addEventListener("pointermove", e => {
+    const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * W;
+    const k = Math.max(0, Math.min(n - 1, Math.round((px - ML) / iw * (n - 1))));
+    montre(e, `<b>${jj(k * 24)}</b><br><span class="t">engagé (pic du jour)</span> ${pct(j[k], 2)}
+      <br><span class="t">soit</span> ${eur(j[k] * D.meta.budget)} <span class="t">sur</span> ${eur(D.meta.budget, 0)}
+      ${s.jours.abandon[k] ? '<br><b style="color:var(--blocage)">position abandonnée</b>' : ""}`);
+  });
+  zone.addEventListener("pointerleave", cache);
+  zone.style.cursor = "crosshair";
+
+  return planche(3, "Où dort l'argent",
+    "La part du budget réellement engagée, jour par jour. On affiche le pic de chaque journée, jamais la moyenne : une moyenne journalière effacerait précisément ce qu'il faut voir.",
+    box,
+    `Le pic atteint <b>${pct(st.pic, 0)} du budget</b>, mais la moyenne sur les ${D.meta.jours} jours n'est que de
+     <b>${pct(st.moy, 2)}</b>. Voilà l'explication du rendement en apparence modeste : il est calculé sur un budget
+     qui reste presque toujours en caisse. Rapporté à l'argent réellement au travail, ce réglage rend
+     <b>${sgn(st.surEngage, 0)}</b>. Et il est impossible de réduire la réserve : il faut la totalité pour couvrir
+     le pic, même s'il ne survient qu'une fois.`,
+    [["carre a-ach", "budget engagé"], ["trait a-gris", "moyenne sur la période"]]);
+}
+
+/* --------------------------------- 4 : l'echelle, et ce qu'elle engage vraiment */
+function plancheEchelle() {
+  const s = S(), reg = R(), np = reg.paliers;
+  const grille = h("div", { class: "souscadre" });
+
+  const g1 = h("div"); g1.append(h("div", { class: "sous-t" }, "Mise posée sur chaque barreau, et le plancher de la plateforme"));
+  const W = 560, H = 260, ML = 30, MR = 66, MT = 8, MB = 30;
+  const s1 = el("svg", { viewBox: `0 0 ${W} ${H}` }); g1.append(s1);
+  const mises = reg.mises_pct.map(m => m * D.meta.budget);
+  const morts = new Set(reg.morts);
+  //  echelle logarithmique obligatoire : de 0,02 EUR a 545 EUR, soit un facteur
+  //  25 000, aucune echelle lineaire ne montre les deux bouts a la fois
+  const lo1 = Math.log10(Math.min(0.01, ...mises)), hi1 = Math.log10(Math.max(...mises) * 1.35);
+  const XL = v => ML + (Math.log10(Math.max(v, Math.pow(10, lo1))) - lo1) / (hi1 - lo1) * (W - ML - MR);
+  const bh = (H - MT - MB) / np;
+  for (let e = Math.ceil(lo1); e <= hi1; e++) {
+    el("line", { x1: XL(Math.pow(10, e)), x2: XL(Math.pow(10, e)), y1: MT, y2: H - MB, class: "axe" }, s1);
+    el("text", { x: XL(Math.pow(10, e)), y: H - MB + 12, "text-anchor": "middle", class: "tick" }, s1)
+      .textContent = Math.pow(10, e) < 1 ? Math.pow(10, e).toFixed(2) : Math.pow(10, e) + " €";
+  }
+  mises.forEach((m, k) => {
+    const mort = morts.has(k);
+    const r = el("rect", { x: ML, y: MT + k * bh + 1.5, width: Math.max(.8, XL(m) - ML), height: bh - 3,
+      class: "barre-m", opacity: mort ? .22 : 1 }, s1);
+    survol(r, `<b>Barreau ${k + 1}</b><br><span class="t">à</span> ${pct(1 - reg.prix_pct[k], 2)}
+      <span class="t">sous la référence</span><br>${eur(m)} <span class="t">soit</span> ${pct(m / D.meta.budget, 2)} <span class="t">du budget</span>
+      ${mort ? '<br><b style="color:var(--blocage)">sous le plancher : jamais posé</b>' : ""}`);
+    el("text", { x: ML - 5, y: MT + k * bh + bh / 2 + 3.5, "text-anchor": "end", class: "tick" }, s1).textContent = k + 1;
+    el("text", { x: XL(m) + 5, y: MT + k * bh + bh / 2 + 3.5, class: mort ? "tick" : "etiq-f" }, s1)
+      .textContent = m < 1 ? m.toFixed(2) + " €" : eur(m, 0);
+  });
+  el("line", { x1: XL(reg.mise_min), x2: XL(reg.mise_min), y1: MT - 2, y2: H - MB + 2,
+    stroke: "var(--blocage)", "stroke-width": 1.8 }, s1);
+  el("text", { x: XL(reg.mise_min) + 4, y: MT + 8, class: "etiq-f", style: "fill:var(--blocage)" }, s1)
+    .textContent = `plancher ${eur(reg.mise_min, 0)}`;
+
+  const g2 = h("div"); g2.append(h("div", { class: "sous-t" }, "Combien de barreaux chaque cycle a-t-il touchés"));
+  const s2 = el("svg", { viewBox: `0 0 ${W} ${H}` }); g2.append(s2);
+  const comptes = new Array(np + 1).fill(0), argent = new Array(np + 1).fill(0);
+  for (const c of s.cycles) { comptes[c[2]]++; argent[c[2]] += c[4]; }
+  const cmax = Math.max(1, ...comptes.slice(1));
+  const bw = (W - ML - MR) / np;
+  for (let k = 1; k <= np; k++) {
+    const hh = comptes[k] / cmax * (H - MT - MB - 10);
+    const r = el("rect", { x: ML + (k - 1) * bw + 1.5, y: H - MB - hh, width: bw - 3, height: Math.max(0, hh), class: "barre-m" }, s2);
+    survol(r, `<b>${comptes[k]} cycle${comptes[k] > 1 ? "s" : ""} à ${k} palier${k > 1 ? "s" : ""}</b><br>
+      <span class="t">engagement</span> ${eur(reg.mises_pct.slice(0, k).reduce((a, b) => a + b, 0) * D.meta.budget)}<br>
+      <span class="t">gain cumulé</span> ${eur(argent[k])}`);
+    if (comptes[k]) el("text", { x: ML + (k - 1) * bw + bw / 2, y: H - MB - hh - 4, "text-anchor": "middle", class: "etiq" }, s2)
+      .textContent = comptes[k];
+    el("text", { x: ML + (k - 1) * bw + bw / 2, y: H - MB + 13, "text-anchor": "middle", class: "tick" }, s2).textContent = k;
+  }
+  el("line", { x1: ML, x2: W - MR, y1: H - MB, y2: H - MB, class: "axe-fort" }, s2);
+  el("text", { x: W - MR + 4, y: H - MB + 4, class: "tick" }, s2).textContent = "paliers";
+  grille.append(g1, g2);
+
+  const st = stats(), vivants = np - reg.morts.length;
+  const budgetMort = reg.morts.reduce((a, k) => a + reg.mises_pct[k], 0);
+  return planche(4, "L'échelle, et la moitié qui n'existe pas",
+    "Les mises suivent une progression géométrique. Le premier barreau est une poussière, le dernier porte plus de la moitié du budget — et tout ce qui est sous le plancher de la plateforme ne sera jamais placé.",
+    grille,
+    `Le barreau du haut demande ${eur(reg.mises_pct[0] * D.meta.budget)}, celui du bas ${eur(reg.mises_pct[np - 1] * D.meta.budget)} :
+     un rapport de <b>1 à ${Math.round(reg.mises_pct[np - 1] / reg.mises_pct[0]).toLocaleString("fr-FR")}</b>.
+     Or aucune plateforme n'accepte un ordre de quelques centimes. Sur ce réglage,
+     <b>${reg.morts.length} barreaux sur ${np} sont morts</b> : il n'en reste que ${vivants}, et ils ne laissent au carnet
+     que ${pct(1 - budgetMort, 1)} du budget. L'échelle réellement posée est bien plus courte que celle du tableur —
+     c'est la première chose que les chiffres ne pouvaient pas dire.`,
+    [["carre a-ach", "barreau posé"], ["carre a-blo", "sous le plancher, jamais posé"]]);
+}
+
+/* ------------------------------- 5 : le papier contre l'executable */
+function planchePlancher() {
+  const W = 1160, H = 400, ML = 232, MR = 118, MT = 30, MB = 40;
+  const [box, svg] = cadre(`0 0 ${W} ${H}`);
+  const lignes = D.reglages.map((reg, k) => {
+    const sim = reg.sims[paire], th = sim.planchers["0"];
+    return { k, reg, papier: th.perf_pct, reel: sim.resume.perf_pct,
+             cyPapier: th.cycles, cyReel: sim.cycles.length, morts: reg.morts.length };
+  }).sort((a, b) => b.reel - a.reel);
+  const vals = lignes.flatMap(l => [l.papier, l.reel]).concat([0, D.paires[paire].hold_pct]);
+  const lo = Math.min(...vals) - .04, hi = Math.max(...vals) + .04;
+  const iw = W - ML - MR, rh = (H - MT - MB) / lignes.length;
+  const X = v => ML + (v - lo) / (hi - lo) * iw;
+
+  for (const v of ticksJolis(lo, hi, 7)) {
+    el("line", { x1: X(v), x2: X(v), y1: MT - 8, y2: H - MB, class: Math.abs(v) < 1e-9 ? "axe-fort" : "axe" }, svg);
+    el("text", { x: X(v), y: H - MB + 14, "text-anchor": "middle", class: "tick" }, svg).textContent = sgn(v, 0);
+  }
+  const hold = D.paires[paire].hold_pct;
+  el("line", { x1: X(hold), x2: X(hold), y1: MT - 8, y2: H - MB, stroke: "var(--blocage)",
+    "stroke-width": 1.4, "stroke-dasharray": "5 3" }, svg);
+  el("text", { x: X(hold), y: MT - 14, "text-anchor": "middle", class: "etiq-f", style: "fill:var(--blocage)" }, svg)
+    .textContent = `ne rien faire : ${sgn(hold, 1)}`;
+
+  lignes.forEach((l, i) => {
+    const y = MT + i * rh + rh / 2, monte = l.reel > l.papier;
+    el("line", { x1: X(l.papier), x2: X(l.reel), y1: y, y2: y,
+      stroke: monte ? "var(--achat)" : "var(--blocage)", "stroke-width": 2, opacity: .5 }, svg);
+    el("circle", { cx: X(l.papier), cy: y, r: 4.5, fill: "var(--surface)",
+      stroke: "var(--ink-3)", "stroke-width": 1.6 }, svg);
+    const c = el("circle", { cx: X(l.reel), cy: y, r: 5.5,
+      fill: monte ? "var(--achat)" : "var(--blocage)",
+      stroke: l.k === iReg ? "var(--ink)" : "transparent", "stroke-width": 1.6 }, svg);
+    survol(c, `<b>${l.reg.nom}</b><br>
+      <span class="t">sur le papier</span> ${sgn(l.papier, 2)} <span class="t">en</span> ${l.cyPapier} <span class="t">cycles</span><br>
+      <span class="t">exécutable</span> <b>${sgn(l.reel, 2)}</b> <span class="t">en</span> ${l.cyReel} <span class="t">cycles</span><br>
+      <span class="t">${l.morts} barreaux sur ${l.reg.paliers} sous le plancher</span>`);
+    c.addEventListener("click", () => { iReg = l.k; document.getElementById("sel-reglage").value = String(l.k); rendu(); });
+    c.style.cursor = "pointer";
+    el("text", { x: ML - 12, y: y - 2, "text-anchor": "end", class: l.k === iReg ? "etiq-f" : "etiq" }, svg)
+      .textContent = l.reg.nom;
+    el("text", { x: ML - 12, y: y + 9, "text-anchor": "end", class: "tick" }, svg)
+      .textContent = `${l.cyPapier} → ${l.cyReel} cycles`;
+    el("text", { x: W - MR + 8, y: y + 3.5, class: "etiq" }, svg)
+      .textContent = `${l.morts}/${l.reg.paliers} barreaux morts`;
+  });
+  el("text", { x: ML, y: 14, class: "etiq" }, svg)
+    .textContent = "cercle creux : la stratégie sur le papier   ·   cercle plein : ce qui était réellement plaçable";
+
+  const moy = a => a.reduce((x, y) => x + y, 0) / a.length;
+  const chute = moy(lignes.map(l => l.papier)) - moy(lignes.map(l => l.reel));
+  const inverses = lignes.filter(l => (l.papier > 0) !== (l.reel > 0)).length;
+  const cyP = lignes.reduce((a, l) => a + l.cyPapier, 0), cyR = lignes.reduce((a, l) => a + l.cyReel, 0);
+  return planche(5, "Le papier contre l'exécutable",
+    "Le même rejeu, deux fois : une fois en autorisant les ordres de quelques centimes, une fois en les refusant comme le ferait la plateforme.",
+    box,
+    `Le classement se retourne. <b>${cyP} cycles deviennent ${cyR}</b> : les quatre cinquièmes des opérations
+     comptées n'auraient jamais pu être passées. ${inverses} réglages sur ${D.reglages.length} changent de signe —
+     et parmi eux, <b>le tableau d'origine cesse d'être une catastrophe</b> : le plancher l'empêche justement
+     d'acheter les barreaux superficiels qui le piégeaient. C'est le rappel le plus utile de cette page :
+     un backtest qui ignore les contraintes d'exécution ne mesure pas la stratégie, il mesure une fiction.`,
+    [["", "exécutable, en hausse"], ["a-blo", "exécutable, en baisse"], ["trait a-blo", "ne rien faire"]]);
+}
+
+/* --------------------------------------------- 6 : la duree vecue des cycles */
+function plancheDuree() {
+  const s = S(); const cy = s.cycles;
+  const W = 1160, H = 260, ML = 62, MR = 16, MT = 18, MB = 34;
+  const [box, svg] = cadre(`0 0 ${W} ${H}`);
+  if (!cy.length) { box.firstChild.remove(); box.append(h("div", { style: "padding:2rem;color:var(--ink-3)" }, "Aucun cycle.")); }
+  else {
+    const iw = W - ML - MR, ih = H - MT - MB;
+    const dur = cy.map(c => Math.max(1, c[1] - c[0]));
+    const maxD = Math.max(...dur), L = v => Math.log10(v), l0 = 0, l1 = L(Math.max(10, maxD));
+    const X = i => ML + i / Math.max(1, NH - 1) * iw;
+    const Y = d => MT + (1 - (L(d) - l0) / (l1 - l0)) * ih;
+    for (const v of [1, 6, 24, 24 * 7, 24 * 30, 24 * 90, 24 * 365]) {
+      if (v > maxD * 1.4) break;
+      el("line", { x1: ML, x2: W - MR, y1: Y(v), y2: Y(v), class: "axe" }, svg);
+      el("text", { x: ML - 7, y: Y(v) + 3.5, "text-anchor": "end", class: "tick" }, svg)
+        .textContent = v < 24 ? v + " h" : v < 24 * 30 ? (v / 24) + " j" : Math.round(v / 24 / 30.4) + " mois";
+    }
+    cy.forEach((c, k) => {
+      const d = dur[k], y = Y(d);
+      const r = el("rect", { x: X(c[0]), y, width: Math.max(1.4, X(c[1]) - X(c[0])), height: 2.4,
+        fill: c[2] >= R().paliers - 2 ? "var(--blocage)" : "var(--achat)", opacity: .8 }, svg);
+      survol(r, `<b>Cycle de ${duree(d)}</b><br><span class="t">ouvert</span> ${jj(c[0])} <span class="t">· fermé</span> ${jj(c[1])}<br>
+        ${c[2]} palier${c[2] > 1 ? "s" : ""}, ${eur(c[3])} <span class="t">engagés</span><br>
+        <b>${eur(c[4])}</b> <span class="t">de gain, soit</span> ${sgn(c[5], 2)}`);
+    });
+    for (let i = 0; i < NH; i += Math.ceil(NH / 8 / 24) * 24)
+      el("text", { x: X(i), y: H - 10, "text-anchor": "middle", class: "tick" }, svg).textContent = jj(i);
+    el("text", { x: ML, y: 12, class: "etiq" }, svg).textContent = "chaque trait = un cycle, sa largeur = sa durée réelle";
+  }
+  const st = stats();
+  return planche(6, "Combien de temps dure une position",
+    "Un cycle de quatre heures et un cycle de trois mois comptent tous les deux pour un dans les statistiques. Ici, chaque cycle occupe sa vraie largeur sur l'axe du temps.",
+    box,
+    `La durée médiane est de <b>${duree(st.medianeH)}</b>, mais la plus longue atteint <b>${duree(st.plusLongCycle)}</b> :
+     l'échelle verticale est logarithmique, sans quoi tous les cycles courts s'écraseraient sur la ligne du bas.
+     Les traits rouges sont les cycles descendus au fond de l'échelle — ce sont eux qui portent l'argent,
+     et ce sont eux qui durent. <b>Rapidité et engagement ne vont jamais ensemble.</b>`,
+    [["carre a-ach", "cycle superficiel"], ["carre a-blo", "descendu au fond de l'échelle"]]);
+}
+
+/* -------------------------------------- 7 : les huit captivites, meme axe */
+function plancheCaptivites() {
+  const W = 1160, hL = 30, ML = 250, MR = 16, MT = 26, MB = 26;
+  const H = MT + D.reglages.length * hL + MB;
+  const [box, svg] = cadre(`0 0 ${W} ${H}`);
+  const iw = W - ML - MR, X = i => ML + i / (NH - 1) * iw;
+  for (let i = 0; i < NH; i += Math.ceil(NH / 8 / 24) * 24) {
+    el("line", { x1: X(i), x2: X(i), y1: MT - 6, y2: H - MB + 2, class: "axe" }, svg);
+    el("text", { x: X(i), y: H - 10, "text-anchor": "middle", class: "tick" }, svg).textContent = jj(i);
+  }
+  D.reglages.forEach((reg, k) => {
+    const sim = reg.sims[paire], y = MT + k * hL;
+    el("rect", { x: ML, y: y + 5, width: iw, height: hL - 12, class: "piste" }, svg);
+    const long = sim.segments.length ? Math.max(...sim.segments.map(([a, b]) => b - a + 1)) : 0;
+    for (const [a, b] of sim.segments) {
+      const w = Math.max(1, X(b) - X(a)), grand = (b - a + 1) > 24 * 30;
+      const r = el("rect", { x: X(a), y: y + 5, width: w, height: hL - 12,
+        class: grand ? "piste-aband" : "piste-bloc" }, svg);
+      survol(r, `<b>${reg.nom}</b><br><span class="t">immobilisé du</span> ${jj(a)} <span class="t">au</span> ${jj(b)}<br>
+        <b>${duree(b - a + 1)}</b>`);
+    }
+    const est = k === iReg;
+    const t = el("text", { x: ML - 10, y: y + hL / 2 + 1, "text-anchor": "end",
+      class: est ? "etiq-f" : "etiq" }, svg);
+    t.textContent = `${reg.nom} · ${sgn(sim.resume.perf_pct, 1)}`;
+    const t2 = el("text", { x: ML - 10, y: y + hL / 2 + 11, "text-anchor": "end", class: "tick" }, svg);
+    t2.textContent = `prof ${pct(reg.profondeur, 0)} · ${reg.paliers} pal · ×${reg.ratio} · obj ${pct(reg.objectif, 0)}`;
+    if (est) el("rect", { x: ML - 244, y: y + 2, width: W - MR - ML + 244, height: hL - 6,
+      fill: "none", stroke: "var(--achat)", "stroke-width": 1.2 }, svg);
+  });
+  el("text", { x: ML, y: 14, class: "etiq" }, svg)
+    .textContent = "une piste par réglage, un seul axe du temps, jamais compressé";
+  const pires = D.reglages.map(r => {
+    const s = r.sims[paire];
+    return s.segments.length ? Math.max(...s.segments.map(([a, b]) => b - a + 1)) : 0;
+  });
+  return planche(7, "Huit captivités, un seul calendrier",
+    `Les huit réglages sur ${paire}, alignés sur le même axe. La longueur d'une barre est une durée vécue, pas un chiffre dans un tableau.`,
+    box,
+    `Les barres claires sont des immobilisations courtes, les barres pleines des immobilisations de plus d'un mois.
+     Le meilleur réglage garde <b>${duree(Math.min(...pires.filter(x => x)))}</b> au pire ;
+     le plus mauvais reste bloqué <b>${duree(Math.max(...pires))}</b>, soit
+     ${pct(Math.max(...pires) / NH, 0)} de toute la période. Un an et un mois d'histoire tiennent sur cette largeur :
+     mesurez à l'œil ce que représentent ces bandes.`,
+    [["carre a-blo-clair", "moins d'un mois"], ["carre a-blo", "plus d'un mois"]]);
+}
+
+/* ----------------------------------------------------- 8 : comment choisir */
+function plancheChoisir() {
+  const W = 1160, H = 440, ML = 62, MR = 130, MT = 24, MB = 46;
+  const [box, svg] = cadre(`0 0 ${W} ${H}`);
+  const iw = W - ML - MR, ih = H - MT - MB;
+  const pts = D.reglages.map((reg, k) => {
+    const s = reg.sims[paire];
+    const moy = s.jours.engage_moyen.reduce((a, b) => a + b, 0) / s.jours.engage_moyen.length;
+    const long = s.segments.length ? Math.max(...s.segments.map(([a, b]) => b - a + 1)) : 0;
+    return { k, reg, moy, perf: s.resume.perf_pct, long, cycles: s.cycles.length };
+  });
+  const hold = D.paires[paire].hold_pct;
+  const py = [...pts.map(p => p.perf), hold, 0];
+  const lo = Math.min(...py) - .05, hi = Math.max(...py) + .05;
+  const X = m => ML + Math.sqrt(m) * iw, Y = v => MT + (1 - (v - lo) / (hi - lo)) * ih;
+  const lMax = Math.max(...pts.map(p => p.long)) || 1;
+
+  for (const v of ticksJolis(lo, hi, 6)) {
+    el("line", { x1: ML, x2: W - MR, y1: Y(v), y2: Y(v), class: Math.abs(v) < 1e-9 ? "axe-fort" : "axe" }, svg);
+    el("text", { x: ML - 7, y: Y(v) + 3.5, "text-anchor": "end", class: "tick" }, svg).textContent = sgn(v, 0);
+  }
+  for (const m of [0, .01, .05, .1, .25, .5, .75, 1]) {
+    el("line", { x1: X(m), x2: X(m), y1: MT, y2: MT + ih, class: "axe" }, svg);
+    el("text", { x: X(m), y: H - 26, "text-anchor": "middle", class: "tick" }, svg).textContent = pct(m, 0);
+  }
+  el("text", { x: ML + iw / 2, y: H - 8, "text-anchor": "middle", class: "etiq" }, svg)
+    .textContent = "part du budget engagée en moyenne  (échelle en racine : les valeurs minuscules restent lisibles)";
+
+  el("line", { x1: ML, x2: W - MR, y1: Y(hold), y2: Y(hold), stroke: "var(--blocage)", "stroke-width": 1.4, "stroke-dasharray": "5 3" }, svg);
+  el("text", { x: W - MR + 6, y: Y(hold) + 3.5, class: "etiq-f", style: "fill:var(--blocage)" }, svg)
+    .textContent = `acheter et attendre : ${sgn(hold, 1)}`;
+
+  for (const p of pts) {
+    const r = 5 + 11 * (p.long / lMax);
+    const c = el("circle", { cx: X(p.moy), cy: Y(p.perf), r,
+      fill: p.k === iReg ? "var(--achat)" : "var(--achat-doux)",
+      stroke: "var(--achat)", "stroke-width": p.k === iReg ? 2 : 1.2 }, svg);
+    survol(c, `<b>${p.reg.nom}</b><br><span class="t">prof</span> ${pct(p.reg.profondeur, 0)}
+      <span class="t">· ${p.reg.paliers} paliers · ratio</span> ×${p.reg.ratio} <span class="t">· obj</span> ${pct(p.reg.objectif, 0)}<br>
+      <span class="t">performance</span> <b>${sgn(p.perf, 2)}</b> <span class="t">· engagé</span> ${pct(p.moy, 2)}<br>
+      <span class="t">plus long blocage</span> ${duree(p.long)} <span class="t">·</span> ${p.cycles} <span class="t">cycles</span>`);
+    c.addEventListener("click", () => { iReg = p.k; document.getElementById("sel-reglage").value = String(p.k); rendu(); });
+    c.style.cursor = "pointer";
+    el("text", { x: X(p.moy), y: Y(p.perf) - r - 5, "text-anchor": "middle",
+      class: p.k === iReg ? "etiq-f" : "etiq" }, svg).textContent = p.reg.nom;
+  }
+  const bons = pts.filter(p => p.perf > 0).length;
+  const meilleur = pts.reduce((a, b) => b.perf > a.perf ? b : a);
+  return planche(8, "Comment choisir, et ce que ça coûte",
+    "Chaque cercle est un réglage. Sa hauteur est ce qu'il a rapporté, sa position horizontale la part du budget qu'il mobilisait, son diamètre la plus longue immobilisation qu'il a imposée.",
+    box,
+    `Il n'existe aucun cercle en haut à droite et petit : <b>engager beaucoup, gagner, et se dénouer vite ne vont jamais ensemble.</b>
+     ${bons} réglages sur ${D.reglages.length} finissent positifs, et tous les huit battent le simple fait d'acheter et d'attendre,
+     qui perdait ${pct(Math.abs(hold), 1)} sur la période. Le meilleur ici, «&nbsp;${meilleur.reg.nom}&nbsp;», rend ${sgn(meilleur.perf, 1)}
+     en mobilisant ${pct(meilleur.moy, 1)} du budget en moyenne. Cliquez un cercle pour recharger toute la page sur ce réglage.`,
+    [["", "cercle plein : réglage affiché"], ["trait a-blo", "acheter et attendre"]]);
+}
+
+/* ------------------------------------------------------------------ tuiles */
+function tuiles() {
+  const st = stats(), s = S();
+  const T = [
+    ["Performance", sgn(st.perf, 2), st.perf >= 0 ? "pos" : "neg", `sur ${eur(D.meta.budget, 0)} de budget`],
+    ["Acheter et attendre", sgn(st.hold, 1), st.hold >= 0 ? "pos" : "neg", `le repère, sur la même fenêtre`],
+    ["Engagé en moyenne", pct(st.moy, 2), "", `pic à ${pct(st.pic, 0)} du budget`],
+    ["Rendu par l'argent au travail", sgn(st.surEngage, 0), st.surEngage >= 0 ? "pos" : "neg", "performance ÷ engagement moyen"],
+    ["Cycles bouclés", String(st.cycles), "", `médiane ${duree(st.medianeH)}`],
+    ["Plus long blocage", duree(st.plusLong), st.plusLong > 24 * 60 ? "neg" : "", `${pct(st.engPct, 0)} du temps avec de l'argent dehors`],
+    ["Abandons", String(st.abandons), st.abandons ? "neg" : "", st.abandons ? `${st.jourAband} jours sous le seuil` : "jamais sous le seuil"],
+  ];
+  const g = h("div", { class: "tuiles" });
+  for (const [k, v, c, n] of T) g.append(h("div", { class: "tuile" },
+    h("span", { class: "k" }, k), h("span", { class: "v " + c }, v), h("span", { class: "n" }, n)));
+  return g;
+}
+
+/* ------------------------------------------------------------------ rendu */
+function rendu() {
+  const app = document.getElementById("app");
+  app.replaceChildren(tuiles(), plancheOrdres(), plancheCycle(), plancheArgent(),
+    plancheEchelle(), planchePlancher(), plancheDuree(), plancheCaptivites(), plancheChoisir());
+  for (const p of app.querySelectorAll(".pastille")) {
+    const c = p.className;
+    if (c.includes("a-ach")) p.style.background = "var(--achat)";
+    else if (c.includes("a-ven")) p.style.background = "var(--vente)";
+    else if (c.includes("a-blo-clair")) { p.style.background = "var(--blocage)"; p.style.opacity = ".55"; }
+    else if (c.includes("a-blo")) p.style.background = "var(--blocage)";
+    else if (c.includes("a-prix")) p.style.background = "var(--prix)";
+    else if (c.includes("a-gris")) p.style.background = "var(--ink-3)";
+    else p.style.background = "var(--achat)";
+  }
+  cache();
+}
+
+const selR = document.getElementById("sel-reglage");
+D.reglages.forEach((r, k) => selR.append(h("option", { value: String(k) },
+  `${r.nom} — prof ${pct(r.profondeur, 0)}, ${r.paliers} paliers, ×${r.ratio}, objectif ${pct(r.objectif, 0)}`)));
+selR.value = String(iReg);
+selR.addEventListener("change", () => { iReg = +selR.value; cycleChoisi = null; rendu(); });
+
+const selP = document.getElementById("sel-paire");
+for (const p of D.meta.paires) {
+  const b = h("button", { class: "puce", type: "button", "aria-pressed": String(p === paire),
+    onclick: () => { paire = p; cycleChoisi = null;
+      for (const x of selP.children) x.setAttribute("aria-pressed", String(x.textContent === p));
+      rendu(); } }, p);
+  selP.append(b);
+}
+rendu();
+</script>

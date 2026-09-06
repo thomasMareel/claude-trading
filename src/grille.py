@@ -48,6 +48,13 @@ class Reglages:
     objectif_net: float = 0.02      # gain vise, NET de frais
     frais: float = 0.001            # taux maker, par ordre
     abandon_sous: float = 0.15      # sous le dernier barreau, on n'ajoute plus rien
+    mise_min: float = 0.0           # taille minimale d'un ordre, en quote
+    #  Une plateforme REFUSE un ordre trop petit, elle ne l'agrandit pas : c'est
+    #  exactement ce que fait la couche de risque du systeme reel (src/risk.py,
+    #  floor = max(min_order_value, min_notional)). Avec une progression forte,
+    #  les premiers barreaux valent quelques centimes et ne seraient donc jamais
+    #  poses. Laisser mise_min a zero fait tourner la strategie telle qu'elle est
+    #  sur le papier ; la porter au plancher reel dit ce qui aurait ete executable.
 
     def __post_init__(self) -> None:
         if not 0 < self.profondeur < 1:
@@ -67,6 +74,8 @@ class Reglages:
             )
         if self.depart_sous < 0 or self.depart_sous + self.profondeur >= 1:
             raise GrilleError("depart_sous + profondeur doit rester sous 1")
+        if self.mise_min < 0:
+            raise GrilleError(f"mise_min doit etre >= 0, trouve {self.mise_min}")
 
     def echelle(self, reference: float, budget: float) -> list[tuple[float, float]]:
         """Les barreaux : (prix cible, mise en euros), du haut vers le bas.
@@ -135,11 +144,24 @@ class Descente:
     def seuil_abandon(self) -> float:
         return self.dernier_palier * (1 - self.reglages.abandon_sous)
 
+    @property
+    def barreaux_morts(self) -> list[int]:
+        """Les barreaux dont la mise est sous le minimum de la plateforme.
+
+        Ils ne sont jamais poses au carnet. Leur budget reste en caisse : on ne
+        le redistribue pas sur les barreaux valides, sans quoi on modifierait en
+        douce l'echelle que l'on pretend tester.
+        """
+        m = self.reglages.mise_min
+        return [i for i, (_, e) in enumerate(self.echelle) if e < m] if m else []
+
     def barreaux_a_poser(self) -> list[tuple[int, float, float]]:
         """Les ordres d'achat a laisser au carnet : (indice, prix, euros)."""
         if self.abandonnee:
             return []
-        return [(i, p, e) for i, (p, e) in enumerate(self.echelle) if i not in self.remplis]
+        m = self.reglages.mise_min
+        return [(i, p, e) for i, (p, e) in enumerate(self.echelle)
+                if i not in self.remplis and e >= m]
 
     # ---------------------------------------------------------------- mutations
     def acheter(self, indice: int, prix: float, ts: int = 0) -> tuple[float, float]:
