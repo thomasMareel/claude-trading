@@ -1,1 +1,82 @@
-[]
+[
+ {
+  "cloturee_le": "2026-09-06T20:57:18+00:00",
+  "mandat": "libre",
+  "phase": "paper",
+  "t0": "2026-09-05T22:28:45+00:00",
+  "jours": 0.94,
+  "regime": "range",
+  "commit_t0": "58747b49f4090d26dad157208e948c99b4ad5e8b",
+  "derive_config": [
+   "exchange"
+  ],
+  "bilan": {
+   "trading_brut": -79.9299,
+   "perf_pct": -79.9299,
+   "cout_api": 0.4878,
+   "net": -80.4177,
+   "appels": 6,
+   "frais": 0.0799
+  },
+  "reperes": {
+   "b1_pct": -0.2997,
+   "b2_pct": 0.6984,
+   "ecart_b2": -80.6283,
+   "exposition_moyenne": 0.4003,
+   "drawdown_max_pct": -0.446
+  },
+  "processus": {
+   "trades_clos": 0,
+   "gagnants": 0,
+   "refus_pct": 0.0,
+   "gels": 0,
+   "cycles": 6,
+   "usage_budget": 0.5
+  },
+  "bias": {
+   "justesse": null,
+   "n": 0
+  },
+  "verdict": "non prononce ici : voir docs/protocole.md section 6 et scripts/singe.py"
+ },
+ {
+  "cloturee_le": "2026-09-06T20:58:20+00:00",
+  "mandat": "libre",
+  "phase": "paper",
+  "t0": "2026-09-05T22:28:45+00:00",
+  "jours": 0.94,
+  "regime": "range",
+  "commit_t0": "58747b49f4090d26dad157208e948c99b4ad5e8b",
+  "derive_config": [
+   "exchange"
+  ],
+  "bilan": {
+   "trading_brut": -79.9299,
+   "perf_pct": -79.9299,
+   "cout_api": 0.4878,
+   "net": -80.4177,
+   "appels": 6,
+   "frais": 0.0799
+  },
+  "reperes": {
+   "b1_pct": -0.2997,
+   "b2_pct": 0.6984,
+   "ecart_b2": -80.6283,
+   "exposition_moyenne": 0.4003,
+   "drawdown_max_pct": -0.446
+  },
+  "processus": {
+   "trades_clos": 0,
+   "gagnants": 0,
+   "refus_pct": 0.0,
+   "gels": 0,
+   "cycles": 6,
+   "usage_budget": 0.5
+  },
+  "bias": {
+   "justesse": null,
+   "n": 0
+  },
+  "verdict": "non prononce ici : voir docs/protocole.md section 6 et scripts/singe.py"
+ }
+]

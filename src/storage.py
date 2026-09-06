@@ -125,7 +125,10 @@ CREATE INDEX IF NOT EXISTS idx_costs_day       ON api_costs(day);
 CREATE INDEX IF NOT EXISTS idx_events_source   ON events(source, level, id);
 """
 
-EXPERIMENT_TABLES = ("decisions", "orders", "positions", "equity", "api_costs", "events", "benchmark")
+# Ordre de SUPPRESSION, pas alphabetique : orders porte une cle etrangere vers
+# decisions, il doit donc partir en premier. L'ordre inverse leve
+# "FOREIGN KEY constraint failed" et laisse la base a moitie effacee.
+EXPERIMENT_TABLES = ("orders", "positions", "decisions", "equity", "api_costs", "events", "benchmark")
 
 
 def utcnow_iso() -> str:

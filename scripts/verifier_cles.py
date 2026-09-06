@@ -82,65 +82,78 @@ def check_ntfy() -> bool:
     return ok
 
 
-def check_binance(cfg, *, testnet: bool) -> bool:
-    prefix = "BINANCE_TESTNET" if testnet else "BINANCE"
-    key, sec = secret(f"{prefix}_API_KEY"), secret(f"{prefix}_API_SECRET")
-    label = "Binance TESTNET" if testnet else "Binance REEL"
-    console.print(f"\n[bold]{'4' if testnet else '3'}. {label}[/]  {prefix}_API_KEY = {masked(key)}")
-    if not key or not sec:
-        console.print(f"   {SKIP} pas configure. {'Optionnel, pour roder les ordres sans argent.' if testnet else 'INUTILE en paper trading, uniquement pour le reel.'}")
-        return False
+def check_venue(cfg, *, testnet: bool) -> bool:
+    """Verifie la plateforme declaree dans config.yaml, quelle qu'elle soit.
+
+    Aucun nom propre en dur : les secrets attendus, leur nombre et leur nom
+    viennent de src/venues.py. OKX en exige trois, Binance et Kraken deux.
+    """
     import ccxt
-    x = ccxt.binance({"apiKey": key, "secret": sec, "enableRateLimit": True, "timeout": 20000,
-                      "options": {"defaultType": "spot", "adjustForTimeDifference": True}})
-    if testnet:
-        x.set_sandbox_mode(True)
-    quote = str(cfg.get("exchange.quote", "USDT"))
+
+    from src.exchange import Exchange, ExchangeError
+    from src.venues import get as venue_get
+
+    v = venue_get(str(cfg.get("exchange.id", "myokx")))
+    prefix = v.env_prefix + ("_TESTNET" if testnet else "")
+    noms = {c: n.replace(v.env_prefix, prefix, 1) for c, n in v.env_names().items()}
+    label = f"{v.nom} {'TESTNET' if testnet else 'REEL'}"
+    console.print(f"\n[bold]{'4' if testnet else '3'}. {label}[/]  ({v.hote})")
+    for n in noms.values():
+        console.print(f"   {n} = {masked(secret(n))}")
+    manquants = [n for n in noms.values() if not secret(n)]
+    if manquants:
+        console.print(f"   {SKIP} incomplet, il manque {', '.join(manquants)}. "
+                      + ("Optionnel, pour roder les ordres sans argent." if testnet
+                         else "INUTILE en paper trading, uniquement pour le reel."))
+        return False
+
     try:
-        bal = x.fetch_balance()
+        x = Exchange(cfg, trading=True, testnet=testnet)
+    except ExchangeError as e:
+        console.print(f"   {KO} {e}")
+        return False
+    quote = str(cfg.get("exchange.quote", "EUR"))
+    try:
+        soldes = x.fetch_balances()
     except ccxt.AuthenticationError as e:
         console.print(f"   {KO} cle refusee : {str(e)[:140]}")
-        console.print("   -> cle fausse, secret mal colle, ou restriction IP qui ne correspond pas a ton IP actuelle.")
+        console.print("   -> cle, secret ou phrase secrete errones, ou restriction IP qui ne "
+                      "correspond pas a ton adresse actuelle.")
         return False
     except Exception as e:
-        console.print(f"   {KO} {type(e).__name__} : {str(e)[:140]}")
+        console.print(f"   {KO} {type(e).__name__} : {str(e)[:160]}")
         return False
-    free = float((bal.get("free") or {}).get(quote, 0) or 0)
-    console.print(f"   {OK} connexion. Solde spot disponible : {free:.2f} {quote}")
+    free = soldes.get(quote, 0.0)
+    console.print(f"   {OK} connexion etablie. Solde disponible : {free:.2f} {quote}")
+    autres = {k: round(val, 8) for k, val in soldes.items() if k != quote}
+    if autres:
+        console.print(f"   [dim]autres actifs detenus : {autres}[/]")
 
-    # Droits au niveau du COMPTE, distincts des droits de la cle. Lisible avec une
-    # cle en lecture seule. Un canTrade a false signifie que la plateforme a ferme
-    # le trading pour ce compte : cocher une case ne changera rien.
-    info = (bal.get("info") or {})
-    droits = {k: info.get(k) for k in ("canTrade", "canWithdraw", "canDeposit") if k in info}
-    if droits:
-        for k, libelle in (("canTrade", "trader"), ("canWithdraw", "retirer"), ("canDeposit", "deposer")):
-            if k not in droits:
-                continue
-            v = bool(droits[k])
-            console.print(f"   {OK if v else KO} le COMPTE peut {libelle} : {'oui' if v else 'NON'}")
-        if droits.get("canTrade") is False:
-            console.print("   [bold red]-> le trading est ferme au niveau du compte, pas de la cle. "
-                          "Aucune permission a cocher ne le rouvrira.[/]")
-            console.print("   [yellow]   Binance ne sert plus les residents de l'Union europeenne depuis "
-                          "le 1er juillet 2026, faute de licence MiCA. Retire tes fonds.[/]")
-    if not testnet and free < cfg.total_capital:
-        console.print(f"   [yellow]!![/] le capital configure est {cfg.total_capital:.0f} {quote} : "
-                      f"convertir d'abord en {quote} sur le compte SPOT (pas Funding).")
-    if testnet:
-        return True
+    # Le droit d'ecrire est le seul qui compte vraiment : on le prouve sans
+    # rien engager, en annulant un ordre qui n'existe pas. Une cle en lecture
+    # seule est refusee pour permission ; une cle de trading dit "introuvable".
     try:
-        r = x.sapiGetAccountApiRestrictions()
+        x.cancel("BTC/" + quote, "0")
+        verdict = (OK, "la cle peut ecrire (ordre inexistant, annulation acceptee)")
+    except ccxt.PermissionDenied as e:
+        verdict = (KO, f"la cle NE PEUT PAS trader : {str(e)[:90]}")
+    except ExchangeError as e:
+        msg = str(e).lower()
+        if any(w in msg for w in ("permission", "not authorized", "unauthorized", "50101", "50103", "50114")):
+            verdict = (KO, f"la cle NE PEUT PAS trader : {str(e)[:90]}")
+        else:
+            verdict = (OK, "la cle peut ecrire (ordre inexistant, refus attendu)")
     except Exception as e:
-        console.print(f"   [yellow]!![/] restrictions non lisibles ({type(e).__name__}). Verifie a la main sur Binance.")
-        return True
-    withdrawals = bool(r.get("enableWithdrawals"))
-    spot = bool(r.get("enableSpotAndMarginTrading"))
-    ip = bool(r.get("ipRestrict"))
-    console.print(f"   {KO if withdrawals else OK} retraits {'ACTIVES : DESACTIVE-LES IMMEDIATEMENT' if withdrawals else 'desactives'}")
-    console.print(f"   {OK if spot else KO} trading spot {'active' if spot else 'DESACTIVE : le bot ne pourra pas passer d ordres'}")
-    console.print(f"   {OK if ip else '[yellow]!![/]'} restriction IP {'active' if ip else 'absente : recommande de la mettre'}")
-    return not withdrawals and spot
+        verdict = ("[yellow]!![/]", f"droit d'ecriture non verifiable : {type(e).__name__}")
+    console.print(f"   {verdict[0]} {verdict[1]}")
+
+    if not testnet and free < cfg.total_capital:
+        console.print(f"   [yellow]!![/] le capital configure est {cfg.total_capital:.0f} {quote} et le "
+                      f"solde n'est que de {free:.2f}. Sur OKX, verifie que les fonds sont bien sur le "
+                      f"compte de TRADING et non sur le compte de financement.")
+    console.print("   [dim]Les retraits ne se verifient pas par API : assure-toi a la main que la "
+                  "permission de retrait est bien decochee.[/]")
+    return verdict[0] == OK
 
 
 def main() -> int:
@@ -148,8 +161,8 @@ def main() -> int:
     console.rule("[bold]Verification des cles")
     a = check_anthropic(cfg)
     check_ntfy()
-    check_binance(cfg, testnet=False)
-    check_binance(cfg, testnet=True)
+    check_venue(cfg, testnet=False)
+    check_venue(cfg, testnet=True)
     console.rule()
     if a:
         console.print("[bold green]Pret pour le paper trading.[/] Lance start_paper_detached.bat "

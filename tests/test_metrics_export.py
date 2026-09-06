@@ -157,3 +157,17 @@ def test_next_cycle_lands_on_the_next_boundary_plus_grace():
     assert next_cycle_iso(4, now) == "2026-09-10T12:01:30+00:00"
     at_boundary = datetime(2026, 9, 10, 12, 1, 30, tzinfo=timezone.utc)
     assert next_cycle_iso(4, at_boundary) == "2026-09-10T16:01:30+00:00"
+
+
+def test_remise_a_zero_respecte_les_cles_etrangeres():
+    """orders.decision_id pointe vers decisions.id : supprimer les decisions
+    avant les ordres leve FOREIGN KEY et laisse la base a moitie effacee."""
+    st = Storage(":memory:")
+    st._conn.execute("INSERT INTO decisions (cycle_id,ts,brain,symbol,action,accepted) VALUES ('c','t','llm','BTC/EUR','buy',1)")
+    st._conn.execute("INSERT INTO orders (cycle_id,ts,brain,symbol,side,mode,price,amount_base,value_quote,fee_quote,decision_id)"
+                     " VALUES ('c','t','llm','BTC/EUR','buy','paper',1,1,1,0,1)")
+    st._conn.commit()
+    counts = st.reset_experiment()
+    assert counts["decisions"] == 1 and counts["orders"] == 1
+    for t in ("decisions", "orders"):
+        assert st._conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0] == 0
