@@ -107,6 +107,23 @@ def check_binance(cfg, *, testnet: bool) -> bool:
         return False
     free = float((bal.get("free") or {}).get(quote, 0) or 0)
     console.print(f"   {OK} connexion. Solde spot disponible : {free:.2f} {quote}")
+
+    # Droits au niveau du COMPTE, distincts des droits de la cle. Lisible avec une
+    # cle en lecture seule. Un canTrade a false signifie que la plateforme a ferme
+    # le trading pour ce compte : cocher une case ne changera rien.
+    info = (bal.get("info") or {})
+    droits = {k: info.get(k) for k in ("canTrade", "canWithdraw", "canDeposit") if k in info}
+    if droits:
+        for k, libelle in (("canTrade", "trader"), ("canWithdraw", "retirer"), ("canDeposit", "deposer")):
+            if k not in droits:
+                continue
+            v = bool(droits[k])
+            console.print(f"   {OK if v else KO} le COMPTE peut {libelle} : {'oui' if v else 'NON'}")
+        if droits.get("canTrade") is False:
+            console.print("   [bold red]-> le trading est ferme au niveau du compte, pas de la cle. "
+                          "Aucune permission a cocher ne le rouvrira.[/]")
+            console.print("   [yellow]   Binance ne sert plus les residents de l'Union europeenne depuis "
+                          "le 1er juillet 2026, faute de licence MiCA. Retire tes fonds.[/]")
     if not testnet and free < cfg.total_capital:
         console.print(f"   [yellow]!![/] le capital configure est {cfg.total_capital:.0f} {quote} : "
                       f"convertir d'abord en {quote} sur le compte SPOT (pas Funding).")
