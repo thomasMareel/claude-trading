@@ -234,6 +234,7 @@ def rejouer(
     cash = budget
     cycles: list[Cycle] = []
     equity: list[tuple[int, float]] = []
+    deploiement: list[tuple[int, float, float, int, bool]] = []
     abandons = 0
 
     for ts, o, h, l, c in bougies:
@@ -263,12 +264,17 @@ def rejouer(
                         d.acheter(i, prix, ts)
                         cash -= euros
         equity.append((ts, cash + d.valeur(c)))
+        # combien d'argent travaille reellement, et combien dort : c'est ce qui
+        # explique un rendement modeste sur le budget alors que chaque cycle
+        # rapporte l'objectif plein sur la somme engagee
+        deploiement.append((ts, cash, d.cumul_euros, len(d.remplis), d.abandonnee))
 
     fin = bougies[-1][4]
     return {
         "symbole": symbole,
         "cycles": cycles,
         "equity": equity,
+        "deploiement": deploiement,
         "cash_final": cash,
         "lot_restant": d.cumul_unites,
         "valeur_lot": d.valeur(fin),
