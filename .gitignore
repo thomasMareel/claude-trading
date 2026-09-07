@@ -15,3 +15,4 @@ data/*.db-*
 docs/simulations.json
 docs/simulations.html
 docs/recherche-*.json
+docs/epreuve-*.json
