@@ -518,3 +518,153 @@ def test_un_objectif_relache_fait_sortir_plus_tot_et_rend_moins():
 def test_un_objectif_profond_sous_les_frais_est_refuse():
     with pytest.raises(GrilleError, match="objectif_profond"):
         Reglages(objectif_net=0.03, objectif_profond=0.0015, frais=0.001)
+
+
+# ================================================================== cliquet
+#  L'objectif cesse d'etre une sortie et devient un plancher : au seuil, un stop
+#  se pose juste dessous, et il remonte a chaque cran de rentabilite franchi.
+CLIQ = Reglages(profondeur=0.10, paliers=5, ratio=2.0, objectif_net=0.02, frais=0.001,
+                cliquet_pas=0.01, cliquet_retrait=0.002,
+                frais_taker=0.0015, glissement_stop=0.0005)
+
+
+def descente_amorcee(r=CLIQ):
+    """Une descente avec le premier barreau achete a 100."""
+    d = Descente("BTC/EUR", 100.0, 1000.0, r)
+    d.acheter(0, 100.0, 0)
+    return d
+
+
+def test_le_cliquet_est_inerte_par_defaut():
+    """Le filet des tests existants est le seul instrument qui distingue une
+    regression d'un changement voulu : le defaut ne doit rien changer."""
+    assert Reglages().cliquet_pas is None
+    b = [bougie(0, 100, 100, 89, 90), bougie(H, 90, 99, 90, 99)]
+    sans = Reglages(profondeur=0.10, paliers=5, ratio=2.0, objectif_net=0.02, frais=0.001)
+    a = rejouer("BTC/EUR", b, sans, 1000.0, reference=100.0)
+    assert resume(a) == resume(rejouer("BTC/EUR", b, R, 1000.0, reference=100.0))
+    assert all(c.sortie == "limite" and c.crans == 0 for c in a["cycles"])
+
+
+def test_sous_le_seuil_le_stop_ne_s_arme_pas():
+    d = descente_amorcee()
+    assert d.armer_ou_monter(101.0, H) is False
+    assert d.stop == 0.0 and d.arme_le is None
+
+
+def test_au_seuil_le_stop_se_pose_juste_dessous_au_lieu_de_vendre():
+    d = descente_amorcee()
+    seuil = d.prix_pour(0.02)
+    assert d.armer_ou_monter(seuil, H) is True
+    assert d.crans == 0 and d.arme_le == H
+    assert d.rentabilite(d.stop) == pytest.approx(0.02 - 0.002)
+
+
+def test_le_stop_monte_d_un_cran_par_pas_franchi_et_jamais_ne_descend():
+    d = descente_amorcee()
+    d.armer_ou_monter(d.prix_pour(0.02), H)
+    hauts = [d.stop]
+    for niveau in (0.03, 0.05, 0.041, 0.02):
+        d.armer_ou_monter(d.prix_pour(niveau), H)
+        hauts.append(d.stop)
+    assert hauts == sorted(hauts), "un cliquet ne redescend jamais"
+    assert d.crans == 3, "0.05 est trois pas au-dessus de 0.02"
+    assert d.rentabilite(d.stop) == pytest.approx(0.05 - 0.002)
+
+
+def test_une_seule_bougie_peut_monter_plusieurs_crans():
+    """N'en autoriser qu'un ferait dependre le resultat de la finesse
+    d'echantillonnage, defaut que ce moteur a deja paye cher."""
+    d = descente_amorcee()
+    d.armer_ou_monter(d.prix_pour(0.09), H)
+    assert d.crans == 7 and d.rentabilite(d.stop) == pytest.approx(0.09 - 0.002)
+
+
+def test_un_stop_arme_annule_tous_les_ordres_d_achat():
+    d = descente_amorcee()
+    assert d.barreaux_a_poser(), "avant armement, les barreaux sont poses"
+    d.armer_ou_monter(d.prix_pour(0.02), H)
+    assert d.barreaux_a_poser() == []
+
+
+def test_le_stop_est_toujours_au_dessus_de_tout_barreau_libre():
+    """C'est ce qui rend l'annulation des achats correcte et non arbitraire."""
+    d = descente_amorcee()
+    d.armer_ou_monter(d.prix_pour(0.02), H)
+    libres = [p for i, (p, _) in enumerate(d.echelle) if i not in d.remplis]
+    assert d.stop > max(libres)
+
+
+def test_un_pas_enorme_donne_un_stop_fixe_qui_ne_monte_jamais():
+    """Bras de controle : il isole ce que coute le passage a un ordre stop,
+    pour que le gain du CLIQUET ne lui soit pas attribue par defaut."""
+    fixe = Reglages(**{**CLIQ.__dict__, "cliquet_pas": 10.0})
+    d = descente_amorcee(fixe)
+    d.armer_ou_monter(d.prix_pour(0.02), H)
+    depart = d.stop
+    d.armer_ou_monter(d.prix_pour(0.50), H)
+    assert d.stop == depart and d.crans == 0
+
+
+def test_un_pas_nul_fait_suivre_le_prix_en_continu():
+    suiveur = Reglages(**{**CLIQ.__dict__, "cliquet_pas": 0.0})
+    d = descente_amorcee(suiveur)
+    d.armer_ou_monter(d.prix_pour(0.02), H)
+    d.armer_ou_monter(d.prix_pour(0.0345), H)
+    assert d.rentabilite(d.stop) == pytest.approx(0.0345 - 0.002)
+
+
+def test_une_sortie_au_stop_paie_le_tarif_taker_et_non_le_maker():
+    d = descente_amorcee()
+    maker = descente_amorcee().vendre(110.0)["recu"]
+    taker = d.vendre(110.0, au_marche=True)["recu"]
+    assert taker < maker
+    assert taker == pytest.approx(maker * (1 - 0.0015) / (1 - 0.001))
+
+
+def test_un_retrait_qui_rendrait_la_sortie_perdante_est_refuse():
+    with pytest.raises(GrilleError, match="cliquet_retrait"):
+        Reglages(objectif_net=0.02, cliquet_pas=0.01, cliquet_retrait=0.03)
+
+
+def test_le_cliquet_capture_une_forte_remontee_que_la_vente_ferme_coupe():
+    """Le but meme du mecanisme : ne pas sortir a 2 % quand le marche en offre 12."""
+    b = [bougie(0, 100, 100, 99, 99)]                       # achat du barreau 0 a 100
+    b += [bougie(i * H, 100 + i * 2, 100 + i * 2, 99 + i * 2, 100 + i * 2) for i in range(1, 8)]
+    b.append(bougie(8 * H, 114, 114, 104, 104))             # rechute : le stop cede
+    ferme = rejouer("BTC/EUR", b, Reglages(profondeur=0.10, paliers=5, ratio=2.0,
+                                           objectif_net=0.02, frais=0.001), 1000.0, reference=100.0)
+    cliq = rejouer("BTC/EUR", b, CLIQ, 1000.0, reference=100.0)
+    assert len(ferme["cycles"]) == 1 and ferme["cycles"][0].gain_pct == pytest.approx(0.02)
+    assert len(cliq["cycles"]) == 1
+    c = cliq["cycles"][0]
+    assert c.sortie == "stop" and c.crans >= 5
+    assert c.gain_pct > 0.03, "bien au-dela des 2 % de la vente ferme"
+    #  Mais nettement moins que le dernier cran atteint ne le promettait : le
+    #  robot ne lit que les clotures, donc une bougie qui plonge de 114 a 104 le
+    #  sort a 104 et non pres de son stop. C'est le cout du sondage, et il doit
+    #  rester visible plutot que d'etre lisse par une hypothese d'execution.
+    assert c.gain_pct < 0.02 + c.crans * CLIQ.cliquet_pas,         "le sondage a la cloture rend une partie de la montee"
+
+
+def test_le_cliquet_paie_le_retrait_quand_le_cours_retombe_aussitot():
+    """Le cout certain du mecanisme, et il doit se voir : au seuil sans suite,
+    on encaisse moins que la vente ferme."""
+    b = [bougie(0, 100, 100, 99, 99),
+         bougie(H, 99, 103, 99, 102.4),                     # arme au-dessus du seuil
+         bougie(2 * H, 102.4, 102.4, 100, 100)]             # retombe : le stop cede
+    cliq = rejouer("BTC/EUR", b, CLIQ, 1000.0, reference=100.0)
+    assert len(cliq["cycles"]) == 1
+    c = cliq["cycles"][0]
+    assert c.sortie == "stop" and c.crans == 0
+    assert c.gain_pct < 0.02, "moins que l'objectif de la vente ferme"
+
+
+def test_le_journal_inscrit_chaque_deplacement_du_stop():
+    b = [bougie(0, 100, 100, 99, 99)]
+    b += [bougie(i * H, 100 + i * 2, 100 + i * 2, 99 + i * 2, 100 + i * 2) for i in range(1, 6)]
+    r = rejouer("BTC/EUR", b, CLIQ, 1000.0, reference=100.0)
+    cliquets = [e for e in r["journal"] if e.genre == "cliquet"]
+    assert len(cliquets) >= 2
+    assert [e.prix for e in cliquets] == sorted(e.prix for e in cliquets)
+    assert [e.palier for e in cliquets] == sorted(e.palier for e in cliquets)

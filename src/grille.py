@@ -52,6 +52,17 @@ class Reglages:
     suivre_hausse: bool = False     # remonter la reference quand le marche monte a vide
     reancrage_min: float = 0.0      # hausse minimale avant de deplacer la reference
     espacement: str = "lineaire"    # repartition des barreaux : "lineaire" ou "geometrique"
+    #  ---- le cliquet : l'objectif devient un plancher, pas une sortie ----
+    cliquet_pas: float | None = None    # None = inerte, le moteur ne change pas
+    cliquet_retrait: float = 0.001      # de combien le stop se place sous le cran atteint
+    cliquet_vue: str = "sondage"        # "sondage" (cloture) ou "carnet" (ordre dormant)
+    frais_taker: float = 0.0015         # un stop part au marche, pas au tarif maker
+    glissement_stop: float = 0.0005     # un stop ne garantit pas son prix
+    #  cliquet_pas commande trois mecanismes avec une seule formule : 0 suit le
+    #  prix en continu, une valeur usuelle donne l'escalier demande, une valeur
+    #  enorme (10.0) pose un stop fixe qui ne monte jamais — ce dernier sert de
+    #  bras de controle, pour attribuer un gain au CLIQUET et non au simple
+    #  passage d'une vente limite a un ordre stop."
     objectif_profond: float | None = None   # objectif vise quand l'echelle est pleine
     #  Un objectif unique traite de la meme facon un lot d'un barreau et un lot
     #  qui a mange tout le budget. Or c'est quand la descente est profonde que le
@@ -90,6 +101,27 @@ class Reglages:
             raise GrilleError(f"reancrage_min doit etre dans [0, 1[, trouve {self.reancrage_min}")
         if self.espacement not in ("lineaire", "geometrique"):
             raise GrilleError(f"espacement inconnu : {self.espacement}")
+        if self.cliquet_pas is not None:
+            if self.cliquet_pas < 0:
+                raise GrilleError(f"cliquet_pas doit etre >= 0, trouve {self.cliquet_pas}")
+            if not 0 <= self.cliquet_retrait < 1:
+                raise GrilleError(f"cliquet_retrait hors de [0, 1[ : {self.cliquet_retrait}")
+            if self.cliquet_vue not in ("sondage", "carnet"):
+                raise GrilleError(f"cliquet_vue inconnue : {self.cliquet_vue}")
+            if not 0 <= self.frais_taker < 0.05:
+                raise GrilleError(f"frais_taker invraisemblables : {self.frais_taker}")
+            if not 0 <= self.glissement_stop < 0.05:
+                raise GrilleError(f"glissement_stop invraisemblable : {self.glissement_stop}")
+            #  Le plancher garanti par le cliquet doit rester un GAIN. Sans cette
+            #  garde, un retrait plus large que l'objectif ferait d'une "sortie
+            #  reussie" une perte, et le balayage le decouvrirait en silence.
+            g_min = (min(self.objectif_net, self.objectif_profond)
+                     if self.objectif_profond is not None else self.objectif_net)
+            if (1 + g_min - self.cliquet_retrait) * (1 - self.glissement_stop) <= 1:
+                raise GrilleError(
+                    f"cliquet_retrait {self.cliquet_retrait:.2%} laisse un plancher "
+                    f"non rentable face a un objectif de {g_min:.2%} : la sortie perdrait"
+                )
         if self.objectif_profond is not None:
             if not 0 < self.objectif_profond < 1:
                 raise GrilleError(f"objectif_profond hors de ]0, 1[ : {self.objectif_profond}")
@@ -148,6 +180,12 @@ class Descente:
     cumul_euros: float = 0.0                     # euros REELLEMENT sortis, frais inclus
     cumul_unites: float = 0.0                    # unites NETTES detenues
     abandonnee: bool = False
+    stop: float = 0.0                            # prix du stop arme ; 0.0 = pas arme
+    crans: int = 0                               # crans montes au-dessus du premier
+    arme_le: int | None = None                   # ts du PREMIER armement du lot
+    #  stop est un PRIX et non un pourcentage : les deux ne different que si le
+    #  prix de revient bouge pendant que le stop est arme, ce qu'un stop arme
+    #  interdit justement en annulant les ordres d'achat.
 
     # ---------------------------------------------------------------- vues
     @property
@@ -194,9 +232,56 @@ class Descente:
         m = self.reglages.mise_min
         return [i for i, (_, e) in enumerate(self.echelle) if e < m] if m else []
 
+    def rentabilite(self, prix: float) -> float:
+        """Ce que rapporterait une sortie AU MARCHE a ce prix, nette de tout."""
+        if not self.cumul_unites:
+            return 0.0
+        return prix * (1 - self.reglages.frais_taker) / self.prix_revient - 1
+
+    def prix_pour(self, niveau: float) -> float:
+        """Le prix auquel une sortie au marche rendrait exactement `niveau`."""
+        return self.prix_revient * (1 + niveau) / (1 - self.reglages.frais_taker)
+
+    def armer_ou_monter(self, prix_lu: float, ts: int) -> bool:
+        """Arme le stop, ou le monte d'autant de crans que le prix le permet.
+
+        Plusieurs crans peuvent etre franchis dans une seule bougie : n'en
+        autoriser qu'un ferait dependre le resultat de la finesse
+        d'echantillonnage, defaut que ce depot a deja paye cher.
+        """
+        r = self.reglages
+        if r.cliquet_pas is None or not self.cumul_unites:
+            return False
+        g0 = r.objectif_a(len(self.remplis))
+        rent = self.rentabilite(prix_lu)
+        if rent < g0:                       # sous le seuil : on n'arme rien
+            return False
+        if r.cliquet_pas > 0:
+            k = int((rent - g0) // r.cliquet_pas)
+            niveau = g0 + k * r.cliquet_pas - r.cliquet_retrait
+        else:                               # pas nul : le stop suit le prix en continu
+            k = self.crans
+            niveau = rent - r.cliquet_retrait
+        cand = self.prix_pour(niveau)
+        if cand <= self.stop:
+            return False
+        self.stop, self.crans = cand, max(self.crans, k)
+        if self.arme_le is None:
+            self.arme_le = ts
+        return True
+
     def barreaux_a_poser(self) -> list[tuple[int, float, float]]:
-        """Les ordres d'achat a laisser au carnet : (indice, prix, euros)."""
-        if self.abandonnee:
+        """Les ordres d'achat a laisser au carnet : (indice, prix, euros).
+
+        Un stop arme les annule tous. Demonstration qu'aucun achat n'est perdu :
+        les mises croissent avec l'indice, le filtre mise_min supprime donc un
+        prefixe haut et jamais un suffixe bas ; le prix de revient est donc
+        superieur au barreau rempli le plus bas, donc a tout barreau libre ; et
+        la garde de construction impose stop > prix_revient. Le stop est donc
+        toujours AU-DESSUS de tout barreau libre : un prix qui descend le
+        traverse avant eux, et l'ordre stop serait servi le premier.
+        """
+        if self.abandonnee or self.stop:
             return []
         m = self.reglages.mise_min
         return [(i, p, e) for i, (p, e) in enumerate(self.echelle)
@@ -221,12 +306,16 @@ class Descente:
             self.ouverte_le = ts
         return euros, unites
 
-    def vendre(self, prix: float) -> dict[str, float]:
-        """Revend tout le lot. Retourne le detail du cycle."""
+    def vendre(self, prix: float, *, au_marche: bool = False) -> dict[str, float]:
+        """Revend tout le lot. Retourne le detail du cycle.
+
+        au_marche=True applique le tarif taker : une sortie declenchee par un
+        stop part au marche, jamais au tarif maker d'un ordre limite dormant.
+        """
         if not self.cumul_unites:
             raise GrilleError("rien a vendre")
         brut = self.cumul_unites * prix
-        recu = brut * (1 - self.reglages.frais)
+        recu = brut * (1 - (self.reglages.frais_taker if au_marche else self.reglages.frais))
         gain = recu - self.cumul_euros
         detail = {
             "unites": self.cumul_unites, "prix": prix, "brut": brut, "recu": recu,
@@ -234,12 +323,21 @@ class Descente:
             "gain_pct": gain / self.cumul_euros if self.cumul_euros else 0.0,
             "paliers": len(self.remplis), "prix_revient": self.prix_revient,
         }
-        self.remplis, self.cumul_euros, self.cumul_unites, self.ouverte_le = [], 0.0, 0.0, None
+        (self.remplis, self.cumul_euros, self.cumul_unites, self.ouverte_le,
+         self.stop, self.crans, self.arme_le) = [], 0.0, 0.0, None, 0.0, 0, None
         return detail
 
     def valeur(self, prix: float) -> float:
-        """Valeur de liquidation du lot detenu, frais de sortie deduits."""
-        return self.cumul_unites * prix * (1 - self.reglages.frais)
+        """Valeur de liquidation du lot detenu, frais de sortie deduits.
+
+        Quand le cliquet est actif il n'existe plus aucune sortie au tarif
+        maker : valoriser le lot au tarif limite surestimerait la nouvelle
+        version dans toute comparaison.
+        """
+        r = self.reglages
+        if r.cliquet_pas is not None:
+            return self.cumul_unites * prix * (1 - r.frais_taker) * (1 - r.glissement_stop)
+        return self.cumul_unites * prix * (1 - r.frais)
 
 
 # ====================================================================== rejeu
@@ -257,6 +355,8 @@ class Cycle:
     prix_revient: float
     prix_sortie: float
     heures: float
+    sortie: str = "limite"   # "limite" | "stop" | "trou"
+    crans: int = 0           # crans montes par le cliquet avant la sortie
 
 
 @dataclass
@@ -335,17 +435,48 @@ def rejouer(
     abandons = 0
     pic, creux, somme_eng, heures_eng = float("-inf"), 0.0, 0.0, 0
 
+    cliquet = reglages.cliquet_pas is not None
     for ts, o, h, l, c in bougies:
+        ferme = False
+
+        def sortir(px: float, genre: str, _ts: int = 0) -> None:
+            """Solde le lot au marche et ouvre une descente au prix du moment."""
+            nonlocal d, cash, ferme
+            ouvert = ts if d.ouverte_le is None else d.ouverte_le
+            crans = d.crans
+            det = d.vendre(px, au_marche=True)
+            cash += det["recu"]
+            cycles.append(Cycle(
+                symbole, ouvert, ts, det["paliers"], det["investi"], det["recu"],
+                det["gain"], det["gain_pct"], det["prix_revient"], px,
+                (ts - ouvert) / 3_600_000, genre, crans,
+            ))
+            if trace:
+                journal.append(Evenement(ts, "vente", px, -1, det["recu"],
+                                         det["prix_revient"], det["gain"]))
+            d = Descente(symbole, c, budget, reglages)
+            ferme = True
+
+        #  Un trou de cotation : la bougie OUVRE deja sous le stop. Le stop n'a pas
+        #  ete traverse en seance, il a ete saute — c'est le seul cas ou le plancher
+        #  garanti est viole, et il se compte a part.
+        if (cliquet and reglages.cliquet_vue == "carnet" and d.stop
+                and d.arme_le is not None and ts > d.arme_le and o <= d.stop):
+            sortir(max(l, o * (1 - reglages.glissement_stop)), "trou")
+
         for extreme, monte in chemin_bougie(o, h, l, c):
+            if ferme:
+                break
+            #  Un aller-retour dans la meme bougie n'est pas observable : il suppose
+            #  que le bas a ete visite avant le haut ET que l'ordre limite de vente a
+            #  ete servi au sommet de la meche. Les interdire donne la borne basse.
+            trop_tot = (not reglages.vente_meme_bougie
+                        and d.ouverte_le is not None and ts <= d.ouverte_le)
             if monte:
-                #  Un aller-retour dans la meme heure n'est pas observable dans une
-                #  bougie horaire : il suppose que le bas a ete visite avant le haut
-                #  ET que l'ordre limite de vente a ete servi au sommet de la meche.
-                #  Plus l'objectif est petit, plus ces cycles sont nombreux et plus
-                #  le resultat repose sur ce pari. Les interdire donne la borne basse.
-                trop_tot = (not reglages.vente_meme_bougie
-                            and d.ouverte_le is not None and ts <= d.ouverte_le)
-                if d.cumul_unites and h >= d.prix_sortie and not trop_tot:
+                #  Le cliquet ne lit JAMAIS le haut d'une bougie : ni pour armer, ni
+                #  pour monter, ni pour sortir. Un robot qui se reveille a la cloture
+                #  ne peut pas savoir qu'une meche est passee par la.
+                if not cliquet and d.cumul_unites and h >= d.prix_sortie and not trop_tot:
                     px = d.prix_sortie
                     # lire l'ouverture AVANT de vendre : vendre() remet la descente a zero
                     ouvert = ts if d.ouverte_le is None else d.ouverte_le
@@ -354,7 +485,7 @@ def rejouer(
                     cycles.append(Cycle(
                         symbole, ouvert, ts, det["paliers"], det["investi"],
                         det["recu"], det["gain"], det["gain_pct"], det["prix_revient"], px,
-                        (ts - ouvert) / 3_600_000,
+                        (ts - ouvert) / 3_600_000, "limite", 0,
                     ))
                     if trace:
                         journal.append(Evenement(ts, "vente", px, -1, det["recu"],
@@ -362,6 +493,11 @@ def rejouer(
                     d = Descente(symbole, c, budget, reglages)   # on repart du prix du moment
                     d.abandonnee = False
             else:
+                #  Un ordre stop dormant au carnet se declenche en seance, sur le bas.
+                if (cliquet and reglages.cliquet_vue == "carnet" and d.stop
+                        and d.arme_le is not None and ts > d.arme_le and l <= d.stop):
+                    sortir(max(l, d.stop * (1 - reglages.glissement_stop)), "stop")
+                    break
                 if l <= d.seuil_abandon and not d.abandonnee:
                     d.abandonnee = True
                     abandons += 1
@@ -375,6 +511,21 @@ def rejouer(
                         if trace:
                             journal.append(Evenement(ts, "achat", prix, i, euros,
                                                      d.prix_revient, 0.0))
+
+        #  Le cliquet vit a la cloture : c'est le seul instant qu'un robot qui se
+        #  reveille une fois par bougie observe reellement. Armer ou monter d'abord,
+        #  declencher ensuite — un stop pose a cette cloture est sous elle, il ne
+        #  peut donc pas se declencher dans la foulee.
+        if cliquet and not ferme and d.cumul_unites:
+            trop_tot = (not reglages.vente_meme_bougie
+                        and d.ouverte_le is not None and ts <= d.ouverte_le)
+            if not trop_tot and d.armer_ou_monter(c, ts) and trace:
+                journal.append(Evenement(ts, "cliquet", d.stop, d.crans, 0.0,
+                                         d.prix_revient, 0.0))
+            if (reglages.cliquet_vue == "sondage" and d.stop
+                    and d.arme_le is not None and ts > d.arme_le and c <= d.stop):
+                sortir(max(l, c * (1 - reglages.glissement_stop)), "stop")
+
         #  Sans cette ligne, l'echelle reste plantee la ou la derniere vente l'a
         #  laissee. Si le marche s'eleve de 20 % sans que rien ne soit achete, le
         #  premier barreau est 20 % sous le cours et n'est jamais rejoint : la
@@ -382,11 +533,8 @@ def rejouer(
         #  prix du moment. On ne suit qu'a la HAUSSE et qu'a vide : suivre a la
         #  baisse reviendrait a courir apres le marche en annulant ses achats, et
         #  suivre en portant un lot deplacerait l'echelle sous ses propres achats.
-        #  On lit la cloture, jamais le haut de la bougie : la bougie doit etre
-        #  fermee au-dessus de l'ancienne reference pour deplacer l'echelle.
         #  reancrage_min evite de courir apres le bruit : sur des bougies a la
-        #  minute, deplacer l'echelle a chaque tick haussier la collerait au prix
-        #  et ne laisserait jamais un creux se former.
+        #  minute, deplacer l'echelle a chaque tick haussier la collerait au prix.
         if (reglages.suivre_hausse and not d.engagee
                 and c > d.reference * (1 + reglages.reancrage_min)):
             d = Descente(symbole, c, budget, reglages)
