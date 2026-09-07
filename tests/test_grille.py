@@ -146,8 +146,30 @@ def test_le_mode_de_defaillance_est_reproduit_la_baisse_durable_bloque_tout():
 
 # ------------------------------------------------------------------ chemin de bougie
 def test_le_chemin_dans_la_bougie_est_prudent():
-    assert chemin_bougie(o=10, h=12, l=9, c=11) == (9, 12)      # haussiere : bas puis haut
-    assert chemin_bougie(o=11, h=12, l=9, c=10) == (12, 9)      # baissiere : haut puis bas
+    assert chemin_bougie(o=10, h=12, l=9, c=11) == ((9, False), (12, True))   # haussiere
+    assert chemin_bougie(o=11, h=12, l=9, c=10) == ((12, True), (9, False))   # baissiere
+
+
+def test_une_bougie_plate_garde_sa_jambe_basse():
+    """Le defaut le plus couteux du moteur : la jambe etait identifiee par
+    `extreme == h`, donc sur une bougie plate les deux jambes passaient pour
+    montantes et aucun achat ne pouvait se declencher. 32 % des bougies de
+    cinq minutes et 61 a 67 % de celles a la minute sont plates : plus on
+    affinait le pas pour gagner en realisme, plus on perdait d'achats."""
+    jambes = chemin_bougie(o=100, h=100, l=100, c=100)
+    assert [m for _, m in jambes] == [False, True], "une jambe basse, une haute"
+
+    b = [bougie(0, 100, 100, 100, 100)] * 1
+    r = rejouer("BTC/EUR", b, R, 1000.0, reference=100.0)
+    assert r["descente_en_cours"].remplis == [0], "le barreau pose a 100 doit etre achete"
+
+
+def test_une_suite_de_bougies_plates_declenche_bien_les_achats():
+    #  echelle R : 100, 97.5, 95, 92.5, 90. Une descente plate de 100 a 95
+    #  traverse donc exactement les trois premiers barreaux.
+    b = [bougie(i * H, 100 - i, 100 - i, 100 - i, 100 - i) for i in range(6)]
+    r = rejouer("BTC/EUR", b, R, 1000.0, reference=100.0)
+    assert r["descente_en_cours"].remplis == [0, 1, 2],         "une descente en marches plates doit remplir les barreaux traverses"
 
 
 def test_une_bougie_baissiere_ne_permet_pas_de_vendre_apres_avoir_achete_plus_bas():

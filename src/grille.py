@@ -278,18 +278,26 @@ class Evenement:
     gain: float         # non nul seulement a la vente
 
 
-def chemin_bougie(o: float, h: float, l: float, c: float) -> tuple[float, float]:
+def chemin_bougie(o: float, h: float, l: float, c: float) -> tuple[tuple[float, bool], tuple[float, bool]]:
     """Dans quel ordre le prix a-t-il probablement parcouru la bougie ?
 
-    On ne connait que l'ouverture, le haut, le bas et la cloture, pas le
-    chemin. Convention retenue, la plus courante et la plus defendable :
-    une bougie haussiere est allee d'abord au plus BAS puis au plus HAUT,
-    une bougie baissiere l'inverse. Pour une grille, cette convention est
-    la moins flatteuse : sur une bougie baissiere elle fait toucher le haut
-    avant le bas, donc elle refuse une vente qui aurait pu avoir lieu apres
-    un achat plus bas dans la meme heure.
+    Rend deux jambes (prix, monte). `monte` DIT ce qu'est la jambe, il ne se
+    deduit pas du prix : identifier la jambe basse par une egalite de flottants
+    (`extreme == h`) etait un defaut silencieux. Sur une bougie plate, haut et
+    bas valent le meme nombre, les deux jambes etaient donc lues comme montantes
+    et la branche d'achat n'etait jamais atteinte. Mesure faite sur cet
+    historique : 1,1 % des bougies horaires sont plates, mais 32 % des bougies
+    de cinq minutes et 61 a 67 % de celles a la minute. Plus on affinait le pas
+    pour gagner en realisme, plus on perdait d'achats.
+
+    Convention retenue, la plus courante et la plus defendable : une bougie
+    haussiere est allee d'abord au plus BAS puis au plus HAUT, une bougie
+    baissiere l'inverse. Pour une grille, cette convention est la moins
+    flatteuse : sur une bougie baissiere elle fait toucher le haut avant le bas,
+    donc elle refuse une vente qui aurait pu avoir lieu apres un achat plus bas
+    dans la meme heure.
     """
-    return (l, h) if c >= o else (h, l)
+    return ((l, False), (h, True)) if c >= o else ((h, True), (l, False))
 
 
 def rejouer(
@@ -328,9 +336,7 @@ def rejouer(
     pic, creux, somme_eng, heures_eng = float("-inf"), 0.0, 0.0, 0
 
     for ts, o, h, l, c in bougies:
-        premier, second = chemin_bougie(o, h, l, c)
-        for extreme in (premier, second):
-            monte = extreme == h
+        for extreme, monte in chemin_bougie(o, h, l, c):
             if monte:
                 #  Un aller-retour dans la meme heure n'est pas observable dans une
                 #  bougie horaire : il suppose que le bas a ete visite avant le haut
