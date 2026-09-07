@@ -50,6 +50,7 @@ class Reglages:
     abandon_sous: float = 0.15      # sous le dernier barreau, on n'ajoute plus rien
     mise_min: float = 0.0           # taille minimale d'un ordre, en quote
     suivre_hausse: bool = False     # remonter la reference quand le marche monte a vide
+    reancrage_min: float = 0.0      # hausse minimale avant de deplacer la reference
     vente_meme_bougie: bool = True  # autoriser l'aller-retour dans la meme bougie
     #  Une plateforme REFUSE un ordre trop petit, elle ne l'agrandit pas : c'est
     #  exactement ce que fait la couche de risque du systeme reel (src/risk.py,
@@ -78,6 +79,8 @@ class Reglages:
             raise GrilleError("depart_sous + profondeur doit rester sous 1")
         if self.mise_min < 0:
             raise GrilleError(f"mise_min doit etre >= 0, trouve {self.mise_min}")
+        if not 0 <= self.reancrage_min < 1:
+            raise GrilleError(f"reancrage_min doit etre dans [0, 1[, trouve {self.reancrage_min}")
 
     def echelle(self, reference: float, budget: float) -> list[tuple[float, float]]:
         """Les barreaux : (prix cible, mise en euros), du haut vers le bas.
@@ -258,6 +261,7 @@ def chemin_bougie(o: float, h: float, l: float, c: float) -> tuple[float, float]
 def rejouer(
     symbole: str, bougies: list[tuple[int, float, float, float, float]],
     reglages: Reglages, budget: float, *, reference: float | None = None,
+    trace: bool = True,
 ) -> dict:
     """Rejoue la strategie sur des bougies (ts, open, high, low, close).
 
@@ -269,6 +273,12 @@ def rejouer(
       - l'ordre des evenements dans la bougie suit chemin_bougie ;
       - sous le seuil d'abandon, plus aucun achat, mais la vente reste
         possible : on attend le rebond sans jamais moyenner davantage.
+
+    trace=False n'enregistre plus rien par bougie. Sur de l'historique a la
+    minute, les series par bougie pesent six cent mille lignes par paire et par
+    reglage, ce qui interdit tout balayage. Les agregats, eux, sont calcules au
+    fil de l'eau dans les deux modes : resume() rend donc exactement les memes
+    nombres avec ou sans trace, ce qu'un test verifie.
     """
     if not bougies:
         raise GrilleError("aucune bougie a rejouer")
@@ -281,6 +291,7 @@ def rejouer(
     journal: list[Evenement] = []
     suivi: list[tuple[int, float, float, float, float]] = []
     abandons = 0
+    pic, creux, somme_eng, heures_eng = float("-inf"), 0.0, 0.0, 0
 
     for ts, o, h, l, c in bougies:
         premier, second = chemin_bougie(o, h, l, c)
@@ -305,22 +316,25 @@ def rejouer(
                         det["recu"], det["gain"], det["gain_pct"], det["prix_revient"], px,
                         (ts - ouvert) / 3_600_000,
                     ))
-                    journal.append(Evenement(ts, "vente", px, -1, det["recu"],
-                                             det["prix_revient"], det["gain"]))
+                    if trace:
+                        journal.append(Evenement(ts, "vente", px, -1, det["recu"],
+                                                 det["prix_revient"], det["gain"]))
                     d = Descente(symbole, c, budget, reglages)   # on repart du prix du moment
                     d.abandonnee = False
             else:
                 if l <= d.seuil_abandon and not d.abandonnee:
                     d.abandonnee = True
                     abandons += 1
-                    journal.append(Evenement(ts, "abandon", d.seuil_abandon, -1, 0.0,
-                                             d.prix_revient, 0.0))
+                    if trace:
+                        journal.append(Evenement(ts, "abandon", d.seuil_abandon, -1, 0.0,
+                                                 d.prix_revient, 0.0))
                 for i, prix, euros in d.barreaux_a_poser():
                     if l <= prix and cash >= euros - 1e-9:
                         d.acheter(i, prix, ts)
                         cash -= euros
-                        journal.append(Evenement(ts, "achat", prix, i, euros,
-                                                 d.prix_revient, 0.0))
+                        if trace:
+                            journal.append(Evenement(ts, "achat", prix, i, euros,
+                                                     d.prix_revient, 0.0))
         #  Sans cette ligne, l'echelle reste plantee la ou la derniere vente l'a
         #  laissee. Si le marche s'eleve de 20 % sans que rien ne soit achete, le
         #  premier barreau est 20 % sous le cours et n'est jamais rejoint : la
@@ -330,16 +344,30 @@ def rejouer(
         #  suivre en portant un lot deplacerait l'echelle sous ses propres achats.
         #  On lit la cloture, jamais le haut de la bougie : la bougie doit etre
         #  fermee au-dessus de l'ancienne reference pour deplacer l'echelle.
-        if reglages.suivre_hausse and not d.engagee and c > d.reference:
+        #  reancrage_min evite de courir apres le bruit : sur des bougies a la
+        #  minute, deplacer l'echelle a chaque tick haussier la collerait au prix
+        #  et ne laisserait jamais un creux se former.
+        if (reglages.suivre_hausse and not d.engagee
+                and c > d.reference * (1 + reglages.reancrage_min)):
             d = Descente(symbole, c, budget, reglages)
-        equity.append((ts, cash + d.valeur(c)))
-        # combien d'argent travaille reellement, et combien dort : c'est ce qui
-        # explique un rendement modeste sur le budget alors que chaque cycle
-        # rapporte l'objectif plein sur la somme engagee
-        deploiement.append((ts, cash, d.cumul_euros, len(d.remplis), d.abandonnee))
-        # de quoi redessiner l'echelle et la cible a n'importe quelle heure : la
-        # reference suffit a reconstruire les barreaux, puisqu'ils s'en deduisent
-        suivi.append((ts, d.reference, d.prix_revient, d.prix_sortie, d.seuil_abandon))
+
+        valeur = cash + d.valeur(c)
+        if valeur > pic:
+            pic = valeur
+        if pic > 0:
+            creux = min(creux, valeur / pic - 1)
+        somme_eng += d.cumul_euros
+        if d.cumul_euros > 1e-9:
+            heures_eng += 1
+        if trace:
+            equity.append((ts, valeur))
+            # combien d'argent travaille reellement, et combien dort : c'est ce qui
+            # explique un rendement modeste sur le budget alors que chaque cycle
+            # rapporte l'objectif plein sur la somme engagee
+            deploiement.append((ts, cash, d.cumul_euros, len(d.remplis), d.abandonnee))
+            # de quoi redessiner l'echelle et la cible a n'importe quelle heure : la
+            # reference suffit a reconstruire les barreaux, puisqu'ils s'en deduisent
+            suivi.append((ts, d.reference, d.prix_revient, d.prix_sortie, d.seuil_abandon))
 
     fin = bougies[-1][4]
     return {
@@ -357,6 +385,15 @@ def rejouer(
         "abandons": abandons,
         "descente_en_cours": d,
         "budget": budget,
+        # calcules au fil de l'eau, donc disponibles meme sans trace
+        "agregats": {
+            "drawdown_max": creux,
+            "engage_moyen": somme_eng / len(bougies) / budget if budget else 0.0,
+            "part_temps_engage": heures_eng / len(bougies),
+            "bougies": len(bougies),
+            "t_debut": bougies[0][0],
+            "t_fin": bougies[-1][0],
+        },
     }
 
 
@@ -364,14 +401,10 @@ def resume(r: dict) -> dict:
     """Les chiffres qui decident si un reglage vaut mieux qu'un autre."""
     cy = r["cycles"]
     budget = r["budget"]
-    equity = [v for _, v in r["equity"]]
-    pic, dd = float("-inf"), 0.0
-    for v in equity:
-        pic = max(pic, v)
-        if pic > 0:
-            dd = min(dd, v / pic - 1)
+    ag = r["agregats"]
+    dd = ag["drawdown_max"]
     gains = [c.gain for c in cy]
-    duree_h = (r["equity"][-1][0] - r["equity"][0][0]) / 3_600_000 if len(r["equity"]) > 1 else 0
+    duree_h = (ag["t_fin"] - ag["t_debut"]) / 3_600_000
     return {
         "cycles": len(cy),
         "gain_cumule": sum(gains),
@@ -383,6 +416,8 @@ def resume(r: dict) -> dict:
         "bloque_pct": r["investi_bloque"] / budget if budget else 0.0,
         "latent": r["valeur_lot"] - r["investi_bloque"],
         "abandons": r["abandons"],
+        "engage_moyen": ag["engage_moyen"],
+        "part_temps_engage": ag["part_temps_engage"],
         "duree_moyenne_h": sum(c.heures for c in cy) / len(cy) if cy else 0.0,
         "cycles_par_mois": len(cy) / (duree_h / 730) if duree_h else 0.0,
         "gain_moyen": sum(gains) / len(cy) if cy else 0.0,

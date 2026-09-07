@@ -375,3 +375,60 @@ def test_interdire_l_aller_retour_ne_repousse_la_vente_que_d_une_bougie():
 
 def test_l_aller_retour_est_autorise_par_defaut():
     assert Reglages().vente_meme_bougie is True
+
+
+# ------------------------------------------------------------- mode rapide
+def test_le_mode_rapide_rend_exactement_le_meme_resume():
+    """Un balayage sur des bougies a la minute ne peut pas garder six cent
+    mille lignes par simulation. Il doit donc pouvoir s'en passer SANS que le
+    resultat change d'un centime, sinon on comparerait deux mesures."""
+    b = [bougie(0, 100, 100, 89, 90), bougie(H, 90, 95, 90, 95),
+         bougie(2 * H, 95, 95, 84, 85), bougie(3 * H, 85, 99, 85, 99)]
+    plein = rejouer("BTC/EUR", b, R, 1000.0, reference=100.0, trace=True)
+    creux = rejouer("BTC/EUR", b, R, 1000.0, reference=100.0, trace=False)
+    assert resume(plein) == resume(creux)
+    assert plein["equity_finale"] == creux["equity_finale"]
+    assert [c.gain for c in plein["cycles"]] == [c.gain for c in creux["cycles"]]
+
+
+def test_le_mode_rapide_ne_garde_aucune_serie_par_bougie():
+    b = [bougie(i * H, 100, 101, 99, 100) for i in range(50)]
+    r = rejouer("BTC/EUR", b, R, 1000.0, reference=100.0, trace=False)
+    assert r["equity"] == [] and r["deploiement"] == [] and r["journal"] == [] and r["suivi"] == []
+    assert r["agregats"]["bougies"] == 50
+
+
+def test_le_drawdown_calcule_au_fil_de_l_eau_vaut_celui_calcule_sur_la_serie():
+    b = [bougie(0, 100, 100, 89, 90)] + \
+        [bougie(i * H, 90 - i, 90 - i, 89 - i, 89 - i) for i in range(1, 40)]
+    r = rejouer("BTC/EUR", b, R, 1000.0, reference=100.0)
+    pic, dd = float("-inf"), 0.0
+    for _, v in r["equity"]:
+        pic = max(pic, v)
+        if pic > 0:
+            dd = min(dd, v / pic - 1)
+    assert r["agregats"]["drawdown_max"] == pytest.approx(dd)
+
+
+# ------------------------------------------------------------- reancrage minimal
+def test_un_seuil_de_reancrage_empeche_de_courir_apres_le_bruit():
+    """Sans seuil, l'echelle se recolle au prix a chaque bougie haussiere et ne
+    laisse jamais un creux se former. depart_sous ecarte le premier barreau du
+    prix, sans quoi il se remplirait des la premiere bougie et figerait tout."""
+    colle = Reglages(profondeur=0.10, paliers=5, ratio=2.0, objectif_net=0.02,
+                     frais=0.001, depart_sous=0.03, suivre_hausse=True, reancrage_min=0.0)
+    sourd = Reglages(**{**colle.__dict__, "reancrage_min": 0.05})
+    #  derive de +2 % : au-dessus du seuil nul, sous le seuil de 5 %
+    fin = [bougie(i * H, 100 + i * .01, 100.005 + i * .01, 99.995 + i * .01, 100 + i * .01)
+           for i in range(200)]
+    a = rejouer("BTC/EUR", fin, colle, 1000.0, reference=100.0)
+    b = rejouer("BTC/EUR", fin, sourd, 1000.0, reference=100.0)
+    assert not a["descente_en_cours"].engagee and not b["descente_en_cours"].engagee
+    assert a["descente_en_cours"].reference == pytest.approx(101.99, abs=.02), "colle au prix"
+    assert b["descente_en_cours"].reference == pytest.approx(100.0), "sous le seuil : ne bouge pas"
+
+
+def test_le_seuil_de_reancrage_est_nul_par_defaut():
+    assert Reglages().reancrage_min == 0.0
+    with pytest.raises(GrilleError, match="reancrage_min"):
+        Reglages(reancrage_min=-0.1)
