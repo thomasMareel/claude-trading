@@ -108,7 +108,22 @@ def main() -> int:
     st = Storage(cfg.get("storage.db_path"), None)
     frais = float(cfg.get("exchange.fee_rate", 0.001))
     entree = json.loads(Path(args.entree).read_text(encoding="utf-8"))
-    candidats = [r["params"] for r in entree["classement"][:args.garder]]
+    #  Deux reglages qui rendent EXACTEMENT le meme resultat sont le meme
+    #  reglage : un parametre inerte les distingue sur le papier seulement.
+    #  abandon_sous s'est revele inerte sur les echelles profondes, ce qui
+    #  remplissait le classement de triplets et gachait deux places sur trois.
+    #  On deduplique sur le resultat mesure, jamais sur une liste de parametres
+    #  supposes inertes : la mesure decide, pas moi.
+    vus, candidats = set(), []
+    for r in entree["classement"]:
+        cle = (round(r.get("perf", 0), 9), r.get("cycles"), round(r.get("drawdown", 0), 9))
+        if cle in vus:
+            continue
+        vus.add(cle)
+        candidats.append(r["params"])
+        if len(candidats) >= args.garder:
+            break
+    doublons = len(entree["classement"]) - len(vus)
 
     plein = {s: bougies(st, s, args.tf) for s in cfg.symbols}
     plein = {s: b for s, b in plein.items() if len(b) > 500}
@@ -122,7 +137,7 @@ def main() -> int:
 
     n = min(len(b) for b in plein.values())
     hold = sum((b[-1][4] / b[0][1]) * (1 - frais) ** 2 - 1 for b in plein.values()) / len(plein)
-    print(f"{len(candidats)} candidats. {len(plein)} paires x {n} bougies {args.tf}. "
+    print(f"{len(candidats)} candidats distincts. {len(plein)} paires x {n} bougies {args.tf}. "
           f"Ne rien faire : {hold:+.1%}")
     print("Resolutions comparees : "
           + ", ".join(f"{tf} ({len(d)} paires)" for tf, d in autres.items()))

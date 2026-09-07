@@ -30,7 +30,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.config import load_config  # noqa: E402
-from src.grille import Reglages, rejouer, resume  # noqa: E402
+from src.grille import GrilleError, Reglages, rejouer, resume  # noqa: E402
 from src.storage import Storage  # noqa: E402
 
 HEURE = 3_600_000
@@ -57,41 +57,58 @@ PAS_VUE = "1h"
 PLANCHER = 12.0
 PLANCHERS_COMPARES = (0.0, 5.0)
 
-#  Les huit reglages compares, ranges de la cadence la plus soutenue a la plus
-#  lente. Le dernier est celui que l'utilisateur appliquait a la main sur son
-#  tableur : il sert de point de depart, pas de repoussoir.
+#  Les huit reglages compares. La page les classe ensuite par gain pur, mais
+#  cette liste-ci raconte la recherche : le vainqueur des epreuves de robustesse
+#  en tete, le vainqueur du classement brut garde exprès pour la comparaison, et
+#  l'historique du projet en queue.
 #
-#  TROIS MECANIQUES decident de la cadence, bien avant le choix des paliers :
-#    suivre_hausse    : reposer l'echelle sous le prix quand le marche monte a
-#                       vide. Sans lui l'echelle reste plantee et s'endort.
-#    objectif_net     : c'est le frein principal. Viser 3 % impose d'attendre un
-#                       rebond de 3 % ; viser 0,5 % declenche plusieurs fois par
-#                       jour. Il doit rester au-dessus de l'aller-retour de frais.
-#    ratio            : une progression forte fait passer le haut de l'echelle
-#                       sous le plancher de la plateforme, ce qui repousse le
-#                       premier achat tres bas et rarefie les cycles.
+#  QUATRE MECANIQUES decident du resultat, et trois ont ete decouvertes en route :
+#    suivre_hausse    reposer l'echelle sous le prix quand le marche monte a vide.
+#                     Sans lui l'echelle reste plantee ou la derniere vente l'a
+#                     laissee, et la grille s'endort pour de bon.
+#    objectif_net     le frein principal. Viser 4 % impose d'attendre un rebond de
+#                     4 % ; viser 0,5 % declenche plusieurs fois par jour mais ne
+#                     survit pas au changement de finesse des bougies.
+#    depart_sous      poser le premier barreau SOUS le prix et non dessus. Sans
+#                     cela la grille achete le sommet de chaque micro-rebond.
+#    ratio            une progression forte fait passer le haut de l'echelle sous
+#                     le plancher de la plateforme, ce qui repousse le premier
+#                     achat tres bas et rarefie les cycles.
+#
+#  abandon_sous, lui, s'est revele INERTE : a 15, 25 ou 40 % les resultats sont
+#  identiques au centieme, parce que sur des echelles profondes le seuil n'est
+#  jamais atteint. Il n'apparait donc plus ici.
 #
 #  vente_meme_bougie=False partout : on refuse de compter un aller-retour boucle
-#  dans l'heure de son achat, car une bougie horaire ne peut pas le prouver.
+#  dans la bougie de son achat, car rien dans les donnees ne peut le prouver.
 REGLAGES = [
-    dict(cle="actif-20-12", nom="Tres actif", profondeur=0.20, paliers=12, ratio=1.3,
-         objectif_net=0.005, suivre_hausse=True),
-    dict(cle="actif-20-8", nom="Actif", profondeur=0.20, paliers=8, ratio=1.5,
-         objectif_net=0.005, suivre_hausse=True),
-    dict(cle="deux-sem", nom="Deux par semaine", profondeur=0.20, paliers=8, ratio=1.5,
-         objectif_net=0.01, suivre_hausse=True),
-    dict(cle="equilibre-30", nom="Equilibre", profondeur=0.30, paliers=12, ratio=1.3,
-         objectif_net=0.02, suivre_hausse=True),
+    #  Le vainqueur des epreuves de robustesse, et non du classement brut. Tous
+    #  ses voisins immediats restent positifs, ses trois paires aussi, son pire
+    #  trimestre ne perd que 1,4 point, et les trois resolutions de bougies le
+    #  donnent au meme nombre a trois dixiemes pres. Son creux est deux fois
+    #  moins profond que celui des reglages plus denses.
+    dict(cle="solide-50-6", nom="Le plus solide", profondeur=0.50, paliers=6, ratio=1.7,
+         objectif_net=0.04, depart_sous=0.02, suivre_hausse=True),
+    #  Le meme esprit, plus actif et encore moins expose : quatre fois plus de
+    #  cycles pour un dixieme du capital immobilise.
+    dict(cle="solide-50-10", nom="Solide et plus actif", profondeur=0.50, paliers=10,
+         ratio=1.4, objectif_net=0.02, reancrage_min=0.02, suivre_hausse=True),
+    #  Le premier du classement BRUT, garde exprès pour la comparaison : il gagne
+    #  le plus et echoue aux epreuves. C'est le piege que ce banc existe pour
+    #  montrer.
+    dict(cle="brut-25-5", nom="Le meilleur du classement brut", profondeur=0.25, paliers=5,
+         ratio=1.5, objectif_net=0.04, depart_sous=0.02, suivre_hausse=True),
     dict(cle="patient-30", nom="Patient", profondeur=0.30, paliers=12, ratio=1.3,
          objectif_net=0.03, suivre_hausse=True),
-    #  le meme que le premier, suivi de hausse coupe : c'est la mesure isolee de
-    #  ce que cette seule ligne de code rapporte
-    dict(cle="actif-sans-suivi", nom="Tres actif, sans suivi de hausse", profondeur=0.20,
-         paliers=12, ratio=1.3, objectif_net=0.005, suivre_hausse=False),
+    dict(cle="equilibre-30", nom="Equilibre", profondeur=0.30, paliers=12, ratio=1.3,
+         objectif_net=0.02, suivre_hausse=True),
+    dict(cle="deux-sem", nom="Deux par semaine", profondeur=0.20, paliers=8, ratio=1.5,
+         objectif_net=0.01, suivre_hausse=True),
     dict(cle="p15-14-r22-o3", nom="L'ancien equilibre", profondeur=0.15, paliers=14,
          ratio=2.2, objectif_net=0.03, suivre_hausse=False),
     dict(cle="p08-14-r18-o2", nom="Le tableau d'origine", profondeur=0.08, paliers=14,
          ratio=1.8, objectif_net=0.02, suivre_hausse=False),
+
 ]
 
 
@@ -181,6 +198,72 @@ def journalier(dep: list[tuple], eq: list[tuple], budget: float, par_jour: int) 
     return {"engage_max": eng_max, "engage_moyen": eng_moy, "equity": equity, "abandon": abandon}
 
 
+#  Les quatre epreuves, avec leurs seuils ecrits d'avance. Un reglage qui les
+#  passe n'est pas garanti gagnant : il est seulement debarrasse des faux
+#  positifs les plus courants. Les seuils sont severes et arbitraires, mais fixes
+#  avant d'avoir vu les resultats, ce qui est la seule chose qui compte.
+SEUILS = {
+    "voisinage": "le pire voisin immediat reste positif",
+    "paires": "les trois paires sont positives",
+    "trimestres": "au moins 3 trimestres sur 4 positifs",
+    "resolutions": "moins de 2 points d'ecart entre bougies de 1 h, 5 min et 1 min",
+}
+#  De combien on bouge chaque parametre pour sonder le voisinage.
+VOISINAGE = {"profondeur": (0.8, 1.25), "objectif_net": (0.75, 1.33), "ratio": (0.92, 1.08)}
+
+
+def _perf(data: dict, rg: Reglages, budget: float) -> list[float]:
+    return [resume(rejouer(s, b, rg, budget, trace=False))["perf_pct"] for s, b in data.items()]
+
+
+def epreuves(spec: dict, brut: dict, autres: dict, frais: float, budget: float) -> dict:
+    """Soumet un reglage aux quatre epreuves et rend le detail chiffre.
+
+    Le classement de la page est celui du gain pur, comme demande. Sans ces
+    chiffres a cote, il mettrait en tete le reglage qui a le mieux epouse ce
+    chemin de prix precis, ce qui est exactement le piege a eviter.
+    """
+    faire = lambda **kw: Reglages(frais=frais, mise_min=PLANCHER,  # noqa: E731
+                                  vente_meme_bougie=False, **{**spec, **kw})
+    base = faire()
+    paires = _perf(brut, base, budget)
+
+    vois = []
+    for cle, facteurs in VOISINAGE.items():
+        for f in facteurs:
+            try:
+                v = faire(**{cle: round(spec.get(cle, getattr(base, cle)) * f, 5)})
+            except GrilleError:
+                continue
+            if v.echelle(1.0, budget)[0][1] >= PLANCHER:
+                vois.append(sum(_perf(brut, v, budget)) / len(brut))
+
+    tri = []
+    for k in range(4):
+        tranche = {s: b[k * len(b) // 4:(k + 1) * len(b) // 4] for s, b in brut.items()}
+        tri.append(sum(_perf(tranche, base, budget)) / len(tranche))
+
+    res = {tf: sum(_perf(d, base, budget)) / len(d) for tf, d in autres.items()}
+    ecart = max(res.values()) - min(res.values()) if len(res) > 1 else 0.0
+
+    passe = {
+        "voisinage": bool(vois) and min(vois) > 0,
+        "paires": min(paires) > 0,
+        "trimestres": sum(1 for x in tri if x > 0) >= 3,
+        "resolutions": ecart < 0.02,
+    }
+    return {
+        "voisin_pire": arrondi(min(vois), 6) if vois else None,
+        "paire_pire": arrondi(min(paires), 6),
+        "trimestres": [arrondi(x, 6) for x in tri],
+        "trimestres_positifs": sum(1 for x in tri if x > 0),
+        "resolutions": {k: arrondi(v, 6) for k, v in res.items()},
+        "ecart_resolutions": arrondi(ecart, 6),
+        "passe": passe,
+        "reussies": sum(passe.values()),
+    }
+
+
 def exporter(cfg, st: Storage, budget: float) -> dict:
     frais = float(cfg.get("exchange.fee_rate", 0.001))
     par_heure = {"1m": 60, "5m": 12, "15m": 4, "1h": 1}[PAS_SIM]
@@ -213,6 +296,16 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
     if not paires:
         raise SystemExit("aucun historique exploitable ; lance scripts/fetch_fin.py")
 
+    #  Les autres finesses de bougies, pour l'epreuve de stabilite. Absentes, elle
+    #  est simplement sautee plutot que declaree reussie.
+    autres = {}
+    for tf in ("1h", PAS_SIM, "1m"):
+        d = {s: bougies(st, s, tf) for s in cfg.symbols}
+        d = {s: b for s, b in d.items() if len(b) > 500}
+        if len(d) == len(paires):
+            autres[tf] = d
+    print(f"  epreuves de stabilite sur : {', '.join(autres) or 'aucune (donnees absentes)'}")
+
     sorties = []
     semaines = n / 24 / 7
     for spec in REGLAGES:
@@ -227,6 +320,7 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
             "id": cle, "nom": nom, "profondeur": rg.profondeur, "paliers": rg.paliers,
             "ratio": rg.ratio, "objectif": rg.objectif_net, "abandon_sous": rg.abandon_sous,
             "suivre_hausse": rg.suivre_hausse, "vente_meme_bougie": rg.vente_meme_bougie,
+            "epreuves": epreuves(params, brut, autres, frais, budget),
             "prix_pct": [arrondi(p, 6) for p, _ in ech],
             "mises_pct": [arrondi(e, 8) for _, e in ech],
             "mise_min": PLANCHER,
@@ -283,6 +377,7 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
             "budget": budget, "frais": frais, "t0": t0, "pas": HEURE, "heures": n,
             "jours": n // 24, "paires": list(paires), "genres": ["achat", "vente", "abandon"],
             "pas_simulation": PAS_SIM, "pas_affichage": PAS_VUE, "plancher": PLANCHER,
+            "seuils_epreuves": SEUILS,
         },
         "paires": paires,
         "reglages": sorties,
