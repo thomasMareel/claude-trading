@@ -51,6 +51,13 @@ class Reglages:
     mise_min: float = 0.0           # taille minimale d'un ordre, en quote
     suivre_hausse: bool = False     # remonter la reference quand le marche monte a vide
     reancrage_min: float = 0.0      # hausse minimale avant de deplacer la reference
+    espacement: str = "lineaire"    # repartition des barreaux : "lineaire" ou "geometrique"
+    objectif_profond: float | None = None   # objectif vise quand l'echelle est pleine
+    #  Un objectif unique traite de la meme facon un lot d'un barreau et un lot
+    #  qui a mange tout le budget. Or c'est quand la descente est profonde que le
+    #  capital est immobilise et que l'attente coute. objectif_profond permet de
+    #  relacher la cible a mesure qu'on s'enfonce, donc de recycler le capital
+    #  plus tot. Laisse a None, l'objectif ne varie pas : comportement d'origine.
     vente_meme_bougie: bool = True  # autoriser l'aller-retour dans la meme bougie
     #  Une plateforme REFUSE un ordre trop petit, elle ne l'agrandit pas : c'est
     #  exactement ce que fait la couche de risque du systeme reel (src/risk.py,
@@ -81,6 +88,16 @@ class Reglages:
             raise GrilleError(f"mise_min doit etre >= 0, trouve {self.mise_min}")
         if not 0 <= self.reancrage_min < 1:
             raise GrilleError(f"reancrage_min doit etre dans [0, 1[, trouve {self.reancrage_min}")
+        if self.espacement not in ("lineaire", "geometrique"):
+            raise GrilleError(f"espacement inconnu : {self.espacement}")
+        if self.objectif_profond is not None:
+            if not 0 < self.objectif_profond < 1:
+                raise GrilleError(f"objectif_profond hors de ]0, 1[ : {self.objectif_profond}")
+            if self.objectif_profond <= 2 * self.frais:
+                raise GrilleError(
+                    f"objectif_profond {self.objectif_profond:.2%} ne couvre pas l'aller-retour "
+                    f"de frais ({2 * self.frais:.2%}) : la descente perdrait au fond"
+                )
 
     def echelle(self, reference: float, budget: float) -> list[tuple[float, float]]:
         """Les barreaux : (prix cible, mise en euros), du haut vers le bas.
@@ -90,13 +107,30 @@ class Reglages:
         """
         if reference <= 0 or budget <= 0:
             raise GrilleError("reference et budget doivent etre > 0")
-        pas = self.profondeur / (self.paliers - 1)
         poids = [self.ratio ** i for i in range(self.paliers)]
         total = sum(poids)
-        return [
-            (reference * (1 - self.depart_sous - pas * i), budget * w / total)
-            for i, w in enumerate(poids)
-        ]
+        haut = reference * (1 - self.depart_sous)
+        bas = reference * (1 - self.depart_sous - self.profondeur)
+        n = self.paliers - 1
+        if self.espacement == "geometrique":
+            #  Memes extremites que le lineaire, repartition differente au milieu :
+            #  les ecarts sont constants en POURCENTAGE et non en euros, ce qui a du
+            #  sens pour un prix. Sur une echelle profonde la difference est nette.
+            prix = [haut * (bas / haut) ** (i / n) for i in range(self.paliers)]
+        else:
+            prix = [haut + (bas - haut) * i / n for i in range(self.paliers)]
+        return [(p, budget * w / total) for p, w in zip(prix, poids)]
+
+    def objectif_a(self, remplis: int) -> float:
+        """L'objectif vise pour un lot de `remplis` barreaux.
+
+        Interpole entre objectif_net au premier barreau et objectif_profond a
+        l'echelle pleine. Sans objectif_profond, la cible ne bouge pas.
+        """
+        if self.objectif_profond is None or self.paliers < 2 or remplis <= 1:
+            return self.objectif_net
+        f = min(1.0, (remplis - 1) / (self.paliers - 1))
+        return self.objectif_net + (self.objectif_profond - self.objectif_net) * f
 
 
 @dataclass
@@ -139,7 +173,7 @@ class Descente:
         if not self.cumul_unites:
             return 0.0
         r = self.reglages
-        return self.prix_revient * (1 + r.objectif_net) / (1 - r.frais)
+        return self.prix_revient * (1 + r.objectif_a(len(self.remplis))) / (1 - r.frais)
 
     @property
     def dernier_palier(self) -> float:

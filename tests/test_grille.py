@@ -432,3 +432,67 @@ def test_le_seuil_de_reancrage_est_nul_par_defaut():
     assert Reglages().reancrage_min == 0.0
     with pytest.raises(GrilleError, match="reancrage_min"):
         Reglages(reancrage_min=-0.1)
+
+
+# ------------------------------------------------------------- espacement
+def test_les_deux_espacements_partagent_leurs_extremites():
+    """Seule la repartition du milieu change : sans cela on comparerait deux
+    echelles differentes et non deux facons de repartir la meme."""
+    lin = Reglages(profondeur=0.40, paliers=9, ratio=1.3, objectif_net=0.02, frais=0.001)
+    geo = Reglages(**{**lin.__dict__, "espacement": "geometrique"})
+    pl = [p for p, _ in lin.echelle(100.0, 1000.0)]
+    pg = [p for p, _ in geo.echelle(100.0, 1000.0)]
+    assert pl[0] == pytest.approx(pg[0]) == pytest.approx(100.0)
+    assert pl[-1] == pytest.approx(pg[-1]) == pytest.approx(60.0)
+    assert pg[1:-1] != pytest.approx(pl[1:-1])
+
+
+def test_l_espacement_geometrique_a_des_ecarts_constants_en_pourcentage():
+    geo = Reglages(profondeur=0.40, paliers=9, ratio=1.3, objectif_net=0.02,
+                   frais=0.001, espacement="geometrique")
+    p = [x for x, _ in geo.echelle(100.0, 1000.0)]
+    ratios = [p[i + 1] / p[i] for i in range(len(p) - 1)]
+    assert all(r == pytest.approx(ratios[0]) for r in ratios)
+    lin = Reglages(**{**geo.__dict__, "espacement": "lineaire"})
+    q = [x for x, _ in lin.echelle(100.0, 1000.0)]
+    ecarts = [q[i] - q[i + 1] for i in range(len(q) - 1)]
+    assert all(e == pytest.approx(ecarts[0]) for e in ecarts), "le lineaire, lui, est constant en euros"
+
+
+def test_un_espacement_inconnu_est_refuse():
+    with pytest.raises(GrilleError, match="espacement"):
+        Reglages(espacement="logarithmique")
+
+
+# ------------------------------------------------------------- objectif variable
+def test_sans_objectif_profond_la_cible_ne_bouge_pas():
+    r = Reglages(profondeur=0.10, paliers=5, ratio=2.0, objectif_net=0.03, frais=0.001)
+    assert [r.objectif_a(k) for k in range(6)] == [0.03] * 6
+
+
+def test_l_objectif_se_relache_a_mesure_que_la_descente_s_enfonce():
+    r = Reglages(profondeur=0.10, paliers=5, ratio=2.0, objectif_net=0.03,
+                 objectif_profond=0.01, frais=0.001)
+    vus = [r.objectif_a(k) for k in range(1, 6)]
+    assert vus[0] == pytest.approx(0.03), "un seul barreau : objectif plein"
+    assert vus[-1] == pytest.approx(0.01), "echelle pleine : objectif du fond"
+    assert vus == sorted(vus, reverse=True)
+
+
+def test_un_objectif_relache_fait_sortir_plus_tot_et_rend_moins():
+    """Le compromis a mesurer : on recycle le capital plus vite, mais chaque
+    cycle profond rapporte moins."""
+    fixe = Reglages(profondeur=0.10, paliers=5, ratio=2.0, objectif_net=0.03, frais=0.001)
+    lache = Reglages(**{**fixe.__dict__, "objectif_profond": 0.01})
+    d1 = Descente("BTC/EUR", 100.0, 1000.0, fixe)
+    d2 = Descente("BTC/EUR", 100.0, 1000.0, lache)
+    for i, (p, _) in enumerate(d1.echelle):
+        d1.acheter(i, p); d2.acheter(i, p)
+    assert d2.prix_sortie < d1.prix_sortie
+    assert d2.vendre(d2.prix_sortie)["gain_pct"] == pytest.approx(0.01)
+    assert d1.vendre(d1.prix_sortie)["gain_pct"] == pytest.approx(0.03)
+
+
+def test_un_objectif_profond_sous_les_frais_est_refuse():
+    with pytest.raises(GrilleError, match="objectif_profond"):
+        Reglages(objectif_net=0.03, objectif_profond=0.0015, frais=0.001)
