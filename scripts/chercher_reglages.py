@@ -44,15 +44,20 @@ GRILLES = {
         reancrage_min=(0.0, 0.02),
         abandon_sous=(0.15,),
     ),
-    # fin : autour de ce que "large" designe, avec les leviers laisses de cote
+    # fin : recentre sur ce que "large" a designe, et non sur ce que je croyais.
+    # Trois enseignements de l'etape large ont dicte ces bornes :
+    #   depart_sous vaut 2 % chez presque tous les vainqueurs — poser le premier
+    #     barreau AU prix fait acheter le sommet de chaque micro-rebond ;
+    #   les profondeurs gagnantes sont de 12 a 20 %, pas de 30 a 50 % ;
+    #   abandon_sous n'a jamais varie : c'est le seul levier encore inexplore.
     "fin": dict(
-        profondeur=(0.25, 0.30, 0.35, 0.40, 0.50),
-        paliers=(8, 10, 12, 16, 20),
-        ratio=(1.15, 1.3, 1.4, 1.5),
-        objectif_net=(0.02, 0.025, 0.03, 0.04, 0.05),
-        depart_sous=(0.0, 0.01, 0.02),
-        reancrage_min=(0.0, 0.01, 0.03),
-        abandon_sous=(0.10, 0.15, 0.25, 0.40),
+        profondeur=(0.10, 0.12, 0.15, 0.20, 0.25),
+        paliers=(6, 8, 10, 12),
+        ratio=(1.3, 1.4, 1.5, 1.6),
+        objectif_net=(0.012, 0.015, 0.02, 0.025),
+        depart_sous=(0.01, 0.02, 0.03),
+        reancrage_min=(0.0, 0.02),
+        abandon_sous=(0.15, 0.25, 0.40),
     ),
 }
 

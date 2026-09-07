@@ -14,8 +14,12 @@ QUATRE EPREUVES, toutes sur des donnees deja vues mais decoupees autrement :
   par trimestre  ni sur une seule saison de marche ;
   voisinage      un sommet etroit dans l'espace des parametres est un accident,
                  un plateau est un mecanisme : on rejoue les huit voisins ;
-  pas plus fin   ce qui disparait entre cinq minutes et la minute etait une
-                 invention du rejeu, pas un gain.
+  resolutions    le meme reglage rejoue en horaire, en cinq minutes et a la
+                 minute doit rendre le meme nombre. C'est l'epreuve la plus
+                 discriminante de toutes : a objectif 3 % on lit +9,37 / +9,30
+                 / +9,11 %, a objectif 0,5 % on lit +6,65 / -0,56 / +6,62 %.
+                 Sept points d'ecart selon la finesse des bougies ne mesurent
+                 aucun bord, seulement une sensibilite au bruit.
 
 Aucune de ces epreuves n'est un vrai hors-echantillon : elles decoupent le meme
 passe. Elles eliminent les faux positifs, elles ne prouvent aucun futur.
@@ -92,7 +96,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--entree", required=True)
     ap.add_argument("--tf", default="5m")
-    ap.add_argument("--tf-fin", default="1m", help="pas plus fin pour l'epreuve de finesse")
+    ap.add_argument("--resolutions", default="1h,5m,1m",
+                    help="pas de temps compares pour l'epreuve de stabilite")
     ap.add_argument("--garder", type=int, default=25)
     ap.add_argument("--budget", type=float, default=1000.0)
     ap.add_argument("--plancher", type=float, default=12.0)
@@ -107,14 +112,21 @@ def main() -> int:
 
     plein = {s: bougies(st, s, args.tf) for s in cfg.symbols}
     plein = {s: b for s, b in plein.items() if len(b) > 500}
-    fin = {s: bougies(st, s, args.tf_fin) for s in cfg.symbols}
-    fin = {s: b for s, b in fin.items() if len(b) > 500}
+    res_tf = [x for x in args.resolutions.split(",") if x]
+    autres = {}
+    for tf in res_tf:
+        d = {s: bougies(st, s, tf) for s in cfg.symbols}
+        d = {s: b for s, b in d.items() if len(b) > 500}
+        if d:
+            autres[tf] = d
+
     n = min(len(b) for b in plein.values())
     hold = sum((b[-1][4] / b[0][1]) * (1 - frais) ** 2 - 1 for b in plein.values()) / len(plein)
     print(f"{len(candidats)} candidats. {len(plein)} paires x {n} bougies {args.tf}. "
           f"Ne rien faire : {hold:+.1%}")
-    print(f"Pas plus fin {args.tf_fin} : "
-          f"{'disponible pour ' + str(len(fin)) + ' paires' if fin else 'ABSENT, epreuve sautee'}\n")
+    print("Resolutions comparees : "
+          + ", ".join(f"{tf} ({len(d)} paires)" for tf, d in autres.items()))
+
 
     lignes = []
     for i, p in enumerate(candidats, 1):
@@ -136,13 +148,19 @@ def main() -> int:
         # --- voisinage
         vs = [perf_sur(plein, v, frais, args.budget, args.plancher) for v in voisins(p)]
         vs = [v[0] for v in vs if v]
-        # --- pas plus fin
-        f = perf_sur(fin, p, frais, args.budget, args.plancher) if fin else None
+        # --- stabilite selon la finesse des bougies
+        res = {}
+        for tf, d in autres.items():
+            r = perf_sur(d, p, frais, args.budget, args.plancher)
+            if r:
+                res[tf] = r[0]
+        ecart = max(res.values()) - min(res.values()) if len(res) > 1 else None
         lignes.append(dict(params=p, perf=base[0], pire_paire=base[1], cycles=base[2],
                            creux=base[3], trimestres=tri, paires=parp,
                            voisins_moy=sum(vs) / len(vs) if vs else None,
                            voisins_pire=min(vs) if vs else None,
-                           perf_fin=f[0] if f else None))
+                           resolutions=res, ecart_resolutions=ecart,
+                           perf_fin=min(res.values()) if res else None))
         print(f"  {i}/{len(candidats)}", end="\r", flush=True)
 
     #  Le classement final ne recompense pas la performance mais la SOLIDITE :
@@ -150,9 +168,18 @@ def main() -> int:
     #  reglage que ses propres voisins contredisent est ecarte.
     for L in lignes:
         pires = min(L["trimestres"]) + min(L["paires"])
-        vois = L["voisins_moy"] if L["voisins_moy"] is not None else L["perf"]
-        fin_ = L["perf_fin"] if L["perf_fin"] is not None else L["perf"]
-        L["solidite"] = 0.30 * L["perf"] + 0.25 * pires + 0.25 * vois + 0.20 * fin_ + 0.5 * L["creux"]
+        #  Le PIRE voisin, pas le voisin moyen : on ne regle jamais un parametre
+        #  au point exact, et la question honnete est "si je me trompe d'un cran,
+        #  qu'est-ce que j'obtiens ?". Une moyenne de voisins laisse passer un
+        #  sommet dont un seul cote s'effondre.
+        vois = L["voisins_pire"] if L["voisins_pire"] is not None else L["perf"]
+        pire_res = L["perf_fin"] if L["perf_fin"] is not None else L["perf"]
+        #  L'ecart entre resolutions est retranche a poids double : c'est la seule
+        #  epreuve qui detecte un reglage dont le gain tient au hasard du parcours
+        #  suppose a l'interieur de la bougie, et rien d'autre ne la remplace.
+        instable = L["ecart_resolutions"] or 0.0
+        L["solidite"] = (0.30 * L["perf"] + 0.25 * pires + 0.25 * vois + 0.20 * pire_res
+                         + 0.5 * L["creux"] - 2.0 * instable)
         L["trim_positifs"] = sum(1 for t in L["trimestres"] if t > 0)
     lignes.sort(key=lambda L: -L["solidite"])
 
@@ -162,7 +189,7 @@ def main() -> int:
     print(f"\nEcrit dans {sortie}\n")
     print(f"{'prof':>5}{'pal':>4}{'ratio':>6}{'obj':>6}{'fond':>6}{'esp':>5}{'reanc':>6}"
           f"{'perf':>8}{'pire tri':>10}{'tri+':>6}{'pire paire':>11}"
-          f"{'voisins':>9}{'pire vois':>11}{f'{args.tf_fin}':>8}{'creux':>7}")
+          f"{'voisins':>9}{'pire vois':>11}{'ecart res':>11}{'creux':>7}")
     for L in lignes[:20]:
         p = L["params"]
         g = lambda v, f="{:>+7.1%}": "      -" if v is None else f.format(v)  # noqa: E731
@@ -172,9 +199,14 @@ def main() -> int:
               f"{p.get('reancrage_min', 0):>6.0%}"
               f"{L['perf']:>+8.1%}{min(L['trimestres']):>+10.1%}{L['trim_positifs']:>4}/4"
               f"{min(L['paires']):>+11.1%}{g(L['voisins_moy']):>9}{g(L['voisins_pire']):>11}"
-              f"{g(L['perf_fin']):>8}{L['creux']:>7.0%}")
-    print("\ntri+ = trimestres positifs sur 4. Un reglage qui ne tient qu'a un trimestre,")
-    print("qu'a une paire, ou que ses propres voisins contredisent, n'est pas un bord.")
+              f"{g(L['ecart_resolutions'], '{:>10.1%}'):>11}{L['creux']:>7.0%}")
+    print("")
+    print("tri+ = trimestres positifs sur 4. ecart res = ecart entre le meilleur")
+    print("et le pire resultat selon la finesse des bougies (" + ", ".join(autres) + ").")
+    print("Un reglage qui ne tient qu'a un trimestre, qu'a une paire, que ses propres")
+    print("voisins contredisent, ou qui change de reponse selon la finesse des")
+    print("bougies, n'est pas un bord : c'est une coincidence trouvee a force de chercher.")
+
     st.close()
     return 0
 
