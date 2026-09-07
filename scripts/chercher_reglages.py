@@ -60,6 +60,28 @@ GRILLES = {
         reancrage_min=(0.0, 0.02),
         abandon_sous=(0.15, 0.25, 0.40),
     ),
+    #  etendu : le vainqueur des epreuves s'est pose sur le BORD de la grille
+    #  fine — profondeur 50 %, ratio 1,7 et objectif 4 % en etaient les trois
+    #  valeurs maximales. Un optimum au bord signale presque toujours que le vrai
+    #  optimum est dehors.
+    #
+    #  La borne du ratio n'est pas arbitraire : elle est imposee par le plancher
+    #  de la plateforme, le premier barreau devant rester au-dessus de douze
+    #  euros. Cartographie faite sur un budget de 1 000 EUR, le ratio maximal
+    #  vaut x4,0 a 3 paliers, x2,13 a 6 et x1,31 a 12. Moins de paliers autorise
+    #  donc une progression bien plus agressive, un prix de revient plus bas, et
+    #  un rebond a attendre de 12,6 % au lieu de 26,5 %. C'est cette region qu'il
+    #  faut fouiller, et la grille precedente s'arretait a x2,1.
+    #  abandon_sous reste fige : mesure faite, il est inerte sur ces profondeurs.
+    "etendu": dict(
+        profondeur=(0.40, 0.50, 0.60, 0.70),
+        paliers=(3, 4, 5, 6),
+        ratio=(1.7, 2.0, 2.4, 2.8, 3.3, 3.9),
+        objectif_net=(0.03, 0.04, 0.05, 0.06, 0.08),
+        depart_sous=(0.0, 0.02, 0.04),
+        reancrage_min=(0.0, 0.02),
+        abandon_sous=(0.15,),
+    ),
 }
 
 
