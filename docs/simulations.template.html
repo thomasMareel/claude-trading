@@ -165,21 +165,22 @@ footer p + p{margin-top:.7rem}
 
 <header class="tete">
   <div class="texte">
-    <div class="eyebrow">Banc d'essai · rejeu sur 400 jours d'historique horaire réel</div>
+    <div class="eyebrow">Banc d'essai · 400 jours rejoués sur 345 600 bougies de cinq minutes</div>
     <h1>Anatomie d'une <em>descente</em></h1>
     <p class="chapo">Huit réglages de la stratégie du tableur, rejoués heure par heure sur BTC, ETH et SOL,
       du 2 août 2025 au 6 septembre 2026. Chaque achat et chaque vente est posé sur la courbe du prix.
-      Seuls les ordres qu'une plateforme accepterait vraiment sont comptés, et aucun aller-retour bouclé dans
-      l'heure de son achat n'est retenu. Les réglages sont rangés <strong>de la cadence la plus soutenue à la
-      plus lente</strong> : sept cycles par semaine en haut, moins d'un en bas. Sur cette fenêtre, ne rien faire
-      faisait perdre 30 %.</p>
+      La simulation tourne sur des bougies de <strong>cinq minutes</strong>, pas d'une heure : sur une bougie
+      horaire, le moteur doit deviner si le prix est passé par le bas avant le haut, et ce pari seul déplaçait
+      les résultats de plusieurs points. Seuls les ordres qu'une plateforme accepterait vraiment sont comptés.
+      Les réglages sont rangés <strong>du plus rentable au moins rentable</strong>. Sur cette fenêtre, ne rien
+      faire faisait perdre 30 %.</p>
   </div>
 </header>
 
 <div class="barre">
   <div class="large barre-in">
     <div class="groupe" style="flex:1 1 22rem">
-      <span class="lab">Réglage</span>
+      <span class="lab">Réglage, du plus au moins rentable</span>
       <select id="sel-reglage" style="flex:1"></select>
     </div>
     <div class="groupe">
@@ -197,6 +198,11 @@ footer p + p{margin-top:.7rem}
     configuration et non ceux réellement prélevés. Ces quatre biais vont tous dans le sens optimiste.
     Surtout : ces 400 jours sont <em>une</em> réalisation du marché, pas la distribution des futurs possibles.
     Un réglage qui gagne ici n'est pas un réglage qui gagnera.</p>
+  <p><b>Pourquoi cinq minutes et pas une heure.</b> Le moteur ne connaît d'une bougie que son ouverture, son
+    haut, son bas et sa clôture. Il doit deviner dans quel ordre le prix les a parcourus, et cette convention
+    décide seule si un achat se déclenche avant une vente. Rejoué à l'heure, un réglage à objectif 0,5 % rendait
+    +6,65 % ; rejoué à cinq minutes, -0,56 %. La totalité de son gain était une invention. Les réglages à
+    objectif 2 % ou 3 %, eux, ne bougent que de trois dixièmes de point d'une résolution à l'autre.</p>
   <p>Les ordres d'achat sont des ordres limites : ils sont exécutés à leur prix exact, sans glissement,
     au tarif maker. Dans une bougie baissière, le haut est visité avant le bas, ce qui interdit de revendre
     dans l'heure un achat fait plus bas — la convention la moins flatteuse a été retenue à dessein.</p>
@@ -294,11 +300,9 @@ addEventListener("scroll", cache, { passive: true });
 
 /* ------------------------------------------------------------------ etat */
 let paire = D.meta.paires[0];
-//  on ouvre sur le reglage le plus ACTIF, calcule et non ecrit en dur : la
-//  question posee est celle de la cadence, la page doit s'ouvrir sur sa reponse
-let iReg = D.reglages
-  .map((r, k) => [k, D.meta.paires.reduce((a, s) => a + r.sims[s].cycles_par_semaine, 0)])
-  .reduce((a, b) => b[1] > a[1] ? b : a)[0];
+//  les reglages arrivent deja classes par gain pur decroissant : on ouvre donc
+//  sur le premier, et l'ordre de la liste porte lui-meme l'information
+let iReg = 0;
 const R = () => D.reglages[iReg];
 const S = () => D.reglages[iReg].sims[paire];
 
@@ -757,7 +761,7 @@ function plancheCaptivites() {
     const est = k === iReg;
     const t = el("text", { x: ML - 10, y: y + hL / 2 + 1, "text-anchor": "end",
       class: est ? "etiq-f" : "etiq" }, svg);
-    t.textContent = `${reg.nom} · ${sgn(sim.resume.perf_pct, 1)}`;
+    t.textContent = `${k + 1}. ${reg.nom} · ${sgn(sim.resume.perf_pct, 1)}`;
     const t2 = el("text", { x: ML - 10, y: y + hL / 2 + 11, "text-anchor": "end", class: "tick" }, svg);
     t2.textContent = `prof ${pct(reg.profondeur, 0)} · ${reg.paliers} pal · ×${reg.ratio} · obj ${pct(reg.objectif, 0)}`;
     if (est) el("rect", { x: ML - 244, y: y + 2, width: W - MR - ML + 244, height: hL - 6,
@@ -770,7 +774,7 @@ function plancheCaptivites() {
     return s.segments.length ? Math.max(...s.segments.map(([a, b]) => b - a + 1)) : 0;
   });
   return planche(7, "Huit captivités, un seul calendrier",
-    `Les huit réglages sur ${paire}, alignés sur le même axe. La longueur d'une barre est une durée vécue, pas un chiffre dans un tableau.`,
+    `Les huit réglages sur ${paire}, du plus rentable en haut au moins rentable en bas, alignés sur le même axe. La longueur d'une barre est une durée vécue, pas un chiffre dans un tableau.`,
     box,
     `Les barres claires sont des immobilisations courtes, les barres pleines des immobilisations de plus d'un mois.
      Le meilleur réglage garde <b>${duree(Math.min(...pires.filter(x => x)))}</b> au pire ;
@@ -842,9 +846,11 @@ function plancheChoisir() {
 function tuiles() {
   const st = stats(), s = S();
   const T = [
+    ["Performance", sgn(st.perf, 2), st.perf >= 0 ? "pos" : "neg",
+      `sur ${paire} · rang ${R().rang}/${D.reglages.length} par gain, `
+      + `${sgn(R().gain_moyen, 1)} en moyenne sur les 3 paires`],
     ["Cycles par semaine", st.parSemaine.toLocaleString("fr-FR", { maximumFractionDigits: 2 }),
       st.parSemaine >= 2 ? "pos" : "", `${st.cycles} cycles sur ${D.meta.jours} jours`],
-    ["Performance", sgn(st.perf, 2), st.perf >= 0 ? "pos" : "neg", `sur ${eur(D.meta.budget, 0)} de budget`],
     ["Acheter et attendre", sgn(st.hold, 1), st.hold >= 0 ? "pos" : "neg", `le repère, sur la même fenêtre`],
     ["Engagé en moyenne", pct(st.moy, 2), "", `pic à ${pct(st.pic, 0)} du budget`],
     ["Rendu par l'argent au travail", sgn(st.surEngage, 0), st.surEngage >= 0 ? "pos" : "neg", "performance ÷ engagement moyen"],
@@ -880,8 +886,9 @@ const selR = document.getElementById("sel-reglage");
 D.reglages.forEach((r, k) => {
   const cad = D.meta.paires.reduce((a, s) => a + r.sims[s].cycles_par_semaine, 0) / D.meta.paires.length;
   selR.append(h("option", { value: String(k) },
-    `${cad.toFixed(1)} cycles/sem — ${r.nom} — prof ${pct(r.profondeur, 0)}, ${r.paliers} paliers, `
-    + `×${r.ratio}, objectif ${pct(r.objectif, 1)}${r.suivre_hausse ? ", suit la hausse" : ""}`));
+    `${k + 1}. ${sgn(r.gain_moyen, 1)} moy. — ${r.nom} — prof ${pct(r.profondeur, 0)}, ${r.paliers} paliers, `
+    + `×${r.ratio}, objectif ${pct(r.objectif, 1)}, ${cad.toFixed(1)} cycles/sem`
+    + `${r.suivre_hausse ? ", suit la hausse" : ""}`));
 });
 selR.value = String(iReg);
 selR.addEventListener("change", () => { iReg = +selR.value; cycleChoisi = null; rendu(); });

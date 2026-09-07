@@ -265,6 +265,19 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
             }
         sorties.append(bloc)
 
+    #  Classes par gain pur, decroissant. L'ordre de la liste est ce que la page
+    #  presente en premier : le ranger par cadence mettait en tete un reglage qui
+    #  s'agite beaucoup et rapporte peu. On classe donc sur la performance moyenne
+    #  des paires, calculee et non decretee, pour que l'ordre suive les donnees.
+    def gain_moyen(bloc: dict) -> float:
+        v = [s["resume"]["perf_pct"] for s in bloc["sims"].values()]
+        return sum(v) / len(v) if v else 0.0
+
+    sorties.sort(key=gain_moyen, reverse=True)
+    for rang, bloc in enumerate(sorties, 1):
+        bloc["rang"] = rang
+        bloc["gain_moyen"] = arrondi(gain_moyen(bloc), 6)
+
     return {
         "meta": {
             "budget": budget, "frais": frais, "t0": t0, "pas": HEURE, "heures": n,
