@@ -51,7 +51,14 @@ class Reglages:
     mise_min: float = 0.0           # taille minimale d'un ordre, en quote
     suivre_hausse: bool = False     # remonter la reference quand le marche monte a vide
     reancrage_min: float = 0.0      # hausse minimale avant de deplacer la reference
-    espacement: str = "lineaire"    # repartition des barreaux : "lineaire" ou "geometrique"
+    espacement: str = "lineaire"    # "lineaire", "geometrique" ou "puissance"
+    courbure: float = 1.0           # espacement="puissance" : 1 = lineaire, plus = resserre en haut
+    #  L'etude des chutes des 400 jours donne une distribution tres asymetrique :
+    #  45 % des chutes s'arretent a -1 %, 10 % a -5 %, 1,8 % a -10 %, aucune sous
+    #  -22 %. Des barreaux equidistants placent donc la moitie de l'echelle la ou
+    #  le prix ne va presque jamais. Une courbure superieure a 1 resserre les
+    #  barreaux en haut et les ecarte en bas, dans la forme meme de cette
+    #  distribution. La valeur 1 redonne exactement l'espacement lineaire.
     #  ---- le cliquet : l'objectif devient un plancher, pas une sortie ----
     cliquet_pas: float | None = None    # None = inerte, le moteur ne change pas
     cliquet_retrait: float = 0.001      # de combien le stop se place sous le cran atteint
@@ -99,8 +106,10 @@ class Reglages:
             raise GrilleError(f"mise_min doit etre >= 0, trouve {self.mise_min}")
         if not 0 <= self.reancrage_min < 1:
             raise GrilleError(f"reancrage_min doit etre dans [0, 1[, trouve {self.reancrage_min}")
-        if self.espacement not in ("lineaire", "geometrique"):
+        if self.espacement not in ("lineaire", "geometrique", "puissance"):
             raise GrilleError(f"espacement inconnu : {self.espacement}")
+        if self.courbure <= 0:
+            raise GrilleError(f"courbure doit etre > 0, trouve {self.courbure}")
         if self.cliquet_pas is not None:
             if self.cliquet_pas < 0:
                 raise GrilleError(f"cliquet_pas doit etre >= 0, trouve {self.cliquet_pas}")
@@ -144,7 +153,12 @@ class Reglages:
         haut = reference * (1 - self.depart_sous)
         bas = reference * (1 - self.depart_sous - self.profondeur)
         n = self.paliers - 1
-        if self.espacement == "geometrique":
+        if self.espacement == "puissance":
+            #  la profondeur croit comme (i/n)^courbure : ecarts serres en haut,
+            #  larges en bas, sans changer ni le premier ni le dernier barreau
+            prix = [haut - (haut - bas) * (i / n) ** self.courbure
+                    for i in range(self.paliers)]
+        elif self.espacement == "geometrique":
             #  Memes extremites que le lineaire, repartition differente au milieu :
             #  les ecarts sont constants en POURCENTAGE et non en euros, ce qui a du
             #  sens pour un prix. Sur une echelle profonde la difference est nette.

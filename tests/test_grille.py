@@ -668,3 +668,41 @@ def test_le_journal_inscrit_chaque_deplacement_du_stop():
     assert len(cliquets) >= 2
     assert [e.prix for e in cliquets] == sorted(e.prix for e in cliquets)
     assert [e.palier for e in cliquets] == sorted(e.palier for e in cliquets)
+
+
+# ------------------------------------------------------------- espacement en puissance
+def test_une_courbure_de_un_redonne_exactement_le_lineaire():
+    """Le defaut doit rester inerte : sans cela, ajouter le mode changerait en
+    silence tous les reglages deja mesures."""
+    assert Reglages().courbure == 1.0
+    lin = Reglages(profondeur=0.10, paliers=8, ratio=1.5, objectif_net=0.02,
+                   depart_sous=0.02, frais=0.001)
+    pui = Reglages(**{**lin.__dict__, "espacement": "puissance", "courbure": 1.0})
+    a = [p for p, _ in lin.echelle(100.0, 1000.0)]
+    b = [p for p, _ in pui.echelle(100.0, 1000.0)]
+    assert a == pytest.approx(b)
+
+
+def test_une_courbure_superieure_a_un_resserre_les_barreaux_en_haut():
+    """C'est ce que reclame la distribution des chutes : 45 % s'arretent a -1 %,
+    1,8 % a -10 %. Des barreaux equidistants gaspillent la moitie de l'echelle."""
+    pui = Reglages(profondeur=0.10, paliers=8, ratio=1.5, objectif_net=0.02,
+                   depart_sous=0.02, frais=0.001, espacement="puissance", courbure=2.0)
+    p = [x for x, _ in pui.echelle(100.0, 1000.0)]
+    ecarts = [p[i] - p[i + 1] for i in range(len(p) - 1)]
+    assert ecarts == sorted(ecarts), "les ecarts doivent s'elargir vers le bas"
+    assert ecarts[-1] > 3 * ecarts[0]
+
+
+def test_la_courbure_ne_deplace_ni_le_premier_ni_le_dernier_barreau():
+    for k in (1.0, 1.5, 2.5, 4.0):
+        r = Reglages(profondeur=0.10, paliers=8, ratio=1.5, objectif_net=0.02,
+                     depart_sous=0.02, frais=0.001, espacement="puissance", courbure=k)
+        p = [x for x, _ in r.echelle(100.0, 1000.0)]
+        assert p[0] == pytest.approx(98.0)
+        assert p[-1] == pytest.approx(88.0)
+
+
+def test_une_courbure_absurde_est_refusee():
+    with pytest.raises(GrilleError, match="courbure"):
+        Reglages(espacement="puissance", courbure=0)

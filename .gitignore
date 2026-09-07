@@ -16,3 +16,5 @@ docs/simulations.json
 docs/recherche-*.json
 docs/epreuve-*.json
 docs/comparaison-*.json
+docs/archives/*/*.json
+docs/archives/*/ancien-*.html

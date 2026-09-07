@@ -82,6 +82,26 @@ GRILLES = {
         reancrage_min=(0.0, 0.02),
         abandon_sous=(0.15,),
     ),
+    #  chutes : la famille deduite de l'etude des chutes des 400 jours, et non
+    #  d'un balayage aveugle. Les bornes viennent de la distribution mesuree :
+    #  45 % des chutes s'arretent a -1 %, 33 % a -2 %, 10 % a -5 %, 1,8 % a -10 %,
+    #  et AUCUNE ne depasse -22 % contre sa moyenne 24 h. Une echelle de 50 % de
+    #  profondeur pose donc la moitie de ses barreaux la ou le prix ne va jamais.
+    #  On reste entre -1 % et -15 %, avec une courbure qui resserre les barreaux
+    #  en haut, dans la forme meme de la distribution.
+    #  95,6 % des chutes bouclent leur aller-retour en moins de douze heures :
+    #  les objectifs testes restent donc petits, comme l'utilisateur le demande.
+    "chutes": dict(
+        profondeur=(0.06, 0.09, 0.12, 0.15),
+        paliers=(6, 8, 10),
+        ratio=(1.2, 1.4, 1.6, 1.9),
+        objectif_net=(0.01, 0.015, 0.02, 0.03),
+        depart_sous=(0.01, 0.02, 0.03),
+        reancrage_min=(0.0,),
+        abandon_sous=(0.15,),
+        espacement=("puissance",),
+        courbure=(1.0, 1.5, 2.0),
+    ),
 }
 
 
