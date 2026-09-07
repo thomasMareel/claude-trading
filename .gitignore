@@ -13,6 +13,5 @@ logs/*.log
 data/*.db-*
 .claude/
 docs/simulations.json
-docs/simulations.html
 docs/recherche-*.json
 docs/epreuve-*.json
