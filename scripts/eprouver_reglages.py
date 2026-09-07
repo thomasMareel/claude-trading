@@ -187,7 +187,7 @@ def main() -> int:
     sortie.write_text(json.dumps({"source": args.entree, "tf": args.tf, "hold": hold,
                                   "classement": lignes}, separators=(",", ":")), encoding="utf-8")
     print(f"\nEcrit dans {sortie}\n")
-    print(f"{'prof':>5}{'pal':>4}{'ratio':>6}{'obj':>6}{'fond':>6}{'esp':>5}{'reanc':>6}"
+    print(f"{'prof':>5}{'pal':>4}{'ratio':>6}{'obj':>6}{'fond':>6}{'esp':>5}{'dep':>5}{'reanc':>6}"
           f"{'perf':>8}{'pire tri':>10}{'tri+':>6}{'pire paire':>11}"
           f"{'voisins':>9}{'pire vois':>11}{'ecart res':>11}{'creux':>7}")
     for L in lignes[:20]:
@@ -196,7 +196,7 @@ def main() -> int:
         print(f"{p['profondeur']:>5.0%}{p['paliers']:>4}{p['ratio']:>6}{p['objectif_net']:>6.1%}"
               f"{('%.0f%%' % (p.get('objectif_profond', 0) * 100)) if p.get('objectif_profond') else '   -':>6}"
               f"{('geo' if p.get('espacement') == 'geometrique' else 'lin'):>5}"
-              f"{p.get('reancrage_min', 0):>6.0%}"
+              f"{p.get('depart_sous', 0):>5.0%}{p.get('reancrage_min', 0):>6.0%}"
               f"{L['perf']:>+8.1%}{min(L['trimestres']):>+10.1%}{L['trim_positifs']:>4}/4"
               f"{min(L['paires']):>+11.1%}{g(L['voisins_moy']):>9}{g(L['voisins_pire']):>11}"
               f"{g(L['ecart_resolutions'], '{:>10.1%}'):>11}{L['creux']:>7.0%}")

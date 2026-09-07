@@ -36,6 +36,18 @@ from src.storage import Storage  # noqa: E402
 HEURE = 3_600_000
 GENRE = {"achat": 0, "vente": 1, "abandon": 2}
 
+#  DEUX PAS DE TEMPS, et il faut les distinguer.
+#  On SIMULE au pas fin : le moteur ne connait d'une bougie que quatre nombres
+#  et doit deviner l'ordre du parcours ; sur une bougie horaire ce pari change
+#  le resultat de plusieurs points. On AFFICHE au pas horaire : la courbe de
+#  prix a la resolution fine peserait sept megaoctets par paire pour un trace
+#  qui, sur quatre cents jours, ne montrerait pas un pixel de plus.
+#  Les evenements gardent leur instant reel et sont ranges dans l'heure qui les
+#  contient : un marqueur peut donc etre place jusqu'a une heure trop tot sur la
+#  vue d'ensemble, jamais sur un autre jour.
+PAS_SIM = "5m"
+PAS_VUE = "1h"
+
 #  Le plancher qui compte : la couche de risque reelle refuse tout ordre sous
 #  max(risk.min_order_value, minimum de la plateforme). Avec une progression
 #  geometrique forte, la moitie haute de l'echelle passe sous ce plancher et
@@ -97,7 +109,7 @@ def bougies(st: Storage, symbole: str, tf: str = "1h") -> list[tuple]:
             for r in rows]
 
 
-def grille_reguliere(b: list[tuple]) -> tuple[int, int]:
+def grille_reguliere(b: list[tuple], pas: int) -> tuple[int, int]:
     """Verifie que les bougies forment bien un pas horaire regulier.
 
     Toute la compacite de l'export repose sur cette hypothese : si elle est
@@ -106,7 +118,7 @@ def grille_reguliere(b: list[tuple]) -> tuple[int, int]:
     """
     t0 = b[0][0]
     for i, ligne in enumerate(b):
-        if ligne[0] != t0 + i * HEURE:
+        if ligne[0] != t0 + i * pas:
             raise SystemExit(
                 f"historique troue a l'indice {i} : attendu {t0 + i * HEURE}, trouve {ligne[0]}.\n"
                 f"Relance scripts/fetch_history.py avant d'exporter."
@@ -114,7 +126,7 @@ def grille_reguliere(b: list[tuple]) -> tuple[int, int]:
     return t0, len(b)
 
 
-def segments_engages(dep: list[tuple]) -> list[list[int]]:
+def segments_engages(dep: list[tuple], par_heure: int) -> list[list[int]]:
     """Les tranches d'heures pendant lesquelles de l'argent est immobilise.
 
     C'est la seule facon de donner une DUREE VECUE au blocage : un creux de
@@ -130,10 +142,12 @@ def segments_engages(dep: list[tuple]) -> list[list[int]]:
             debut = None
     if debut is not None:
         segs.append([debut, len(dep) - 1])
-    return segs
+    #  ramenes a la grille d'affichage horaire ; une bande d'une seule bougie
+    #  fine reste visible en occupant son heure entiere
+    return [[a // par_heure, b // par_heure] for a, b in segs]
 
 
-def marches(suivi: list[tuple], champ: int) -> list[list[float]]:
+def marches(suivi: list[tuple], champ: int, par_heure: int) -> list[list[float]]:
     """Une serie en escalier, reduite a ses marches : [indice, valeur].
 
     La reference, le revient et la sortie sont constants entre deux evenements.
@@ -144,12 +158,12 @@ def marches(suivi: list[tuple], champ: int) -> list[list[float]]:
     for i, ligne in enumerate(suivi):
         v = arrondi(ligne[champ])
         if v != prec:
-            out.append([i, v])
+            out.append([i // par_heure, v])
             prec = v
     return out
 
 
-def journalier(dep: list[tuple], eq: list[tuple], budget: float) -> dict:
+def journalier(dep: list[tuple], eq: list[tuple], budget: float, par_jour: int) -> dict:
     """Le resume par jour, pour les vues d'ensemble.
 
     On garde le MAXIMUM d'engagement du jour, jamais la moyenne : une moyenne
@@ -157,44 +171,47 @@ def journalier(dep: list[tuple], eq: list[tuple], budget: float) -> dict:
     plus important a montrer.
     """
     eng_max, eng_moy, equity, abandon = [], [], [], []
-    for j in range(0, len(dep), 24):
-        tranche = dep[j:j + 24]
+    for j in range(0, len(dep), par_jour):
+        tranche = dep[j:j + par_jour]
         e = [x[2] / budget for x in tranche]
         eng_max.append(arrondi(max(e), 5))
         eng_moy.append(arrondi(sum(e) / len(e), 5))
-        equity.append(arrondi(eq[j:j + 24][-1][1], 2))
+        equity.append(arrondi(eq[j:j + par_jour][-1][1], 2))
         abandon.append(1 if any(x[4] for x in tranche) else 0)
     return {"engage_max": eng_max, "engage_moyen": eng_moy, "equity": equity, "abandon": abandon}
 
 
 def exporter(cfg, st: Storage, budget: float) -> dict:
     frais = float(cfg.get("exchange.fee_rate", 0.001))
+    par_heure = {"1m": 60, "5m": 12, "15m": 4, "1h": 1}[PAS_SIM]
     paires: dict[str, dict] = {}
     brut: dict[str, list[tuple]] = {}
     t0 = n = None
 
     for s in cfg.symbols:
-        b = bougies(st, s)
-        if len(b) < 100:
-            print(f"  {s} ignoree : {len(b)} bougies seulement")
+        vue = bougies(st, s, PAS_VUE)
+        sim = bougies(st, s, PAS_SIM)
+        if len(vue) < 100 or len(sim) < 100:
+            print(f"  {s} ignoree : {len(vue)} bougies {PAS_VUE}, {len(sim)} en {PAS_SIM}")
             continue
-        d0, dn = grille_reguliere(b)
+        d0, dn = grille_reguliere(vue, HEURE)
+        grille_reguliere(sim, HEURE // par_heure)
         if t0 is None:
             t0, n = d0, dn
         elif (d0, dn) != (t0, n):
             raise SystemExit(f"{s} ne couvre pas la meme fenetre que les autres paires")
-        brut[s] = b
-        ouverture, cloture = b[0][1], b[-1][4]
+        brut[s] = sim
+        ouverture, cloture = vue[0][1], vue[-1][4]
         paires[s] = {
             # le prix est le decor commun a toutes les simulations : une seule copie
-            "close": [arrondi(x[4], 4) for x in b],
-            "haut": [arrondi(x[2], 4) for x in b],
-            "bas": [arrondi(x[3], 4) for x in b],
+            "close": [arrondi(x[4], 4) for x in vue],
+            "haut": [arrondi(x[2], 4) for x in vue],
+            "bas": [arrondi(x[3], 4) for x in vue],
             # le repere honnete : acheter au debut, ne rien faire, payer les frais
             "hold_pct": arrondi((cloture / ouverture) * (1 - frais) ** 2 - 1, 5),
         }
     if not paires:
-        raise SystemExit("aucun historique exploitable ; lance scripts/fetch_history.py")
+        raise SystemExit("aucun historique exploitable ; lance scripts/fetch_fin.py")
 
     sorties = []
     semaines = n / 24 / 7
@@ -202,7 +219,7 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
         cle, nom = spec["cle"], spec["nom"]
         params = {k: v for k, v in spec.items() if k not in ("cle", "nom")}
         faire = lambda m, _p=params: Reglages(  # noqa: E731
-            frais=frais, abandon_sous=0.15, mise_min=m, vente_meme_bougie=False, **_p)
+            frais=frais, mise_min=m, vente_meme_bougie=False, **_p)
         rg = faire(PLANCHER)
         # l'echelle est la meme a toute epoque, exprimee en fraction de la reference
         ech = rg.echelle(1.0, 1.0)
@@ -227,14 +244,14 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
                 "journal": [[e.ts // HEURE - t0 // HEURE, GENRE[e.genre], arrondi(e.prix, 4),
                              e.palier, arrondi(e.euros, 4), arrondi(e.revient, 4),
                              arrondi(e.gain, 4)] for e in r["journal"]],
-                "references": marches(r["suivi"], 1),
-                "revients": marches(r["suivi"], 2),
-                "sorties": marches(r["suivi"], 3),
-                "segments": segments_engages(r["deploiement"]),
+                "references": marches(r["suivi"], 1, par_heure),
+                "revients": marches(r["suivi"], 2, par_heure),
+                "sorties": marches(r["suivi"], 3, par_heure),
+                "segments": segments_engages(r["deploiement"], par_heure),
                 "cycles": [[c.ouvert_le // HEURE - t0 // HEURE, c.ferme_le // HEURE - t0 // HEURE,
                             c.paliers, arrondi(c.investi, 2), arrondi(c.gain, 4),
                             arrondi(c.gain_pct, 6)] for c in r["cycles"]],
-                "jours": journalier(r["deploiement"], r["equity"], budget),
+                "jours": journalier(r["deploiement"], r["equity"], budget, 24 * par_heure),
                 # ce que le meme reglage aurait donne sous d'autres planchers :
                 # sans cette colonne, la page ne pourrait pas montrer combien du
                 # resultat tenait a des ordres irrecevables
@@ -252,6 +269,7 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
         "meta": {
             "budget": budget, "frais": frais, "t0": t0, "pas": HEURE, "heures": n,
             "jours": n // 24, "paires": list(paires), "genres": ["achat", "vente", "abandon"],
+            "pas_simulation": PAS_SIM, "pas_affichage": PAS_VUE, "plancher": PLANCHER,
         },
         "paires": paires,
         "reglages": sorties,

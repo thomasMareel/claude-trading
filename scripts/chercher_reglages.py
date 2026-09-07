@@ -44,18 +44,19 @@ GRILLES = {
         reancrage_min=(0.0, 0.02),
         abandon_sous=(0.15,),
     ),
-    # fin : recentre sur ce que "large" a designe, et non sur ce que je croyais.
-    # Trois enseignements de l'etape large ont dicte ces bornes :
-    #   depart_sous vaut 2 % chez presque tous les vainqueurs — poser le premier
-    #     barreau AU prix fait acheter le sommet de chaque micro-rebond ;
-    #   les profondeurs gagnantes sont de 12 a 20 %, pas de 30 a 50 % ;
-    #   abandon_sous n'a jamais varie : c'est le seul levier encore inexplore.
+    # fin : recentre sur ce que le banc de robustesse a retenu, et non sur le
+    # haut du classement brut. La difference est enorme et c'est tout l'interet
+    # du banc : le meilleur reglage brut (12 % / 8 paliers / obj 1 %, +12,8 %)
+    # change de reponse de vingt-trois points selon la finesse des bougies, donc
+    # il ne mesure rien. Le meilleur reglage SOLIDE est bien plus profond et bien
+    # moins dense : 40 % de profondeur, 6 paliers, x1,5, objectif 3 %, dont le
+    # pire voisin ne perd que 1,5 point et l'ecart entre resolutions vaut 0,8.
     "fin": dict(
-        profondeur=(0.10, 0.12, 0.15, 0.20, 0.25),
-        paliers=(6, 8, 10, 12),
-        ratio=(1.3, 1.4, 1.5, 1.6),
-        objectif_net=(0.012, 0.015, 0.02, 0.025),
-        depart_sous=(0.01, 0.02, 0.03),
+        profondeur=(0.25, 0.30, 0.35, 0.40, 0.50),
+        paliers=(5, 6, 8, 10),
+        ratio=(1.3, 1.4, 1.5, 1.7),
+        objectif_net=(0.02, 0.025, 0.03, 0.04),
+        depart_sous=(0.0, 0.02),
         reancrage_min=(0.0, 0.02),
         abandon_sous=(0.15, 0.25, 0.40),
     ),
