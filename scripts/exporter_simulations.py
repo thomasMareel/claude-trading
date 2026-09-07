@@ -82,28 +82,27 @@ PLANCHERS_COMPARES = (0.0, 5.0)
 #  vente_meme_bougie=False partout : on refuse de compter un aller-retour boucle
 #  dans la bougie de son achat, car rien dans les donnees ne peut le prouver.
 REGLAGES = [
-    #  Le vainqueur des epreuves de robustesse, et non du classement brut. Tous
-    #  ses voisins immediats restent positifs, ses trois paires aussi, son pire
-    #  trimestre ne perd que 1,4 point, et les trois resolutions de bougies le
-    #  donnent au meme nombre a trois dixiemes pres. Son creux est deux fois
-    #  moins profond que celui des reglages plus denses.
-    dict(cle="solide-50-6", nom="Le plus solide", profondeur=0.50, paliers=6, ratio=1.7,
+    #  Le vainqueur des epreuves de robustesse, apres extension de la recherche
+    #  au-dela des bornes precedentes. Trois paliers seulement : le plancher de
+    #  la plateforme autorise alors une progression bien plus agressive, donc un
+    #  prix de revient plus bas et un rebond a attendre plus court. Tous ses
+    #  voisins restent positifs, son pire trimestre ne perd que 2,2 points, et
+    #  son creux est deux fois moins profond que celui des echelles denses.
+    dict(cle="solide-50-3", nom="Le plus solide", profondeur=0.50, paliers=3, ratio=3.3,
          objectif_net=0.04, depart_sous=0.02, suivre_hausse=True),
-    #  Le meme esprit, plus actif et encore moins expose : quatre fois plus de
-    #  cycles pour un dixieme du capital immobilise.
-    dict(cle="solide-50-10", nom="Solide et plus actif", profondeur=0.50, paliers=10,
-         ratio=1.4, objectif_net=0.02, reancrage_min=0.02, suivre_hausse=True),
-    #  Le premier du classement BRUT, garde exprès pour la comparaison : il gagne
-    #  le plus et echoue aux epreuves. C'est le piege que ce banc existe pour
-    #  montrer.
-    dict(cle="brut-25-5", nom="Le meilleur du classement brut", profondeur=0.25, paliers=5,
-         ratio=1.5, objectif_net=0.04, depart_sous=0.02, suivre_hausse=True),
+    dict(cle="solide-50-3-o3", nom="Solide, objectif 3 %", profondeur=0.50, paliers=3,
+         ratio=2.8, objectif_net=0.03, depart_sous=0.02, suivre_hausse=True),
+    #  Le premier du classement BRUT, garde pour la comparaison : il gagne le plus
+    #  et son resultat varie de 6,3 points selon la finesse des bougies.
+    dict(cle="brut-40-3", nom="Le plus rentable, mais fragile", profondeur=0.40, paliers=3,
+         ratio=3.9, objectif_net=0.08, depart_sous=0.04, reancrage_min=0.02, suivre_hausse=True),
+    dict(cle="six-paliers", nom="Six paliers", profondeur=0.50, paliers=6, ratio=1.7,
+         objectif_net=0.05, depart_sous=0.02, reancrage_min=0.02, suivre_hausse=True),
+    #  Le creux le moins profond de toute la recherche : -9 %.
+    dict(cle="prudent-60-5", nom="Le moins risque", profondeur=0.60, paliers=5, ratio=2.4,
+         objectif_net=0.08, depart_sous=0.04, reancrage_min=0.02, suivre_hausse=True),
     dict(cle="patient-30", nom="Patient", profondeur=0.30, paliers=12, ratio=1.3,
          objectif_net=0.03, suivre_hausse=True),
-    dict(cle="equilibre-30", nom="Equilibre", profondeur=0.30, paliers=12, ratio=1.3,
-         objectif_net=0.02, suivre_hausse=True),
-    dict(cle="deux-sem", nom="Deux par semaine", profondeur=0.20, paliers=8, ratio=1.5,
-         objectif_net=0.01, suivre_hausse=True),
     dict(cle="p15-14-r22-o3", nom="L'ancien equilibre", profondeur=0.15, paliers=14,
          ratio=2.2, objectif_net=0.03, suivre_hausse=False),
     dict(cle="p08-14-r18-o2", nom="Le tableau d'origine", profondeur=0.08, paliers=14,

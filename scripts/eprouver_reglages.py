@@ -45,6 +45,8 @@ VOISINAGE = {
     "objectif_profond": ("x", 0.75, 1.33),
     "ratio": ("x", 0.92, 1.08),
     "paliers": ("+", -2, 2),
+    "cliquet_pas": ("x", 0.5, 2.0),
+    "cliquet_retrait": ("x", 0.5, 2.0),
 }
 
 
