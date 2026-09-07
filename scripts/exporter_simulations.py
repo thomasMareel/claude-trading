@@ -291,11 +291,22 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
             raise SystemExit(f"{s} ne couvre pas la meme fenetre que les autres paires")
         brut[s] = sim
         ouverture, cloture = vue[0][1], vue[-1][4]
+        vols = st._conn.execute(
+            "SELECT ts, volume FROM candles WHERE symbol=? AND timeframe=? ORDER BY ts",
+            (s, PAS_VUE)).fetchall()
+        vol = {int(r["ts"]): float(r["volume"] or 0.0) for r in vols}
         paires[s] = {
-            # le prix est le decor commun a toutes les simulations : une seule copie
+            #  Le prix est le decor commun a toutes les simulations : une seule copie.
+            #  Quatre series OHLC plus le volume, au pas horaire. Le navigateur agrege
+            #  lui-meme vers 2h, 4h, 12h, 1 jour et 1 semaine : exporter chaque unite
+            #  de temps separement multiplierait le poids par six pour aucune
+            #  information nouvelle, une bougie longue etant exactement la somme des
+            #  courtes qu'elle contient.
+            "ouv": [arrondi(x[1], 4) for x in vue],
             "close": [arrondi(x[4], 4) for x in vue],
             "haut": [arrondi(x[2], 4) for x in vue],
             "bas": [arrondi(x[3], 4) for x in vue],
+            "vol": [arrondi(vol.get(x[0], 0.0), 3) for x in vue],
             # le repere honnete : acheter au debut, ne rien faire, payer les frais
             "hold_pct": arrondi((cloture / ouverture) * (1 - frais) ** 2 - 1, 5),
         }
@@ -354,8 +365,12 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
                 "cycles": [[c.ouvert_le // HEURE - t0 // HEURE, c.ferme_le // HEURE - t0 // HEURE,
                             c.paliers, arrondi(c.investi, 2), arrondi(c.gain, 4),
                             arrondi(c.gain_pct, 6), c.sortie, c.crans] for c in r["cycles"]],
-                "sorties": {g: sum(1 for c in r["cycles"] if c.sortie == g)
-                            for g in ("limite", "stop", "trou")},
+                #  PAS "sorties" : cette cle porte deja la serie des prix de
+                #  sortie, quelques lignes plus haut. La collision ecrasait
+                #  silencieusement la serie, et le trait pointille de la sortie
+                #  visee n'etait jamais trace — sur la planche dont c'est le sujet.
+                "sorties_type": {g: sum(1 for c in r["cycles"] if c.sortie == g)
+                                 for g in ("limite", "stop", "trou")},
                 "crans_moyens": arrondi(
                     sum(c.crans for c in r["cycles"]) / len(r["cycles"]), 3) if r["cycles"] else 0.0,
                 "jours": journalier(r["deploiement"], r["equity"], budget, 24 * par_heure),
@@ -404,7 +419,13 @@ def batir_page(json_texte: str, gabarit: Path, sortie: Path) -> Path:
     fichier local et ne survit pas a un hebergement qui bloque la requete. Une
     seule page qui se suffit a elle-meme s'ouvre partout.
     """
-    modele = gabarit.read_text(encoding="utf-8")
+    #  Sans doctype, un navigateur applique les regles de compatibilite heritees
+    #  au lieu du modele de boite standard. L'enveloppe d'un artifact en fournit
+    #  un ; un fichier servi tel quel par GitHub Pages, non. On l'ecrit donc ici,
+    #  a la construction, et pas dans le gabarit : un doctype egare dans le corps
+    #  d'une page deja ouverte est ignore sans dommage.
+    modele = "<!doctype html>" + chr(10) + gabarit.read_text(encoding="utf-8")
+
     jeton = "/*__DONNEES__*/"
     if jeton not in modele:
         raise SystemExit(f"{gabarit} ne contient pas le jeton {jeton}")

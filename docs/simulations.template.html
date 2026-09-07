@@ -4,189 +4,239 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
+/* ------------------------------------------------------------------ jetons
+   Toute couleur est definie ici, sur :root nu, pour le theme clair. Les deux
+   blocs suivants ne REDEFINISSENT que ces memes jetons : aucune couleur n'existe
+   uniquement derriere une media-query, sans quoi elle ne s'applique pas dans
+   l'etat par defaut du navigateur, ou aucun attribut data-theme n'est pose. */
 :root{
-  --ground:#EDF0EF; --surface:#FFFFFF; --surface-2:#F6F8F7;
-  --ink:#16201F; --ink-2:#55625F; --ink-3:#8A9694;
-  --rule:#D2DAD8; --rule-fort:#B4C0BD;
-  --achat:#0E7C86; --achat-doux:#0E7C8622;
-  --vente:#B5730B; --vente-doux:#B5730B22;
-  --blocage:#A34A3A; --blocage-doux:#A34A3A1A;
-  --dort:#C3CDCA; --prix:#48544F;
-  --ombre:0 1px 2px rgba(22,32,31,.05), 0 8px 24px -12px rgba(22,32,31,.18);
+  --ground:#EEF1F0; --surface:#FFFFFF; --surface-2:#F5F8F7; --surface-3:#EAEFED;
+  --ink:#141D1C; --ink-2:#485552; --ink-3:#5F6D6A;
+  --rule:#D6DEDC; --rule-fort:#B2BFBB;
+  --achat:#0E7C86; --vente:#B0700A; --blocage:#A34A3A;
+  --hausse:#0B8F63; --baisse:#C0392E;
+  --dort:#C7D1CE; --prix:#3F4B47;
+  --ombre:0 1px 2px rgba(20,29,28,.06), 0 10px 28px -14px rgba(20,29,28,.22);
   --focus:#0E7C86;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --ground:#0F1514; --surface:#171F1E; --surface-2:#1D2726;
-    --ink:#E4EAE8; --ink-2:#9CAAA6; --ink-3:#6A7874;
-    --rule:#293432; --rule-fort:#3A4845;
-    --achat:#4FC5D0; --achat-doux:#4FC5D022;
-    --vente:#E0A544; --vente-doux:#E0A54422;
-    --blocage:#DB7A63; --blocage-doux:#DB7A631F;
-    --dort:#333F3D; --prix:#94A29E;
-    --ombre:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6);
-    --focus:#4FC5D0;
+    --ground:#0E1413; --surface:#161E1D; --surface-2:#1C2625; --surface-3:#243130;
+    --ink:#E6ECEA; --ink-2:#A6B4B0; --ink-3:#8A9995;
+    --rule:#27332F; --rule-fort:#3A4844;
+    --achat:#45C2CE; --vente:#DDA33F; --blocage:#DB7A63;
+    --hausse:#22C58B; --baisse:#EB6B5F;
+    --dort:#2C3937; --prix:#93A19D;
+    --ombre:0 1px 2px rgba(0,0,0,.35), 0 10px 28px -14px rgba(0,0,0,.7);
+    --focus:#45C2CE;
   }
 }
 :root[data-theme="dark"]{
-  --ground:#0F1514; --surface:#171F1E; --surface-2:#1D2726;
-  --ink:#E4EAE8; --ink-2:#9CAAA6; --ink-3:#6A7874;
-  --rule:#293432; --rule-fort:#3A4845;
-  --achat:#4FC5D0; --achat-doux:#4FC5D022;
-  --vente:#E0A544; --vente-doux:#E0A54422;
-  --blocage:#DB7A63; --blocage-doux:#DB7A631F;
-  --dort:#333F3D; --prix:#94A29E;
-  --ombre:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6);
-  --focus:#4FC5D0;
+  --ground:#0E1413; --surface:#161E1D; --surface-2:#1C2625; --surface-3:#243130;
+  --ink:#E6ECEA; --ink-2:#A6B4B0; --ink-3:#8A9995;
+  --rule:#27332F; --rule-fort:#3A4844;
+  --achat:#45C2CE; --vente:#DDA33F; --blocage:#DB7A63;
+  --hausse:#22C58B; --baisse:#EB6B5F;
+  --dort:#2C3937; --prix:#93A19D;
+  --ombre:0 1px 2px rgba(0,0,0,.35), 0 10px 28px -14px rgba(0,0,0,.7);
+  --focus:#45C2CE;
 }
 
 *{box-sizing:border-box}
-body{
-  margin:0; background:var(--ground); color:var(--ink);
+html{-webkit-text-size-adjust:100%}
+body{margin:0; background:var(--ground); color:var(--ink);
   font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  font-size:16px; line-height:1.62; -webkit-font-smoothing:antialiased;
-}
-.mono{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-  font-variant-numeric:tabular-nums}
-h1,h2,h3{font-family:"Newsreader",Georgia,"Times New Roman",serif; font-weight:500;
-  text-wrap:balance; margin:0; line-height:1.18; letter-spacing:-.005em}
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  overflow-x:hidden}
+h1,h2{font-family:"Newsreader",Georgia,serif; font-weight:500; margin:0;
+  line-height:1.15; text-wrap:balance; letter-spacing:-.01em}
 p{margin:0}
-a{color:var(--achat)}
-:focus-visible{outline:2px solid var(--focus); outline-offset:2px; border-radius:2px}
+button{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--focus); outline-offset:2px; border-radius:3px}
+.num{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  font-variant-numeric:tabular-nums}
+.haut{color:var(--hausse)} .bas{color:var(--baisse)}
 
-/* ---------------------------------------------------------------- trame */
-.large{width:min(1160px,100% - 2.5rem); margin-inline:auto}
-.texte{width:min(66ch,100% - 2.5rem); margin-inline:auto}
-@media (max-width:640px){ .large,.texte{width:calc(100% - 1.75rem)} }
+/* ------------------------------------------------------------------ trame */
+.large{width:min(1240px,100% - 2rem); margin-inline:auto}
+.texte{width:min(64ch,100% - 2rem); margin-inline:auto}
+@media (max-width:640px){ .large,.texte{width:calc(100% - 1.25rem)} }
 
-/* ---------------------------------------------------------------- entete */
-header.tete{padding:clamp(2.5rem,7vw,5rem) 0 clamp(1.5rem,4vw,2.5rem)}
-.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.7rem; letter-spacing:.14em;
-  text-transform:uppercase; color:var(--ink-3); margin-bottom:1rem}
-h1{font-size:clamp(2.3rem,6.5vw,3.9rem); letter-spacing:-.02em}
+header.tete{padding:clamp(2rem,6vw,3.6rem) 0 1.4rem}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.15em;
+  text-transform:uppercase; color:var(--ink-3); margin-bottom:.9rem}
+h1{font-size:clamp(2rem,5.5vw,3.2rem); letter-spacing:-.02em}
 h1 em{font-style:italic; color:var(--achat)}
-.chapo{margin-top:1.4rem; font-size:clamp(1.02rem,2.2vw,1.16rem); color:var(--ink-2); max-width:60ch}
+.chapo{margin-top:1.1rem; font-size:clamp(1rem,2vw,1.1rem); color:var(--ink-2); max-width:62ch}
 .chapo strong{color:var(--ink); font-weight:600}
 
-/* ---------------------------------------------------------------- barre */
-.barre{position:sticky; top:0; z-index:20; background:color-mix(in srgb,var(--ground) 88%,transparent);
-  backdrop-filter:blur(10px); border-block:1px solid var(--rule); margin-top:2rem}
-.barre-in{display:flex; flex-wrap:wrap; gap:.75rem 1.5rem; align-items:center; padding:.7rem 0}
-.groupe{display:flex; align-items:center; gap:.5rem; min-width:0}
-.groupe > .lab{font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.13em;
-  text-transform:uppercase; color:var(--ink-3); white-space:nowrap}
-select{font-family:"IBM Plex Mono",monospace; font-size:.82rem; color:var(--ink);
+/* ------------------------------------------------- bandeau de marche */
+.marche{background:var(--surface); border:1px solid var(--rule); box-shadow:var(--ombre);
+  margin-top:1.6rem; overflow:hidden}
+.paires{display:flex; gap:0; border-bottom:1px solid var(--rule); overflow-x:auto;
+  scrollbar-width:thin}
+.paire-onglet{flex:0 0 auto; padding:.6rem .9rem; background:none; border:none;
+  border-bottom:2px solid transparent; cursor:pointer; text-align:left; min-width:8.5rem}
+.paire-onglet[aria-selected="true"]{border-bottom-color:var(--achat); background:var(--surface-2)}
+.paire-onglet .p{display:block; font-family:"IBM Plex Mono",monospace; font-size:.72rem;
+  color:var(--ink-3); letter-spacing:.04em}
+.paire-onglet .v{display:block; font-family:"IBM Plex Mono",monospace; font-size:.94rem;
+  font-weight:500; font-variant-numeric:tabular-nums; margin-top:.1rem}
+.paire-onglet .d{display:block; font-family:"IBM Plex Mono",monospace; font-size:.72rem;
+  font-variant-numeric:tabular-nums}
+
+.stats{display:flex; flex-wrap:wrap; gap:.1rem 1.6rem; padding:.7rem .9rem;
+  border-bottom:1px solid var(--rule); background:var(--surface-2)}
+.stat{display:flex; flex-direction:column; min-width:5.5rem}
+.stat .k{font-family:"IBM Plex Mono",monospace; font-size:.62rem; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3)}
+.stat .v{font-family:"IBM Plex Mono",monospace; font-size:.86rem; font-weight:500;
+  font-variant-numeric:tabular-nums; margin-top:.1rem}
+
+.outils{display:flex; flex-wrap:wrap; align-items:center; gap:.4rem .9rem;
+  padding:.5rem .9rem; border-bottom:1px solid var(--rule)}
+.groupe-b{display:flex; gap:1px; background:var(--rule); border:1px solid var(--rule);
+  border-radius:3px; overflow:hidden}
+.groupe-b button{background:var(--surface); border:none; padding:.3rem .55rem; cursor:pointer;
+  font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-2); white-space:nowrap}
+.groupe-b button:hover{background:var(--surface-3)}
+.groupe-b button[aria-pressed="true"]{background:var(--achat); color:#fff; font-weight:500}
+.lab-o{font-family:"IBM Plex Mono",monospace; font-size:.62rem; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--ink-3)}
+.bascule{margin-left:auto; display:flex; gap:.4rem; align-items:center}
+
+.toile{position:relative; width:100%; cursor:crosshair; touch-action:pan-y}
+/*  Seul le chandelier capture le doigt, parce qu'il s'y deplace et s'y zoome.
+    Sur les autres graphiques, capturer le doigt transformait chaque planche en
+    zone morte ou la page refusait de defiler. */
+#toile-marche{touch-action:none}
+.toile svg{display:block}
+.aide{padding:.45rem .9rem; border-top:1px solid var(--rule); color:var(--ink-3);
+  font-size:.76rem; background:var(--surface-2)}
+
+/* ------------------------------------------------------------------ selecteur */
+.barre{position:sticky; top:0; z-index:30;
+  background:color-mix(in srgb,var(--ground) 90%,transparent);
+  backdrop-filter:blur(10px); border-block:1px solid var(--rule); margin-top:1.6rem}
+.barre-in{display:flex; flex-wrap:wrap; gap:.35rem .9rem; align-items:center;
+  padding:.6rem 0; min-width:0}
+select{font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--ink);
   background:var(--surface); border:1px solid var(--rule-fort); border-radius:3px;
-  padding:.34rem 1.9rem .34rem .55rem; max-width:100%;
-  appearance:none;
-  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
-  background-position:calc(100% - 15px) calc(50% + 1px),calc(100% - 10px) calc(50% + 1px);
+  padding:.35rem 1.9rem .35rem .55rem; width:100%; min-width:0; flex:1 1 16rem;
+  text-overflow:ellipsis; appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),
+                   linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:calc(100% - 15px) 52%,calc(100% - 10px) 52%;
   background-size:5px 5px,5px 5px; background-repeat:no-repeat}
-.puces{display:flex; gap:.3rem; flex-wrap:wrap}
-.puce{font-family:"IBM Plex Mono",monospace; font-size:.76rem; color:var(--ink-2);
-  background:var(--surface); border:1px solid var(--rule); border-radius:3px;
-  padding:.3rem .6rem; cursor:pointer; white-space:nowrap}
-.puce[aria-pressed="true"]{background:var(--achat); border-color:var(--achat); color:var(--surface); font-weight:500}
-.puce:hover{border-color:var(--rule-fort)}
 
-/* ---------------------------------------------------------------- tuiles */
-.tuiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(148px,1fr)); gap:1px;
-  background:var(--rule); border:1px solid var(--rule); margin:2.2rem 0 0}
-.tuile{background:var(--surface); padding:.85rem .95rem 1rem}
-.tuile .k{font-family:"IBM Plex Mono",monospace; font-size:.63rem; letter-spacing:.11em;
-  text-transform:uppercase; color:var(--ink-3); display:block; margin-bottom:.35rem}
-.tuile .v{font-family:"IBM Plex Mono",monospace; font-size:1.42rem; font-weight:500;
-  letter-spacing:-.02em; display:block; line-height:1.1}
-.tuile .n{font-size:.76rem; color:var(--ink-3); display:block; margin-top:.2rem; line-height:1.35}
-.v.pos{color:var(--achat)} .v.neg{color:var(--blocage)}
+/* ------------------------------------------------------------------ tuiles */
+.tuiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr)); gap:1px;
+  background:var(--rule); border:1px solid var(--rule); margin-top:1.8rem}
+.tuile{background:var(--surface); padding:.8rem .9rem .9rem; min-width:0}
+.tuile .k{font-family:"IBM Plex Mono",monospace; font-size:.62rem; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3); display:block; margin-bottom:.3rem}
+.tuile .v{font-family:"IBM Plex Mono",monospace; font-size:1.3rem; font-weight:500;
+  letter-spacing:-.02em; display:block; line-height:1.1; font-variant-numeric:tabular-nums}
+.tuile .n{font-size:.74rem; color:var(--ink-3); display:block; margin-top:.25rem;
+  line-height:1.35; overflow-wrap:anywhere}
+.v.pos{color:var(--hausse)} .v.neg{color:var(--baisse)}
 
-/* ---------------------------------------------------------------- planches */
-.planche{margin-top:clamp(3rem,7vw,4.6rem); border-top:1px solid var(--rule-fort); padding-top:1.1rem}
-.pl-tete{display:flex; gap:1.1rem; align-items:baseline; flex-wrap:wrap; margin-bottom:.15rem}
-.pl-num{font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.14em;
+/* ------------------------------------------------------------------ planches */
+.planche{margin-top:clamp(2.6rem,6vw,4rem); border-top:1px solid var(--rule-fort); padding-top:1rem}
+.pl-tete{display:flex; gap:1rem; align-items:baseline; flex-wrap:wrap}
+.pl-num{font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.14em;
   text-transform:uppercase; color:var(--ink-3); white-space:nowrap}
-.pl-tete h2{font-size:clamp(1.35rem,3.2vw,1.72rem); flex:1 1 18ch}
-.pl-q{color:var(--ink-2); font-size:.95rem; margin:.35rem 0 1.1rem; max-width:72ch}
+.pl-tete h2{font-size:clamp(1.25rem,3vw,1.6rem); flex:1 1 16ch}
+.pl-q{color:var(--ink-2); font-size:.93rem; margin:.3rem 0 1rem; max-width:70ch}
 .cadre{background:var(--surface); border:1px solid var(--rule); box-shadow:var(--ombre)}
-.cadre svg{display:block; width:100%; height:auto}
-.legende{display:flex; flex-wrap:wrap; gap:.35rem 1.15rem; padding:.6rem .9rem;
-  border-top:1px solid var(--rule); font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--ink-2)}
+.legende{display:flex; flex-wrap:wrap; gap:.3rem 1.1rem; padding:.55rem .85rem;
+  border-top:1px solid var(--rule); font-family:"IBM Plex Mono",monospace;
+  font-size:.72rem; color:var(--ink-2)}
 .cle{display:inline-flex; align-items:center; gap:.4rem}
 .pastille{width:9px; height:9px; border-radius:50%; flex:none}
 .pastille.carre{border-radius:1px} .pastille.trait{height:2px; width:16px; border-radius:0}
-.alire{margin-top:.85rem; font-size:.93rem; color:var(--ink-2); max-width:76ch;
-  border-left:2px solid var(--achat); padding-left:.85rem}
+.alire{margin-top:.8rem; font-size:.92rem; color:var(--ink-2); max-width:74ch;
+  border-left:2px solid var(--achat); padding-left:.8rem}
 .alire b{color:var(--ink); font-weight:600}
-.souscadre{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--rule);
-  border:1px solid var(--rule); box-shadow:var(--ombre)}
-@media (max-width:760px){ .souscadre{grid-template-columns:1fr} }
-.souscadre > div{background:var(--surface)}
-.sous-t{font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.11em;
-  text-transform:uppercase; color:var(--ink-3); padding:.7rem .9rem .1rem}
+.souscadre{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr));
+  gap:1px; background:var(--rule); border:1px solid var(--rule); box-shadow:var(--ombre)}
+.souscadre > div{background:var(--surface); min-width:0}
+.sous-t{font-family:"IBM Plex Mono",monospace; font-size:.64rem; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3); padding:.65rem .85rem .1rem}
+.puces{display:flex; gap:.3rem; flex-wrap:wrap; margin-bottom:.7rem}
+.puce{font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-2);
+  background:var(--surface); border:1px solid var(--rule); border-radius:3px;
+  padding:.28rem .55rem; cursor:pointer; white-space:nowrap}
+.puce[aria-pressed="true"]{background:var(--achat); border-color:var(--achat);
+  color:#fff; font-weight:500}
+.puce:hover{border-color:var(--rule-fort)}
 
-/* ---------------------------------------------------------------- dessin */
-.axe{stroke:var(--rule); stroke-width:1}
-.axe-fort{stroke:var(--rule-fort); stroke-width:1}
-.tick{fill:var(--ink-3); font-family:"IBM Plex Mono",monospace; font-size:10px}
-.tick-t{fill:var(--ink-2); font-family:"IBM Plex Mono",monospace; font-size:10px; font-weight:500}
-.prix-l{fill:none; stroke:var(--prix); stroke-width:1.1; stroke-linejoin:round}
-.rung{stroke:var(--achat); stroke-width:1; opacity:.32; stroke-dasharray:2 3}
+/* ------------------------------------------------------------------ dessin */
+.axe{stroke:var(--rule)} .axe-fort{stroke:var(--rule-fort)}
+.tick{fill:var(--ink-3); font-family:"IBM Plex Mono",monospace; font-size:11px}
+.etiq{fill:var(--ink-2); font-family:"IBM Plex Mono",monospace; font-size:11px}
+.etiq-f{fill:var(--ink); font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:600}
+.prix-l{fill:none; stroke:var(--prix); stroke-width:1.2; stroke-linejoin:round}
+.m-achat{fill:var(--achat)} .m-vente{fill:var(--vente)}
+.bande-bloc{fill:var(--blocage); opacity:.12}
+.aire-eng{fill:var(--achat); fill-opacity:.8}
+.barre-m{fill:var(--achat)}
+.piste{fill:var(--surface-3)} .piste-bloc{fill:var(--blocage); opacity:.5}
+.piste-aband{fill:var(--blocage)}
+.ref-l{stroke:var(--ink-3); stroke-dasharray:3 3; opacity:.75}
+.rung{stroke:var(--achat); opacity:.3; stroke-dasharray:2 3}
 .rung-plein{stroke:var(--achat); stroke-width:1.4; opacity:.85}
 .revient-l{fill:none; stroke:var(--vente); stroke-width:1.6}
 .sortie-l{fill:none; stroke:var(--vente); stroke-width:1.3; stroke-dasharray:4 3; opacity:.75}
-.m-achat{fill:var(--achat); fill-opacity:.72; stroke:var(--surface); stroke-width:.6}
-.m-vente{fill:var(--vente); stroke:var(--surface); stroke-width:.7}
-.bande-bloc{fill:var(--blocage-doux)}
-.bande-aband{fill:var(--blocage); opacity:.2}
-.aire-dort{fill:var(--dort)}
-.aire-eng{fill:var(--achat); fill-opacity:.85}
-.barre-m{fill:var(--achat)}
-.piste{fill:var(--surface-2)}
-.piste-bloc{fill:var(--blocage); opacity:.55}
-.piste-aband{fill:var(--blocage)}
-.pt{stroke:var(--surface); stroke-width:1}
-.etiq{fill:var(--ink-2); font-family:"IBM Plex Mono",monospace; font-size:10px}
-.etiq-f{fill:var(--ink); font-family:"IBM Plex Mono",monospace; font-size:10px; font-weight:600}
-.ref-l{stroke:var(--ink-3); stroke-width:1; stroke-dasharray:3 3; opacity:.7}
 
-/* ---------------------------------------------------------------- infobulle */
-#bulle{position:fixed; z-index:60; pointer-events:none; opacity:0; transition:opacity .1s;
+/* ------------------------------------------------------------------ infobulle */
+#bulle{position:fixed; z-index:60; pointer-events:none; opacity:0; transition:opacity .08s;
   background:var(--surface); border:1px solid var(--rule-fort); box-shadow:var(--ombre);
-  padding:.5rem .65rem; font-family:"IBM Plex Mono",monospace; font-size:.73rem;
-  line-height:1.5; color:var(--ink); max-width:19rem; border-radius:3px}
-#bulle b{color:var(--ink); font-weight:600}
+  padding:.5rem .65rem; font-family:"IBM Plex Mono",monospace; font-size:.74rem;
+  line-height:1.5; color:var(--ink); max-width:20rem; border-radius:3px}
 #bulle .t{color:var(--ink-3)}
 
-footer{margin:clamp(3.5rem,8vw,6rem) 0 4rem; border-top:1px solid var(--rule); padding-top:1.3rem;
-  color:var(--ink-3); font-size:.84rem}
+footer{margin:clamp(3rem,7vw,5rem) 0 4rem; border-top:1px solid var(--rule);
+  padding-top:1.2rem; color:var(--ink-3); font-size:.84rem}
 footer p + p{margin-top:.7rem}
-@media (prefers-reduced-motion:reduce){ *{transition:none !important; animation:none !important} }
+footer b{color:var(--ink-2)}
+@media (prefers-reduced-motion:reduce){ *{transition:none!important; animation:none!important} }
 </style>
-
 <header class="tete">
   <div class="texte">
     <div class="eyebrow">Banc d'essai · 400 jours rejoués sur 345 600 bougies de cinq minutes</div>
     <h1>Anatomie d'une <em>descente</em></h1>
-    <p class="chapo">Huit réglages de la stratégie du tableur, rejoués heure par heure sur BTC, ETH et SOL,
-      du 2 août 2025 au 6 septembre 2026. Chaque achat et chaque vente est posé sur la courbe du prix.
-      La simulation tourne sur des bougies de <strong>cinq minutes</strong>, pas d'une heure : sur une bougie
-      horaire, le moteur doit deviner si le prix est passé par le bas avant le haut, et ce pari seul déplaçait
-      les résultats de plusieurs points. Seuls les ordres qu'une plateforme accepterait vraiment sont comptés.
-      Les réglages sont rangés <strong>du plus rentable au moins rentable</strong>. Sur cette fenêtre, ne rien
-      faire faisait perdre 30 %.</p>
+    <p class="chapo">Une stratégie de grille rejouée sur BTC, ETH et SOL, du 2 août 2025 au 6 septembre 2026.
+      Chaque ordre réellement exécutable est posé sur le chandelier. Les réglages sont rangés
+      <strong>du plus rentable au moins rentable</strong>, avec à côté le nombre d'épreuves de robustesse
+      qu'ils passent — car le plus rentable n'est pas toujours le plus fiable. Sur cette fenêtre,
+      ne rien faire faisait perdre 30 %.</p>
   </div>
 </header>
 
+<div class="large">
+  <section class="marche" id="marche">
+    <div class="paires" id="paires" role="tablist" aria-label="Paires"></div>
+    <div class="stats" id="stats"></div>
+    <div class="outils">
+      <span class="lab-o">Unité</span>
+      <div class="groupe-b" id="unites"></div>
+      <span class="lab-o">Période</span>
+      <div class="groupe-b" id="portees"></div>
+      <div class="bascule">
+        <div class="groupe-b" id="calques"></div>
+      </div>
+    </div>
+    <div class="toile" id="toile-marche"></div>
+    <p class="aide">Molette ou pincement pour zoomer, glisser pour déplacer, double-clic pour tout revoir.
+      Les triangles sont les ordres réellement passés par le réglage sélectionné ci-dessous.</p>
+  </section>
+</div>
+
 <div class="barre">
   <div class="large barre-in">
-    <div class="groupe" style="flex:1 1 22rem">
-      <span class="lab">Réglage, du plus au moins rentable</span>
-      <select id="sel-reglage" style="flex:1"></select>
-    </div>
-    <div class="groupe">
-      <span class="lab">Paire</span>
-      <div class="puces" id="sel-paire"></div>
-    </div>
+    <span class="lab-o">Réglage, du plus au moins rentable</span>
+    <select id="sel-reglage"></select>
   </div>
 </div>
 
@@ -195,17 +245,20 @@ footer p + p{margin-top:.7rem}
 <footer class="texte">
   <p><b>Ce que ce rejeu ne dit pas.</b> Le carnet d'ordres est supposé infiniment profond, aucun ordre
     n'est jamais refusé, la plateforme est supposée toujours disponible, et les frais sont ceux de la
-    configuration et non ceux réellement prélevés. Ces quatre biais vont tous dans le sens optimiste.
-    Surtout : ces 400 jours sont <em>une</em> réalisation du marché, pas la distribution des futurs possibles.
-    Un réglage qui gagne ici n'est pas un réglage qui gagnera.</p>
-  <p><b>Pourquoi cinq minutes et pas une heure.</b> Le moteur ne connaît d'une bougie que son ouverture, son
-    haut, son bas et sa clôture. Il doit deviner dans quel ordre le prix les a parcourus, et cette convention
-    décide seule si un achat se déclenche avant une vente. Rejoué à l'heure, un réglage à objectif 0,5 % rendait
-    +6,65 % ; rejoué à cinq minutes, -0,56 %. La totalité de son gain était une invention. Les réglages à
-    objectif 2 % ou 3 %, eux, ne bougent que de trois dixièmes de point d'une résolution à l'autre.</p>
-  <p>Les ordres d'achat sont des ordres limites : ils sont exécutés à leur prix exact, sans glissement,
-    au tarif maker. Dans une bougie baissière, le haut est visité avant le bas, ce qui interdit de revendre
-    dans l'heure un achat fait plus bas — la convention la moins flatteuse a été retenue à dessein.</p>
+    configuration. Ces quatre biais vont tous dans le sens optimiste. Surtout : ces 400 jours sont
+    <em>une</em> réalisation du marché, pas la distribution des futurs possibles. Un réglage qui gagne
+    ici n'est pas un réglage qui gagnera.</p>
+  <p><b>Pourquoi cinq minutes et pas une heure.</b> Le moteur ne connaît d'une bougie que son ouverture,
+    son haut, son bas et sa clôture. Il doit deviner dans quel ordre le prix les a parcourus, et cette
+    convention décide seule si un achat se déclenche avant une vente. Rejoué à l'heure, un réglage à
+    objectif 0,5 % rendait +6,65 % ; à cinq minutes, −0,56 %. La simulation tourne donc sur des bougies
+    de cinq minutes. Le chandelier, lui, s'affiche à l'heure et au-dessus : une bougie longue est
+    exactement la somme des courtes qu'elle contient, et 400 jours de cinq minutes ne tiendraient pas
+    dans une page.</p>
+  <p><b>Les ordres.</b> Les achats sont des ordres limites, exécutés à leur prix exact au tarif maker
+    de 0,10 %. Une sortie déclenchée par un stop part au marché, au tarif taker de 0,15 %, glissement
+    compris. Aucun aller-retour bouclé dans la bougie de son achat n'est compté : rien dans les données
+    ne peut le prouver.</p>
 </footer>
 
 <div id="bulle" role="status" aria-live="polite"></div>
@@ -230,45 +283,30 @@ const h = (t, a = {}, ...kids) => {
     if (k === "class") n.className = a[k];
     else if (k === "html") n.innerHTML = a[k];
     else if (k.startsWith("on")) n.addEventListener(k.slice(2), a[k]);
-    else n.setAttribute(k, a[k]);
+    else if (a[k] !== null && a[k] !== undefined) n.setAttribute(k, a[k]);
   }
   for (const c of kids) if (c != null) n.append(c.nodeType ? c : String(c));
   return n;
 };
 const dateDe = i => new Date(T0 + i * HEURE);
 const jj = i => dateDe(i).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit" });
-const jjh = i => dateDe(i).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })
-  + " " + String(dateDe(i).getUTCHours()).padStart(2, "0") + "h";
-const eur = (v, d = 2) => v.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d }) + " €";
-const pct = (v, d = 1) => (v * 100).toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d }) + " %";
+const jjc = i => dateDe(i).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+const jjh = i => jjc(i) + " " + String(dateDe(i).getUTCHours()).padStart(2, "0") + "h";
+const dec = v => v >= 1000 ? 2 : v >= 10 ? 2 : v >= 1 ? 3 : 4;
+const nb = (v, d) => v.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const eur = (v, d) => nb(v, d === undefined ? dec(v) : d) + " €";
+const pct = (v, d = 1) => nb(v * 100, d) + " %";
 const sgn = (v, d = 1) => (v >= 0 ? "+" : "") + pct(v, d);
-const duree = hh => hh < 48 ? `${Math.round(hh)} h` : hh < 24 * 90 ? `${Math.round(hh / 24)} j` : `${(hh / 24 / 30.4).toFixed(1)} mois`;
+const duree = hh => hh < 48 ? `${Math.round(hh)} h` : hh < 24 * 90 ? `${Math.round(hh / 24)} j`
+  : `${(hh / 24 / 30.4).toFixed(1)} mois`;
+const compact = v => v >= 1e9 ? (v / 1e9).toFixed(1) + " Md" : v >= 1e6 ? (v / 1e6).toFixed(1) + " M"
+  : v >= 1e3 ? (v / 1e3).toFixed(1) + " k" : nb(v, 1);
 
-/** Valeur d'une serie en escalier a l'indice i. Les series de reference, de
- *  revient et de sortie ne sont exportees qu'a leurs marches : on retrouve la
- *  valeur en vigueur par dichotomie. */
+/** Valeur d'une serie en escalier a l'indice i, par dichotomie. */
 function marche(serie, i) {
   let a = 0, b = serie.length - 1, r = null;
   while (a <= b) { const m = (a + b) >> 1; if (serie[m][0] <= i) { r = serie[m][1]; a = m + 1; } else b = m - 1; }
   return r;
-}
-
-/** Reduit une serie dense a deux points par colonne de pixels, le minimum et
- *  le maximum, dans l'ordre du temps. Une decimation par simple pas ferait
- *  disparaitre les meches, donc les creux qui declenchent les achats. */
-function decimer(vals, i0, i1, colonnes) {
-  const n = i1 - i0 + 1, pas = n / colonnes;
-  if (pas <= 1.5) { const o = []; for (let i = i0; i <= i1; i++) o.push([i, vals[i]]); return o; }
-  const out = [];
-  for (let c = 0; c < colonnes; c++) {
-    const a = i0 + Math.floor(c * pas), b = Math.min(i1, i0 + Math.floor((c + 1) * pas) - 1);
-    if (b < a) continue;
-    let iMin = a, iMax = a;
-    for (let i = a; i <= b; i++) { if (vals[i] < vals[iMin]) iMin = i; if (vals[i] > vals[iMax]) iMax = i; }
-    const [p, q] = iMin < iMax ? [iMin, iMax] : [iMax, iMin];
-    out.push([p, vals[p]]); if (q !== p) out.push([q, vals[q]]);
-  }
-  return out;
 }
 
 const ticksJolis = (lo, hi, n = 5) => {
@@ -284,30 +322,359 @@ const bulle = document.getElementById("bulle");
 function montre(evt, html) {
   bulle.innerHTML = html; bulle.style.opacity = "1";
   const r = bulle.getBoundingClientRect();
-  let x = evt.clientX + 14, y = evt.clientY + 14;
-  if (x + r.width > innerWidth - 8) x = evt.clientX - r.width - 14;
-  if (y + r.height > innerHeight - 8) y = evt.clientY - r.height - 14;
+  let x = evt.clientX + 16, y = evt.clientY + 16;
+  if (x + r.width > innerWidth - 8) x = evt.clientX - r.width - 16;
+  if (y + r.height > innerHeight - 8) y = evt.clientY - r.height - 16;
   bulle.style.left = Math.max(8, x) + "px"; bulle.style.top = Math.max(8, y) + "px";
 }
 const cache = () => { bulle.style.opacity = "0"; };
+let epingle = null;
 function survol(node, html) {
-  node.addEventListener("pointerenter", e => montre(e, html));
-  node.addEventListener("pointermove", e => montre(e, html));
-  node.addEventListener("pointerleave", cache);
-  node.style.cursor = "crosshair";
+  node.addEventListener("pointerenter", e => { if (!epingle) montre(e, html); });
+  node.addEventListener("pointermove", e => { if (!epingle) montre(e, html); });
+  node.addEventListener("pointerleave", () => { if (!epingle) cache(); });
+  //  Au doigt il n'y a pas de survol : sans ce clic, aucune valeur de la page
+  //  n'etait accessible sur telephone. L'infobulle reste alors epinglee jusqu'au
+  //  prochain appui ailleurs.
+  node.addEventListener("click", e => {
+    e.stopPropagation(); epingle = node; montre(e, html);
+  });
+  node.style.cursor = "pointer";
 }
+addEventListener("click", () => { if (epingle) { epingle = null; cache(); } });
 addEventListener("scroll", cache, { passive: true });
 
-/* ------------------------------------------------------------------ etat */
-let paire = D.meta.paires[0];
-//  les reglages arrivent deja classes par gain pur decroissant : on ouvre donc
-//  sur le premier, et l'ordre de la liste porte lui-meme l'information
+/* ==================================================================== TOILE
+   Le defaut le plus couteux de la version precedente : un viewBox fixe de 1160
+   unites affiche en width:100%. Des que le conteneur etait plus etroit, tout le
+   dessin retrecissait, et le texte ecrit en 10 unites finissait a deux pixels.
+   Une Toile mesure son conteneur et dessine a sa taille REELLE : une unite du
+   dessin vaut un pixel a l'ecran, donc une etiquette de 11 px fait 11 px a
+   toute largeur. Le redessin est declenche par ResizeObserver, ce qui couvre
+   aussi bien la rotation d'un telephone que l'ouverture d'un panneau. */
+class Toile {
+  constructor(parent, hauteur, dessiner) {
+    this.hauteur = hauteur;               // (largeur) -> hauteur en pixels
+    this.dessiner = dessiner;             // (svg, largeur, hauteur) -> void
+    this.el = parent.classList && parent.classList.contains("toile")
+      ? parent : h("div", { class: "toile" });
+    if (this.el !== parent) parent.appendChild(this.el);
+    this.svg = el("svg", {}, this.el);
+    this.l = 0;
+    //  Trois declencheurs plutot qu'un. ResizeObserver couvre le cas general,
+    //  y compris un panneau qui s'ouvre a cote ; mais il n'existe pas partout et
+    //  ne fire pas dans tous les moteurs. L'evenement de fenetre rattrape la
+    //  rotation d'un telephone, et les deux passes differees rattrapent une
+    //  premiere mesure prise avant que la mise en page ou les polices ne soient
+    //  posees — le dessin serait alors fige a la largeur de repli.
+    this.ro = new ResizeObserver(() => this.rendre());
+    this.ro.observe(this.el);
+    this.surFenetre = () => this.rendre();
+    addEventListener("resize", this.surFenetre, { passive: true });
+    addEventListener("orientationchange", this.surFenetre, { passive: true });
+    this.rendre();
+    requestAnimationFrame(() => this.rendre());
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.rendre());
+  }
+  detruire() {
+    this.ro.disconnect();
+    removeEventListener("resize", this.surFenetre);
+    removeEventListener("orientationchange", this.surFenetre);
+  }
+  rendre(force) {
+    const l = Math.max(200, Math.round(this.el.clientWidth || 0));
+    if (!l) return;
+    if (!force && l === this.l && this.h === Math.round(this.hauteur(l))) return;
+    const ht = Math.round(this.hauteur(l));
+    this.l = l; this.h = ht;
+    this.svg.setAttribute("width", l);
+    this.svg.setAttribute("height", ht);
+    this.svg.setAttribute("viewBox", `0 0 ${l} ${ht}`);
+    this.svg.replaceChildren();
+    this.dessiner(this.svg, l, ht);
+  }
+}
+
+/* ------------------------------------------------------- agregation OHLC
+   Une bougie de n heures est exactement la somme des n bougies horaires
+   qu'elle contient : ouverture de la premiere, haut le plus haut, bas le plus
+   bas, cloture de la derniere, volumes additionnes. Agreger dans le navigateur
+   evite d'exporter six series pour la meme information. */
+const AGREG = new Map();
+function agreger(sym, n) {
+  const cle = sym + ":" + n;
+  if (AGREG.has(cle)) return AGREG.get(cle);
+  const P = D.paires[sym], out = [];
+  for (let i = 0; i < NH; i += n) {
+    const j = Math.min(NH, i + n);
+    let hi = P.haut[i], lo = P.bas[i], v = 0;
+    for (let k = i; k < j; k++) {
+      if (P.haut[k] > hi) hi = P.haut[k];
+      if (P.bas[k] < lo) lo = P.bas[k];
+      v += P.vol[k];
+    }
+    out.push({ i, o: P.ouv[i], h: hi, l: lo, c: P.close[j - 1], v });
+  }
+  AGREG.set(cle, out);
+  return out;
+}
+const moyenne = (bougies, n) => {
+  const out = new Array(bougies.length).fill(null);
+  let s = 0;
+  for (let k = 0; k < bougies.length; k++) {
+    s += bougies[k].c;
+    if (k >= n) s -= bougies[k - n].c;
+    if (k >= n - 1) out[k] = s / n;
+  }
+  return out;
+};
+
+/* ================================================================== MARCHE */
+const UNITES = [["1 h", 1], ["4 h", 4], ["12 h", 12], ["1 J", 24], ["3 J", 72], ["1 S", 168]];
+const PORTEES = [["7 J", 24 * 7], ["1 M", 24 * 30], ["3 M", 24 * 91], ["1 A", 24 * 365], ["Tout", NH]];
+const M = {
+  paire: D.meta.paires[0],
+  unite: 24,
+  h0: 0, h1: NH - 1,                    // fenetre visible, en indices horaires
+  calques: { ma: true, vol: true, ordres: true },
+  croix: null,
+};
+
+/** L'unite qui donne un nombre de bougies lisible pour la fenetre demandee :
+ *  ni des batonnets d'un pixel, ni douze bougies perdues dans la largeur. */
+function uniteAuto(heures) {
+  const vise = 220;
+  let best = UNITES[0][1];
+  for (const [, n] of UNITES) if (Math.abs(heures / n - vise) < Math.abs(heures / best - vise)) best = n;
+  return best;
+}
+const bornerVue = () => {
+  const span = Math.max(M.unite * 12, Math.min(NH, M.h1 - M.h0));
+  M.h0 = Math.max(0, Math.min(NH - 1 - span, M.h0));
+  M.h1 = Math.min(NH - 1, M.h0 + span);
+};
+
+function dessinerMarche(svg, W, H) {
+  const MR = 66, MB = 24, MT = 8;
+  const bougies = agreger(M.paire, M.unite);
+  const g0 = Math.max(0, Math.floor(M.h0 / M.unite));
+  const g1 = Math.min(bougies.length - 1, Math.ceil(M.h1 / M.unite));
+  const vis = bougies.slice(g0, g1 + 1);
+  if (!vis.length) return;
+
+  const hVol = M.calques.vol ? Math.round((H - MT - MB) * 0.2) : 0;
+  const hPrix = H - MT - MB - hVol;
+  const iw = W - MR;
+  let lo = Infinity, hi = -Infinity, vmax = 0;
+  for (const b of vis) { if (b.l < lo) lo = b.l; if (b.h > hi) hi = b.h; if (b.v > vmax) vmax = b.v; }
+  const pad = (hi - lo) * .06 || 1; lo -= pad; hi += pad;
+  const pas = iw / vis.length;
+  const X = k => (k + .5) * pas;                          // centre de la bougie k
+  const Y = v => MT + (1 - (v - lo) / (hi - lo)) * hPrix;
+  const YV = v => MT + hPrix + hVol - (vmax ? v / vmax : 0) * hVol;
+  M.geo = { W, H, MR, MB, MT, hPrix, hVol, iw, pas, g0, vis, X, Y, lo, hi };
+
+  //  grille et axe des prix, a DROITE : c'est la convention des interfaces de
+  //  marche, et elle laisse le dernier prix aligne avec son etiquette
+  for (const v of ticksJolis(lo, hi, Math.max(3, Math.round(hPrix / 55)))) {
+    el("line", { x1: 0, x2: iw, y1: Y(v), y2: Y(v), class: "axe" }, svg);
+    el("text", { x: iw + 6, y: Y(v) + 4, class: "tick" }, svg).textContent =
+      v >= 1000 ? nb(v, 0) : nb(v, v < 10 ? 2 : 1);
+  }
+  const nT = Math.max(2, Math.floor(iw / 92));
+  for (let k = 0; k < vis.length; k += Math.max(1, Math.ceil(vis.length / nT))) {
+    el("line", { x1: X(k), x2: X(k), y1: MT, y2: MT + hPrix + hVol, class: "axe" }, svg);
+    el("text", { x: X(k), y: H - 8, "text-anchor": "middle", class: "tick" }, svg)
+      .textContent = M.unite >= 24 ? jj(vis[k].i) : jjh(vis[k].i);
+  }
+
+  //  les periodes ou de l'argent est immobilise, DERRIERE les chandeliers :
+  //  dessinees plus tard elles masqueraient les bougies qu'elles doivent situer
+  if (M.calques.ordres) {
+    for (const [a, b] of S().segments) {
+      if (b < M.h0 || a > M.h1) continue;
+      const xa = X(Math.max(0, Math.floor(a / M.unite) - g0));
+      const xb = X(Math.min(vis.length - 1, Math.floor(b / M.unite) - g0));
+      el("rect", { x: xa - pas / 2, y: MT, width: Math.max(1, xb - xa + pas),
+        height: hPrix, class: "bande-bloc" }, svg);
+    }
+  }
+
+  //  volume, sous les prix : meme axe des temps, echelle propre
+  if (M.calques.vol) {
+    const gv = el("g", {}, svg);
+    for (let k = 0; k < vis.length; k++) {
+      const b = vis[k], hh = MT + hPrix + hVol - YV(b.v);
+      el("rect", { x: X(k) - pas * .35, y: YV(b.v), width: Math.max(.6, pas * .7),
+        height: Math.max(.5, hh), fill: b.c >= b.o ? "var(--hausse)" : "var(--baisse)",
+        opacity: .35 }, gv);
+    }
+    el("line", { x1: 0, x2: iw, y1: MT + hPrix, y2: MT + hPrix, class: "axe-fort" }, svg);
+    el("text", { x: 4, y: MT + hPrix + 12, class: "tick" }, svg).textContent = "volume";
+  }
+
+  //  chandeliers : corps du plus haut au plus bas de (ouverture, cloture),
+  //  meche du bas au haut. Sous un pixel de large, le corps devient un trait :
+  //  on ne masque pas la densite, on la laisse se voir.
+  const gc = el("g", {}, svg);
+  const mince = pas < 2.5;
+  for (let k = 0; k < vis.length; k++) {
+    const b = vis[k], monte = b.c >= b.o;
+    const col = monte ? "var(--hausse)" : "var(--baisse)";
+    el("line", { x1: X(k), x2: X(k), y1: Y(b.h), y2: Y(b.l), stroke: col,
+      "stroke-width": mince ? Math.max(.7, pas * .8) : 1 }, gc);
+    if (!mince) {
+      const y = Y(Math.max(b.o, b.c)), hh = Math.max(1, Math.abs(Y(b.o) - Y(b.c)));
+      el("rect", { x: X(k) - pas * .35, y, width: pas * .7, height: hh, fill: col }, gc);
+    }
+  }
+
+  //  moyennes mobiles, calculees sur la serie agregee visible
+  if (M.calques.ma) {
+    for (const [n, coul, larg] of [[7, "var(--vente)", 1.2], [25, "var(--achat)", 1.4]]) {
+      const ma = moyenne(bougies, n);
+      let d = "", ouvert = false;
+      for (let k = 0; k < vis.length; k++) {
+        const v = ma[g0 + k];
+        if (v == null) { ouvert = false; continue; }
+        d += (ouvert ? "L" : "M") + X(k).toFixed(1) + " " + Y(v).toFixed(1) + " ";
+        ouvert = true;
+      }
+      if (d) el("path", { d, fill: "none", stroke: coul, "stroke-width": larg, opacity: .85 }, svg);
+    }
+  }
+
+  //  les ordres du reglage selectionne, poses sur le chandelier
+  if (M.calques.ordres) {
+    const s = S(), go = el("g", {}, svg);
+    const mises = R().mises_pct, mMax = Math.max(...mises);
+    for (const [i, genre, prix, pal, euros, revient, gain] of s.journal) {
+      if (i < M.h0 || i > M.h1 || genre > 1) continue;
+      const k = Math.floor(i / M.unite) - g0;
+      if (k < 0 || k >= vis.length) continue;
+      const x = X(k), y = Y(prix);
+      if (y < MT - 4 || y > MT + hPrix + 4) continue;
+      const t = 4 + 3.5 * Math.sqrt(euros / (mMax * D.meta.budget));
+      const n = genre === 0
+        ? el("path", { d: `M${x} ${y + t}L${x + t} ${y - t * .6}L${x - t} ${y - t * .6}Z`,
+            class: "m-achat", stroke: "var(--surface)", "stroke-width": .7 }, go)
+        : el("path", { d: `M${x} ${y - t}L${x + t} ${y + t * .6}L${x - t} ${y + t * .6}Z`,
+            class: "m-vente", stroke: "var(--surface)", "stroke-width": .7 }, go);
+      survol(n, genre === 0
+        ? `<b>Achat · barreau ${pal + 1}</b><br><span class="t">${jjh(i)}</span><br>
+           ${eur(euros, 2)} <span class="t">à</span> ${eur(prix)}<br>
+           <span class="t">prix de revient après :</span> ${eur(revient)}`
+        : `<b>Vente du lot entier</b><br><span class="t">${jjh(i)}</span><br>
+           ${eur(euros, 2)} <span class="t">reçus, gain</span> <b>${eur(gain, 2)}</b><br>
+           <span class="t">revient</span> ${eur(revient)} <span class="t">→</span> ${eur(prix)}`);
+    }
+  }
+
+  //  dernier prix de la fenetre, sur l'axe : le reperage le plus utilise
+  const der = vis[vis.length - 1];
+  el("line", { x1: 0, x2: iw, y1: Y(der.c), y2: Y(der.c), stroke: "var(--ink-3)",
+    "stroke-width": 1, "stroke-dasharray": "4 3", opacity: .8 }, svg);
+  const bg = el("rect", { x: iw + 1, y: Y(der.c) - 9, width: MR - 2, height: 18,
+    fill: der.c >= der.o ? "var(--hausse)" : "var(--baisse)", rx: 2 }, svg);
+  el("text", { x: iw + 6, y: Y(der.c) + 4, fill: "#fff",
+    style: "font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600" }, svg)
+    .textContent = der.c >= 1000 ? nb(der.c, 0) : nb(der.c, 2);
+
+  M.gCroix = el("g", { "pointer-events": "none" }, svg);
+}
+
+/* ------------------------------------------------- reticule et lecture OHLC */
+function croixSur(evt) {
+  const g = M.geo; if (!g || !M.gCroix) return;
+  const r = M.toile.svg.getBoundingClientRect();
+  const x = evt.clientX - r.left, y = evt.clientY - r.top;
+  M.gCroix.replaceChildren();
+  if (x < 0 || x > g.iw || y < 0 || y > g.H) { cache(); return; }
+  const k = Math.max(0, Math.min(g.vis.length - 1, Math.floor(x / g.pas)));
+  const b = g.vis[k];
+  el("line", { x1: g.X(k), x2: g.X(k), y1: g.MT, y2: g.H - g.MB,
+    stroke: "var(--ink-3)", "stroke-width": 1, "stroke-dasharray": "3 3" }, M.gCroix);
+  el("line", { x1: 0, x2: g.iw, y1: y, y2: y,
+    stroke: "var(--ink-3)", "stroke-width": 1, "stroke-dasharray": "3 3" }, M.gCroix);
+  const prix = g.lo + (1 - (y - g.MT) / g.hPrix) * (g.hi - g.lo);
+  if (y >= g.MT && y <= g.MT + g.hPrix) {
+    el("rect", { x: g.iw + 1, y: y - 9, width: g.MR - 2, height: 18,
+      fill: "var(--ink-2)", rx: 2 }, M.gCroix);
+    el("text", { x: g.iw + 6, y: y + 4, fill: "var(--surface)",
+      style: "font-family:'IBM Plex Mono',monospace;font-size:11px" }, M.gCroix)
+      .textContent = prix >= 1000 ? nb(prix, 0) : nb(prix, 2);
+  }
+  const v = b.c >= b.o ? "haut" : "bas";
+  montre(evt, `<b>${M.unite >= 24 ? jj(b.i) : jjh(b.i)}</b>
+    <span class="t">· ${UNITES.find(u => u[1] === M.unite)[0]}</span><br>
+    <span class="t">O</span> ${nb(b.o, dec(b.o))} <span class="t">H</span> ${nb(b.h, dec(b.h))}<br>
+    <span class="t">B</span> ${nb(b.l, dec(b.l))} <span class="t">C</span>
+      <b class="${v}">${nb(b.c, dec(b.c))}</b><br>
+    <span class="t">variation</span> <b class="${v}">${sgn(b.c / b.o - 1, 2)}</b><br>
+    <span class="t">volume</span> ${compact(b.v)}`);
+}
+
+/* --------------------------------------------------- zoom, deplacement, doigt */
+function brancherGestes(toile) {
+  const n = toile.el;
+  let glisse = null, pointeurs = new Map(), ecart0 = 0, span0 = 0, centre0 = 0;
+  let depart = null;
+  n.addEventListener("pointerdown", e => {
+    n.setPointerCapture(e.pointerId);
+    pointeurs.set(e.pointerId, e.clientX);
+    depart = { x: e.clientX, y: e.clientY };
+    if (pointeurs.size === 2) {
+      const [a, b] = [...pointeurs.values()];
+      ecart0 = Math.abs(a - b) || 1; span0 = M.h1 - M.h0; centre0 = (M.h0 + M.h1) / 2;
+      glisse = null;
+    } else glisse = { x: e.clientX, h0: M.h0, h1: M.h1 };
+  });
+  n.addEventListener("pointermove", e => {
+    if (pointeurs.has(e.pointerId)) pointeurs.set(e.pointerId, e.clientX);
+    if (pointeurs.size === 2) {
+      const [a, b] = [...pointeurs.values()];
+      const f = ecart0 / (Math.abs(a - b) || 1);
+      const span = Math.max(M.unite * 12, Math.min(NH, Math.round(span0 * f)));
+      M.h0 = Math.round(centre0 - span / 2); M.h1 = M.h0 + span;
+      bornerVue(); toile.rendre(true); return;
+    }
+    if (glisse) {
+      const g = M.geo; if (!g) return;
+      const dh = Math.round((glisse.x - e.clientX) / g.pas) * M.unite;
+      const span = glisse.h1 - glisse.h0;
+      M.h0 = glisse.h0 + dh; M.h1 = M.h0 + span;
+      bornerVue(); toile.rendre(true);
+    } else croixSur(e);
+  });
+  const relacher = e => {
+    //  un appui bref n'est pas un deplacement : c'est une demande de lecture.
+    //  Sans cela, le reticule et l'encadre OHLC — la fonction la plus utile du
+    //  graphique — n'existaient tout simplement pas au doigt.
+    if (depart && Math.hypot(e.clientX - depart.x, e.clientY - depart.y) < 7) croixSur(e);
+    depart = null; pointeurs.delete(e.pointerId); glisse = null;
+  };
+  n.addEventListener("pointerup", relacher);
+  n.addEventListener("pointercancel", relacher);
+  n.addEventListener("pointerleave", () => { cache(); M.gCroix && M.gCroix.replaceChildren(); });
+  n.addEventListener("wheel", e => {
+    e.preventDefault();
+    const g = M.geo; if (!g) return;
+    const r = toile.svg.getBoundingClientRect();
+    const f = Math.max(0, Math.min(1, (e.clientX - r.left) / g.iw));
+    const span = M.h1 - M.h0;
+    const nouveau = Math.max(M.unite * 12, Math.min(NH, Math.round(span * (e.deltaY > 0 ? 1.25 : .8))));
+    const ancre = M.h0 + f * span;
+    M.h0 = Math.round(ancre - f * nouveau); M.h1 = M.h0 + nouveau;
+    bornerVue(); toile.rendre(true);
+  }, { passive: false });
+  n.addEventListener("dblclick", () => { M.h0 = 0; M.h1 = NH - 1; M.unite = uniteAuto(NH); majOutils(); });
+}
+
+/* ================================================================== ETAT */
 let iReg = 0;
 const R = () => D.reglages[iReg];
-const S = () => D.reglages[iReg].sims[paire];
+const S = () => D.reglages[iReg].sims[M.paire];
 
-/** Les chiffres derives, recalcules a chaque selection : jamais ecrits en dur
- *  dans le texte, pour qu'une legende ne puisse pas contredire son graphique. */
 function stats() {
   const s = S(), seg = s.segments;
   const heuresEng = seg.reduce((n, [a, b]) => n + (b - a + 1), 0);
@@ -316,562 +683,432 @@ function stats() {
   const pic = Math.max(...s.jours.engage_max);
   const gains = s.cycles.map(c => c[4]).sort((a, b) => b - a);
   const tot = gains.reduce((a, b) => a + b, 0);
-  const cinq = tot > 0 ? gains.slice(0, 5).reduce((a, b) => a + b, 0) / tot : 0;
-  const jourAband = s.jours.abandon.reduce((a, b) => a + b, 0);
   return {
     perf: s.resume.perf_pct, cycles: s.cycles.length, abandons: s.resume.abandons,
-    parSemaine: s.cycles_par_semaine,
-    moy, pic, plusLong, engPct: heuresEng / NH, jourAband,
+    parSemaine: s.cycles_par_semaine, moy, pic, plusLong, engPct: heuresEng / NH,
     surEngage: moy > 1e-9 ? s.resume.perf_pct / moy : 0,
-    cinq, gainTot: tot, hold: D.paires[paire].hold_pct,
+    cinq: tot > 0 ? gains.slice(0, 5).reduce((a, b) => a + b, 0) / tot : 0,
+    hold: D.paires[M.paire].hold_pct,
+    jourAband: s.jours.abandon.reduce((a, b) => a + b, 0),
     medianeH: s.cycles.length ? s.cycles.map(c => c[1] - c[0]).sort((a, b) => a - b)[s.cycles.length >> 1] : 0,
     plusLongCycle: s.cycles.length ? Math.max(...s.cycles.map(c => c[1] - c[0])) : 0,
   };
 }
 
-/* ================================================================== PLANCHES */
+const TOILES = [];
+const cadreToile = (parent, hauteur, dessiner) => {
+  const t = new Toile(parent, hauteur, dessiner);
+  TOILES.push(t);
+  return t;
+};
+
 function planche(n, titre, question, corps, alire, legende) {
   const c = h("section", { class: "planche" });
-  const t = h("div", { class: "pl-tete" }, h("span", { class: "pl-num" }, "Planche " + n), h("h2", {}, titre));
-  c.append(t, h("p", { class: "pl-q" }, question));
-  c.append(corps);
+  c.append(h("div", { class: "pl-tete" }, h("span", { class: "pl-num" }, "Planche " + n),
+    h("h2", {}, titre)), h("p", { class: "pl-q" }, question), corps);
   if (legende) {
     const L = h("div", { class: "legende" });
-    for (const [cls, txt] of legende) L.append(h("span", { class: "cle" },
-      h("span", { class: "pastille " + cls }), txt));
-    corps.append(L);
+    for (const [cls, txt] of legende)
+      L.append(h("span", { class: "cle" }, h("span", { class: "pastille " + cls }), txt));
+    //  une legende n'a de sens que dans un cadre : posee sur une grille elle y
+    //  occuperait une cellule et laisserait un grand bloc gris sans contenu
+    const hote = corps.classList.contains("cadre") ? corps : corps.querySelector(".cadre");
+    if (hote) hote.append(L); else corps.after(h("div", { class: "legende cadre" }, ...L.childNodes));
   }
   if (alire) c.append(h("p", { class: "alire", html: alire }));
   return c;
 }
+const cadre = () => h("div", { class: "cadre" });
 
-const cadre = (vb, hAuto) => {
-  const d = h("div", { class: "cadre" });
-  const s = el("svg", { viewBox: vb, preserveAspectRatio: "xMidYMid meet", role: "img" });
-  d.appendChild(s); return [d, s];
-};
-
-/* ------------------------------------------------- 1 : le prix et les ordres */
-function plancheOrdres() {
-  const W = 1160, H = 430, ML = 62, MR = 16, MT = 16, MB = 30;
-  const [box, svg] = cadre(`0 0 ${W} ${H}`);
-  const s = S(), P = D.paires[paire], iw = W - ML - MR, ih = H - MT - MB;
-  const close = P.close;
-  let lo = Infinity, hi = -Infinity;
-  for (let i = 0; i < NH; i++) { if (close[i] < lo) lo = close[i]; if (close[i] > hi) hi = close[i]; }
-  const pad = (hi - lo) * .06; lo -= pad; hi += pad;
-  const X = i => ML + i / (NH - 1) * iw, Y = v => MT + (1 - (v - lo) / (hi - lo)) * ih;
-
-  for (const [a, b] of s.segments) {
-    const r = el("rect", { x: X(a), y: MT, width: Math.max(1.2, X(b) - X(a)), height: ih, class: "bande-bloc" }, svg);
-    survol(r, `<b>Capital immobilisé</b><br><span class="t">du</span> ${jj(a)} <span class="t">au</span> ${jj(b)}<br>
-      <span class="t">durée</span> ${duree(b - a + 1)}`);
-  }
-  for (const [v, y] of ticksJolis(lo, hi, 5).map(v => [v, Y(v)])) {
-    el("line", { x1: ML, x2: W - MR, y1: y, y2: y, class: "axe" }, svg);
-    el("text", { x: ML - 7, y: y + 3.5, "text-anchor": "end", class: "tick" }, svg)
-      .textContent = v >= 1000 ? Math.round(v / 1000) + "k" : v.toFixed(v < 10 ? 1 : 0);
-  }
-  const pas = Math.ceil(NH / 8 / 24) * 24;
-  for (let i = 0; i < NH; i += pas) {
-    el("line", { x1: X(i), x2: X(i), y1: MT, y2: MT + ih, class: "axe" }, svg);
-    el("text", { x: X(i), y: H - 10, "text-anchor": "middle", class: "tick" }, svg).textContent = jj(i);
-  }
-  const pts = decimer(close, 0, NH - 1, iw);
-  el("path", { class: "prix-l", d: pts.map((p, k) => (k ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(" ") }, svg);
-
-  const mises = R().mises_pct, mMax = Math.max(...mises);
-  const gAch = el("g", {}, svg), gVen = el("g", {}, svg);
-  for (const [i, g, prix, pal, euros, revient, gain] of s.journal) {
-    if (g === 0) {
-      const r = 1.5 + 4.2 * Math.sqrt(euros / (mMax * D.meta.budget));
-      const c = el("circle", { cx: X(i), cy: Y(prix), r: r.toFixed(2), class: "m-achat" }, gAch);
-      survol(c, `<b>Achat · barreau ${pal + 1}</b><br><span class="t">${jjh(i)}</span><br>
-        ${eur(euros)} <span class="t">à</span> ${eur(prix, prix < 10 ? 3 : 2)}<br>
-        <span class="t">prix de revient après :</span> ${eur(revient, revient < 10 ? 3 : 2)}`);
-    } else if (g === 1) {
-      const y = Y(prix), x = X(i);
-      const t = el("path", { d: `M${x} ${y - 5.4}L${x + 4.7} ${y + 2.7}L${x - 4.7} ${y + 2.7}Z`, class: "m-vente" }, gVen);
-      survol(t, `<b>Vente du lot entier</b><br><span class="t">${jjh(i)}</span><br>
-        ${eur(euros)} <span class="t">reçus, gain</span> <b>${eur(gain)}</b><br>
-        <span class="t">revient</span> ${eur(revient, revient < 10 ? 3 : 2)} <span class="t">→ sortie</span> ${eur(prix, prix < 10 ? 3 : 2)}`);
-    } else {
-      el("line", { x1: X(i), x2: X(i), y1: MT, y2: MT + ih, stroke: "var(--blocage)", "stroke-width": 1.4, "stroke-dasharray": "3 2" }, svg);
-    }
-  }
-  const st = stats(), s2 = S();
-  const nAch = s2.journal.filter(e => e[1] === 0).length;
-  return planche(1, "Où tombent les ordres",
-    `Chaque point est un ordre réellement exécuté. Le diamètre du point est la mise : les barreaux du haut sont des centimes, ceux du bas des centaines d'euros.`,
-    box,
-    `<b>${nAch} achats, ${st.cycles} ventes</b> sur ${D.meta.jours} jours. Les points s'agglutinent dans les creux et
-     disparaissent dans les montées : la grille n'achète que ce qui tombe. Les bandes rouges sont les périodes
-     où l'argent n'était pas ressorti — <b>la plus longue a duré ${duree(st.plusLong)}</b>.
-     Regardez la taille des points : les gros, ceux qui portent l'argent, sont rarissimes.`,
-    [["a-ach", "achat (aire ∝ mise)"], ["carre a-ven", "vente du lot entier"],
-     ["carre a-blo-clair", "capital immobilisé"], ["trait a-prix", "prix"]]);
-}
-
-/* --------------------------------------------- 2 : la mecanique d'un cycle */
+/* ------------------------------------------------- 1 : mecanique d'un cycle */
 let cycleChoisi = null;
 function plancheCycle() {
-  const s = S(), cy = s.cycles;
-  const wrap = h("div");
-  if (!cy.length) { wrap.append(h("div", { class: "cadre", style: "padding:2rem;color:var(--ink-3)" },
-    "Aucun cycle ne s'est bouclé avec ce réglage sur cette paire.")); return planche(2, "La mécanique d'un cycle",
-    "Comment le prix de sortie descend à la rencontre du marché.", wrap, null, null); }
-
-  const parPal = [...cy].sort((a, b) => b[2] - a[2]);
-  const parDur = [...cy].sort((a, b) => (b[1] - b[0]) - (a[1] - a[0]));
+  const s = S(), cy = s.cycles, wrap = h("div");
+  if (!cy.length) {
+    const c = cadre(); c.append(h("div", { style: "padding:2rem;color:var(--ink-3)" },
+      "Aucun cycle ne s'est bouclé avec ce réglage sur cette paire."));
+    return planche(1, "La mécanique d'un cycle", "—", c, null, null);
+  }
   const choix = [];
   const pousse = (c, nom) => { if (c && !choix.some(x => x.c === c)) choix.push({ c, nom }); };
-  pousse(parPal[0], "le plus profond");
-  pousse(parDur[0], "le plus long");
+  pousse([...cy].sort((a, b) => b[2] - a[2])[0], "le plus profond");
+  pousse([...cy].sort((a, b) => (b[1] - b[0]) - (a[1] - a[0]))[0], "le plus long");
   pousse([...cy].sort((a, b) => (a[1] - a[0]) - (b[1] - b[0]))[0], "le plus rapide");
   pousse([...cy].sort((a, b) => b[4] - a[4])[0], "le plus rentable");
   if (!cycleChoisi || !choix.some(x => x.c === cycleChoisi)) cycleChoisi = choix[0].c;
 
-  const puces = h("div", { class: "puces", style: "margin-bottom:.8rem" });
-  for (const { c, nom } of choix) {
-    const b = h("button", { class: "puce", type: "button", "aria-pressed": String(c === cycleChoisi),
+  const puces = h("div", { class: "puces" });
+  for (const { c, nom } of choix)
+    puces.append(h("button", { class: "puce", type: "button", "aria-pressed": String(c === cycleChoisi),
       onclick: () => { cycleChoisi = c; rendu(); } },
-      `${nom} · ${c[2]} palier${c[2] > 1 ? "s" : ""} · ${duree(c[1] - c[0])}`);
-    puces.append(b);
-  }
+      `${nom} · ${c[2]} palier${c[2] > 1 ? "s" : ""} · ${duree(c[1] - c[0])}`));
   wrap.append(puces);
 
   const c = cycleChoisi, marge = Math.max(6, Math.round((c[1] - c[0]) * .12));
   const i0 = Math.max(0, c[0] - marge), i1 = Math.min(NH - 1, c[1] + marge);
-  const W = 1160, H = 420, ML = 74, MR = 128, MT = 16, MB = 30;
-  const [box, svg] = cadre(`0 0 ${W} ${H}`);
-  const iw = W - ML - MR, ih = H - MT - MB, P = D.paires[paire];
-  const ref = marche(s.references, c[0]), rungs = R().prix_pct.map(p => ref * p);
-  const evs = s.journal.filter(e => e[0] >= i0 && e[0] <= i1);
-  let lo = Infinity, hi = -Infinity;
-  for (let i = i0; i <= i1; i++) { lo = Math.min(lo, P.bas[i]); hi = Math.max(hi, P.haut[i]); }
-  const touches = new Set(evs.filter(e => e[1] === 0).map(e => e[3]));
-  for (const k of touches) { lo = Math.min(lo, rungs[k]); hi = Math.max(hi, rungs[k]); }
-  const sortieFin = evs.find(e => e[1] === 1);
-  if (sortieFin) hi = Math.max(hi, sortieFin[2]);
-  const pad = (hi - lo) * .08 || 1; lo -= pad; hi += pad;
-  const X = i => ML + (i - i0) / Math.max(1, i1 - i0) * iw, Y = v => MT + (1 - (v - lo) / (hi - lo)) * ih;
-  const dec = v => v < 10 ? 3 : v < 1000 ? 2 : 0;
-
-  for (const v of ticksJolis(lo, hi, 5)) {
-    el("line", { x1: ML, x2: W - MR, y1: Y(v), y2: Y(v), class: "axe" }, svg);
-    el("text", { x: ML - 7, y: Y(v) + 3.5, "text-anchor": "end", class: "tick" }, svg)
-      .textContent = v >= 1000 ? Math.round(v / 1000) + "k" : v.toFixed(dec(v));
-  }
-  const nT = Math.min(7, i1 - i0), pasT = Math.max(1, Math.floor((i1 - i0) / nT));
-  for (let i = i0; i <= i1; i += pasT)
-    el("text", { x: X(i), y: H - 10, "text-anchor": "middle", class: "tick" }, svg)
-      .textContent = (i1 - i0) > 24 * 10 ? jj(i) : jjh(i);
-
-  rungs.forEach((p, k) => {
-    if (p < lo || p > hi) return;
-    const pris = touches.has(k);
-    el("line", { x1: ML, x2: W - MR, y1: Y(p), y2: Y(p), class: pris ? "rung-plein" : "rung" }, svg);
-    el("text", { x: W - MR + 6, y: Y(p) + 3.4, class: pris ? "etiq-f" : "etiq" }, svg)
-      .textContent = `${k + 1} · ${eur(R().mises_pct[k] * D.meta.budget)}`;
-  });
-
-  const pts = decimer(P.close, i0, i1, iw);
-  el("path", { class: "prix-l", d: pts.map((p, k) => (k ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(" ") }, svg);
-
-  const esc = (serie, cls) => {
-    let d = "", ouvert = false;
-    for (let i = i0; i <= i1; i++) {
-      const v = marche(serie, i);
-      if (!v) { ouvert = false; continue; }
-      d += (ouvert ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1) + " ";
-      ouvert = true;
+  const box = cadre(); wrap.append(box);
+  cadreToile(box, W => Math.max(260, Math.min(430, W * .38)), (svg, W, H) => {
+    const MG = 58, MD = Math.min(150, Math.max(96, W * .17)), MT = 10, MB = 24;
+    const P = D.paires[M.paire], iw = W - MG - MD, ih = H - MT - MB;
+    const ref = marche(s.references, c[0]), rungs = R().prix_pct.map(p => ref * p);
+    const evs = s.journal.filter(e => e[0] >= i0 && e[0] <= i1 && e[1] <= 1);
+    let lo = Infinity, hi = -Infinity;
+    for (let i = i0; i <= i1; i++) { lo = Math.min(lo, P.bas[i]); hi = Math.max(hi, P.haut[i]); }
+    const touches = new Set(evs.filter(e => e[1] === 0).map(e => e[3]));
+    for (const k of touches) { lo = Math.min(lo, rungs[k]); hi = Math.max(hi, rungs[k]); }
+    const vente = evs.find(e => e[1] === 1); if (vente) hi = Math.max(hi, vente[2]);
+    const pad = (hi - lo) * .08 || 1; lo -= pad; hi += pad;
+    const X = i => MG + (i - i0) / Math.max(1, i1 - i0) * iw;
+    const Y = v => MT + (1 - (v - lo) / (hi - lo)) * ih;
+    for (const v of ticksJolis(lo, hi, Math.max(3, Math.round(ih / 50)))) {
+      el("line", { x1: MG, x2: W - MD, y1: Y(v), y2: Y(v), class: "axe" }, svg);
+      el("text", { x: MG - 6, y: Y(v) + 4, "text-anchor": "end", class: "tick" }, svg)
+        .textContent = v >= 1000 ? nb(v, 0) : nb(v, dec(v));
     }
-    if (d) el("path", { class: cls, d }, svg);
-  };
-  esc(s.sorties, "sortie-l"); esc(s.revients, "revient-l");
-
-  for (const [i, g, prix, pal, euros, revient, gain] of evs) {
-    if (g === 0) {
-      const n = el("circle", { cx: X(i), cy: Y(prix), r: 4, class: "m-achat pt" }, svg);
-      survol(n, `<b>Achat · barreau ${pal + 1}</b><br><span class="t">${jjh(i)}</span><br>
-        ${eur(euros)} <span class="t">à</span> ${eur(prix, dec(prix))}<br>
-        <span class="t">revient après :</span> <b>${eur(revient, dec(revient))}</b>`);
-    } else if (g === 1) {
+    const nT = Math.max(2, Math.floor(iw / 88));
+    for (let k = 0; k <= nT; k++) {
+      const i = i0 + Math.round((i1 - i0) * k / nT);
+      el("text", { x: X(i), y: H - 8, "text-anchor": "middle", class: "tick" }, svg)
+        .textContent = (i1 - i0) > 24 * 10 ? jjc(i) : jjh(i);
+    }
+    rungs.forEach((p, k) => {
+      if (p < lo || p > hi) return;
+      const pris = touches.has(k);
+      el("line", { x1: MG, x2: W - MD, y1: Y(p), y2: Y(p),
+        class: pris ? "rung-plein" : "rung" }, svg);
+      el("text", { x: W - MD + 6, y: Y(p) + 4, class: pris ? "etiq-f" : "etiq" }, svg)
+        .textContent = `${k + 1} · ${eur(R().mises_pct[k] * D.meta.budget, 0)}`;
+    });
+    let d = "";
+    for (let i = i0; i <= i1; i++) d += (i === i0 ? "M" : "L") + X(i).toFixed(1) + " " + Y(P.close[i]).toFixed(1);
+    el("path", { class: "prix-l", d }, svg);
+    const esc = (serie, cls) => {
+      let dd = "", ouvert = false;
+      for (let i = i0; i <= i1; i++) {
+        const v = marche(serie, i);
+        if (!v) { ouvert = false; continue; }
+        dd += (ouvert ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1) + " ";
+        ouvert = true;
+      }
+      if (dd) el("path", { class: cls, d: dd }, svg);
+    };
+    esc(s.sorties, "sortie-l"); esc(s.revients, "revient-l");
+    for (const [i, genre, prix, pal, euros, revient, gain] of evs) {
       const x = X(i), y = Y(prix);
-      const n = el("path", { d: `M${x} ${y - 7}L${x + 6} ${y + 3.5}L${x - 6} ${y + 3.5}Z`, class: "m-vente pt" }, svg);
-      survol(n, `<b>Vente du lot entier</b><br><span class="t">${jjh(i)}</span><br>
-        <span class="t">revient</span> ${eur(revient, dec(revient))} <span class="t">→ sortie</span> ${eur(prix, dec(prix))}<br>
-        <b>${eur(gain)}</b> <span class="t">soit</span> ${sgn(c[5], 2)}`);
+      const n = genre === 0
+        ? el("circle", { cx: x, cy: y, r: 4.5, class: "m-achat",
+            stroke: "var(--surface)", "stroke-width": 1 }, svg)
+        : el("path", { d: `M${x} ${y - 7}L${x + 6} ${y + 4}L${x - 6} ${y + 4}Z`,
+            class: "m-vente", stroke: "var(--surface)", "stroke-width": 1 }, svg);
+      survol(n, genre === 0
+        ? `<b>Achat · barreau ${pal + 1}</b><br><span class="t">${jjh(i)}</span><br>
+           ${eur(euros, 2)} <span class="t">à</span> ${eur(prix)}<br>
+           <span class="t">revient après :</span> <b>${eur(revient)}</b>`
+        : `<b>Vente du lot entier</b><br><span class="t">${jjh(i)}</span><br>
+           <span class="t">revient</span> ${eur(revient)} <span class="t">→ sortie</span> ${eur(prix)}<br>
+           <b>${eur(gain, 2)}</b> <span class="t">soit</span> ${sgn(c[5], 2)}`);
     }
-  }
-  wrap.append(box);
-  const remonte = sortieFin ? (sortieFin[2] / P.close[c[1]] - 1) : 0;
-  const bas = Math.min(...evs.filter(e => e[1] === 0).map(e => e[2]));
-  const rebondRequis = sortieFin ? sortieFin[2] / bas - 1 : 0;
-  return planche(2, "La mécanique d'un cycle",
+  });
+  const bas = Math.min(...s.journal.filter(e => e[1] === 0 && e[0] >= i0 && e[0] <= i1).map(e => e[2]));
+  const vente = s.journal.find(e => e[1] === 1 && e[0] >= i0 && e[0] <= i1);
+  return planche(1, "La mécanique d'un cycle",
     "Ce n'est pas le prix qui remonte vous chercher : c'est votre prix de sortie qui descend à sa rencontre.",
     wrap,
-    `Chaque achat plus bas tire le trait orange plein — le prix de revient — vers le bas, et avec lui le trait
-     pointillé, la sortie visée. Sur ce cycle, la vente s'est faite à ${eur(sortieFin ? sortieFin[2] : 0, dec(hi))},
-     <b>soit ${sgn(rebondRequis, 1)} au-dessus du plus bas acheté</b>, alors que le premier barreau était
-     ${eur(rungs[0], dec(rungs[0]))}. Il n'a jamais fallu que le cours revienne à son point de départ.
+    `Chaque achat plus bas tire le trait orange plein — le prix de revient — vers le bas, et avec lui
+     le pointillé, la sortie visée. ${vente ? `Sur ce cycle la vente s'est faite
+     <b>${sgn(vente[2] / bas - 1, 1)} au-dessus du plus bas acheté</b>, et non au prix de départ.` : ""}
      Les barreaux en trait plein ont été touchés, ceux en pointillé sont restés au carnet.`,
     [["a-ach", "achat"], ["a-ven", "vente"], ["trait a-ven", "prix de revient"], ["trait a-prix", "prix"]]);
 }
 
-/* --------------------------------------------------- 3 : ou dort l'argent */
+/* ------------------------------------------------------- 2 : ou dort l'argent */
 function plancheArgent() {
-  const W = 1160, H = 300, ML = 62, MR = 16, MT = 16, MB = 30;
-  const [box, svg] = cadre(`0 0 ${W} ${H}`);
-  const s = S(), j = s.jours.engage_max, n = j.length, iw = W - ML - MR, ih = H - MT - MB;
-  const X = d => ML + d / (n - 1) * iw, Y = f => MT + (1 - f) * ih;
-  for (const f of [0, .25, .5, .75, 1]) {
-    el("line", { x1: ML, x2: W - MR, y1: Y(f), y2: Y(f), class: f === 0 ? "axe-fort" : "axe" }, svg);
-    el("text", { x: ML - 7, y: Y(f) + 3.5, "text-anchor": "end", class: "tick" }, svg).textContent = (f * 100) + " %";
-  }
-  let d = `M${ML} ${Y(0)}`;
-  for (let k = 0; k < n; k++) d += `L${X(k).toFixed(1)} ${Y(j[k]).toFixed(1)}`;
-  d += `L${W - MR} ${Y(0)}Z`;
-  el("path", { d, class: "aire-eng" }, svg);
-  const st = stats();
-  el("line", { x1: ML, x2: W - MR, y1: Y(st.moy), y2: Y(st.moy), class: "ref-l" }, svg);
-  el("text", { x: ML + 6, y: Y(st.moy) - 5, class: "etiq-f" }, svg)
-    .textContent = `moyenne réelle : ${pct(st.moy, 2)}`;
-  for (let k = 0; k < n; k += Math.ceil(n / 8))
-    el("text", { x: X(k), y: H - 10, "text-anchor": "middle", class: "tick" }, svg).textContent = jj(k * 24);
-  const zone = el("rect", { x: ML, y: MT, width: iw, height: ih, fill: "transparent" }, svg);
-  zone.addEventListener("pointermove", e => {
-    const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * W;
-    const k = Math.max(0, Math.min(n - 1, Math.round((px - ML) / iw * (n - 1))));
-    montre(e, `<b>${jj(k * 24)}</b><br><span class="t">engagé (pic du jour)</span> ${pct(j[k], 2)}
-      <br><span class="t">soit</span> ${eur(j[k] * D.meta.budget)} <span class="t">sur</span> ${eur(D.meta.budget, 0)}
-      ${s.jours.abandon[k] ? '<br><b style="color:var(--blocage)">position abandonnée</b>' : ""}`);
+  const box = cadre(), s = S(), st = stats();
+  cadreToile(box, W => Math.max(200, Math.min(300, W * .26)), (svg, W, H) => {
+    const MG = 46, MD = 12, MT = 12, MB = 24;
+    const j = s.jours.engage_max, n = j.length, iw = W - MG - MD, ih = H - MT - MB;
+    const X = d => MG + d / (n - 1) * iw, Y = f => MT + (1 - f) * ih;
+    for (const f of [0, .25, .5, .75, 1]) {
+      el("line", { x1: MG, x2: W - MD, y1: Y(f), y2: Y(f), class: f === 0 ? "axe-fort" : "axe" }, svg);
+      el("text", { x: MG - 6, y: Y(f) + 4, "text-anchor": "end", class: "tick" }, svg)
+        .textContent = (f * 100) + " %";
+    }
+    let d = `M${MG} ${Y(0)}`;
+    for (let k = 0; k < n; k++) d += `L${X(k).toFixed(1)} ${Y(j[k]).toFixed(1)}`;
+    d += `L${W - MD} ${Y(0)}Z`;
+    el("path", { d, class: "aire-eng" }, svg);
+    el("line", { x1: MG, x2: W - MD, y1: Y(st.moy), y2: Y(st.moy), class: "ref-l" }, svg);
+    el("text", { x: MG + 6, y: Y(st.moy) - 5, class: "etiq-f" }, svg)
+      .textContent = `moyenne : ${pct(st.moy, 1)}`;
+    const nT = Math.max(2, Math.floor(iw / 88));
+    for (let k = 0; k <= nT; k++) {
+      const jour = Math.round((n - 1) * k / nT);
+      el("text", { x: X(jour), y: H - 8, "text-anchor": "middle", class: "tick" }, svg)
+        .textContent = jj(jour * 24);
+    }
+    const zone = el("rect", { x: MG, y: MT, width: iw, height: ih, fill: "transparent" }, svg);
+    zone.addEventListener("pointermove", e => {
+      const r = svg.getBoundingClientRect();
+      const k = Math.max(0, Math.min(n - 1, Math.round((e.clientX - r.left - MG) / iw * (n - 1))));
+      montre(e, `<b>${jj(k * 24)}</b><br><span class="t">engagé, pic du jour</span> ${pct(j[k], 1)}<br>
+        <span class="t">soit</span> ${eur(j[k] * D.meta.budget, 0)} <span class="t">sur</span>
+        ${eur(D.meta.budget, 0)}${s.jours.abandon[k] ? '<br><b style="color:var(--blocage)">abandonnée</b>' : ""}`);
+    });
+    zone.addEventListener("pointerleave", cache);
   });
-  zone.addEventListener("pointerleave", cache);
-  zone.style.cursor = "crosshair";
-
-  return planche(3, "Où dort l'argent",
+  return planche(2, "Où dort l'argent",
     "La part du budget réellement engagée, jour par jour. On affiche le pic de chaque journée, jamais la moyenne : une moyenne journalière effacerait précisément ce qu'il faut voir.",
     box,
-    `Le pic atteint <b>${pct(st.pic, 0)} du budget</b>, mais la moyenne sur les ${D.meta.jours} jours n'est que de
-     <b>${pct(st.moy, 2)}</b>. Voilà l'explication du rendement en apparence modeste : il est calculé sur un budget
-     qui reste presque toujours en caisse. Rapporté à l'argent réellement au travail, ce réglage rend
-     <b>${sgn(st.surEngage, 0)}</b>. Et il est impossible de réduire la réserve : il faut la totalité pour couvrir
-     le pic, même s'il ne survient qu'une fois.`,
+    `Le pic atteint <b>${pct(st.pic, 0)} du budget</b>, la moyenne sur les ${D.meta.jours} jours
+     <b>${pct(st.moy, 1)}</b>. Rapporté à l'argent réellement au travail, ce réglage rend
+     <b>${sgn(st.surEngage, 0)}</b>. Et la réserve ne peut pas être réduite : il en faut la totalité
+     pour couvrir le pic, même s'il ne survient qu'une fois.`,
     [["carre a-ach", "budget engagé"], ["trait a-gris", "moyenne sur la période"]]);
 }
 
-/* --------------------------------- 4 : l'echelle, et ce qu'elle engage vraiment */
+/* ------------------------------------------------------ 3 : l'echelle */
 function plancheEchelle() {
-  const s = S(), reg = R(), np = reg.paliers;
-  const grille = h("div", { class: "souscadre" });
-
-  const g1 = h("div"); g1.append(h("div", { class: "sous-t" }, "Mise posée sur chaque barreau, et le plancher de la plateforme"));
-  const W = 560, H = 260, ML = 30, MR = 66, MT = 8, MB = 30;
-  const s1 = el("svg", { viewBox: `0 0 ${W} ${H}` }); g1.append(s1);
-  const mises = reg.mises_pct.map(m => m * D.meta.budget);
-  const morts = new Set(reg.morts);
-  //  echelle logarithmique obligatoire : de 0,02 EUR a 545 EUR, soit un facteur
-  //  25 000, aucune echelle lineaire ne montre les deux bouts a la fois
-  const lo1 = Math.log10(Math.min(0.01, ...mises)), hi1 = Math.log10(Math.max(...mises) * 1.35);
-  const XL = v => ML + (Math.log10(Math.max(v, Math.pow(10, lo1))) - lo1) / (hi1 - lo1) * (W - ML - MR);
-  const bh = (H - MT - MB) / np;
-  for (let e = Math.ceil(lo1); e <= hi1; e++) {
-    el("line", { x1: XL(Math.pow(10, e)), x2: XL(Math.pow(10, e)), y1: MT, y2: H - MB, class: "axe" }, s1);
-    el("text", { x: XL(Math.pow(10, e)), y: H - MB + 12, "text-anchor": "middle", class: "tick" }, s1)
-      .textContent = Math.pow(10, e) < 1 ? Math.pow(10, e).toFixed(2) : Math.pow(10, e) + " €";
-  }
-  mises.forEach((m, k) => {
-    const mort = morts.has(k);
-    const r = el("rect", { x: ML, y: MT + k * bh + 1.5, width: Math.max(.8, XL(m) - ML), height: bh - 3,
-      class: "barre-m", opacity: mort ? .22 : 1 }, s1);
-    survol(r, `<b>Barreau ${k + 1}</b><br><span class="t">à</span> ${pct(1 - reg.prix_pct[k], 2)}
-      <span class="t">sous la référence</span><br>${eur(m)} <span class="t">soit</span> ${pct(m / D.meta.budget, 2)} <span class="t">du budget</span>
-      ${mort ? '<br><b style="color:var(--blocage)">sous le plancher : jamais posé</b>' : ""}`);
-    el("text", { x: ML - 5, y: MT + k * bh + bh / 2 + 3.5, "text-anchor": "end", class: "tick" }, s1).textContent = k + 1;
-    el("text", { x: XL(m) + 5, y: MT + k * bh + bh / 2 + 3.5, class: mort ? "tick" : "etiq-f" }, s1)
-      .textContent = m < 1 ? m.toFixed(2) + " €" : eur(m, 0);
+  const s = S(), reg = R(), np = reg.paliers, grille = h("div", { class: "souscadre" });
+  const g1 = h("div"); g1.append(h("div", { class: "sous-t" }, "Mise par barreau, et le plancher de la plateforme"));
+  cadreToile(g1, W => Math.max(180, 40 + np * 22), (svg, W, H) => {
+    const MG = 26, MD = 66, MT = 6, MB = 26;
+    const mises = reg.mises_pct.map(m => m * D.meta.budget), morts = new Set(reg.morts);
+    const lo1 = Math.log10(Math.min(0.01, ...mises)), hi1 = Math.log10(Math.max(...mises) * 1.3);
+    const XL = v => MG + (Math.log10(Math.max(v, Math.pow(10, lo1))) - lo1) / (hi1 - lo1) * (W - MG - MD);
+    const bh = (H - MT - MB) / np;
+    for (let e = Math.ceil(lo1); e <= hi1; e++) {
+      const v = Math.pow(10, e);
+      el("line", { x1: XL(v), x2: XL(v), y1: MT, y2: H - MB, class: "axe" }, svg);
+      el("text", { x: XL(v), y: H - MB + 13, "text-anchor": "middle", class: "tick" }, svg)
+        .textContent = v < 1 ? nb(v, 2) : nb(v, 0) + " €";
+    }
+    mises.forEach((m, k) => {
+      const mort = morts.has(k);
+      const r = el("rect", { x: MG, y: MT + k * bh + 1.5, width: Math.max(1, XL(m) - MG),
+        height: Math.max(2, bh - 3), class: "barre-m", opacity: mort ? .22 : 1 }, svg);
+      survol(r, `<b>Barreau ${k + 1}</b><br><span class="t">à</span> ${pct(1 - reg.prix_pct[k], 1)}
+        <span class="t">sous la référence</span><br>${eur(m, 2)}
+        ${mort ? '<br><b style="color:var(--blocage)">sous le plancher : jamais posé</b>' : ""}`);
+      el("text", { x: MG - 5, y: MT + k * bh + bh / 2 + 4, "text-anchor": "end", class: "tick" }, svg)
+        .textContent = k + 1;
+      el("text", { x: XL(m) + 5, y: MT + k * bh + bh / 2 + 4, class: mort ? "tick" : "etiq-f" }, svg)
+        .textContent = m < 1 ? nb(m, 2) + " €" : eur(m, 0);
+    });
+    el("line", { x1: XL(reg.mise_min), x2: XL(reg.mise_min), y1: MT, y2: H - MB,
+      stroke: "var(--blocage)", "stroke-width": 1.8 }, svg);
+    el("text", { x: XL(reg.mise_min) + 4, y: MT + 11, class: "etiq-f",
+      style: "fill:var(--blocage)" }, svg).textContent = `plancher ${eur(reg.mise_min, 0)}`;
   });
-  el("line", { x1: XL(reg.mise_min), x2: XL(reg.mise_min), y1: MT - 2, y2: H - MB + 2,
-    stroke: "var(--blocage)", "stroke-width": 1.8 }, s1);
-  el("text", { x: XL(reg.mise_min) + 4, y: MT + 8, class: "etiq-f", style: "fill:var(--blocage)" }, s1)
-    .textContent = `plancher ${eur(reg.mise_min, 0)}`;
-
-  const g2 = h("div"); g2.append(h("div", { class: "sous-t" }, "Combien de barreaux chaque cycle a-t-il touchés"));
-  const s2 = el("svg", { viewBox: `0 0 ${W} ${H}` }); g2.append(s2);
-  const comptes = new Array(np + 1).fill(0), argent = new Array(np + 1).fill(0);
-  for (const c of s.cycles) { comptes[c[2]]++; argent[c[2]] += c[4]; }
-  const cmax = Math.max(1, ...comptes.slice(1));
-  const bw = (W - ML - MR) / np;
-  for (let k = 1; k <= np; k++) {
-    const hh = comptes[k] / cmax * (H - MT - MB - 10);
-    const r = el("rect", { x: ML + (k - 1) * bw + 1.5, y: H - MB - hh, width: bw - 3, height: Math.max(0, hh), class: "barre-m" }, s2);
-    survol(r, `<b>${comptes[k]} cycle${comptes[k] > 1 ? "s" : ""} à ${k} palier${k > 1 ? "s" : ""}</b><br>
-      <span class="t">engagement</span> ${eur(reg.mises_pct.slice(0, k).reduce((a, b) => a + b, 0) * D.meta.budget)}<br>
-      <span class="t">gain cumulé</span> ${eur(argent[k])}`);
-    if (comptes[k]) el("text", { x: ML + (k - 1) * bw + bw / 2, y: H - MB - hh - 4, "text-anchor": "middle", class: "etiq" }, s2)
-      .textContent = comptes[k];
-    el("text", { x: ML + (k - 1) * bw + bw / 2, y: H - MB + 13, "text-anchor": "middle", class: "tick" }, s2).textContent = k;
-  }
-  el("line", { x1: ML, x2: W - MR, y1: H - MB, y2: H - MB, class: "axe-fort" }, s2);
-  el("text", { x: W - MR + 4, y: H - MB + 4, class: "tick" }, s2).textContent = "paliers";
+  const g2 = h("div"); g2.append(h("div", { class: "sous-t" }, "Barreaux touchés par cycle"));
+  cadreToile(g2, W => Math.max(180, 40 + np * 22), (svg, W, H) => {
+    const MG = 30, MD = 46, MT = 6, MB = 26;
+    const comptes = new Array(np + 1).fill(0), argent = new Array(np + 1).fill(0);
+    for (const c of s.cycles) { comptes[c[2]]++; argent[c[2]] += c[4]; }
+    const cmax = Math.max(1, ...comptes.slice(1)), bw = (W - MG - MD) / np;
+    for (let k = 1; k <= np; k++) {
+      const hh = comptes[k] / cmax * (H - MT - MB - 14);
+      const r = el("rect", { x: MG + (k - 1) * bw + 1.5, y: H - MB - hh,
+        width: Math.max(2, bw - 3), height: Math.max(0, hh), class: "barre-m" }, svg);
+      survol(r, `<b>${comptes[k]} cycle${comptes[k] > 1 ? "s" : ""} à ${k} palier${k > 1 ? "s" : ""}</b><br>
+        <span class="t">engagement</span> ${eur(reg.mises_pct.slice(0, k).reduce((a, b) => a + b, 0) * D.meta.budget, 0)}<br>
+        <span class="t">gain cumulé</span> ${eur(argent[k], 2)}`);
+      if (comptes[k]) el("text", { x: MG + (k - 1) * bw + bw / 2, y: H - MB - hh - 4,
+        "text-anchor": "middle", class: "etiq" }, svg).textContent = comptes[k];
+      el("text", { x: MG + (k - 1) * bw + bw / 2, y: H - MB + 14, "text-anchor": "middle",
+        class: "tick" }, svg).textContent = k;
+    }
+    el("line", { x1: MG, x2: W - MD, y1: H - MB, y2: H - MB, class: "axe-fort" }, svg);
+    el("text", { x: W - MD + 5, y: H - MB + 4, class: "tick" }, svg).textContent = "paliers";
+  });
   grille.append(g1, g2);
-
-  const st = stats(), vivants = np - reg.morts.length;
+  const vivants = np - reg.morts.length;
   const budgetMort = reg.morts.reduce((a, k) => a + reg.mises_pct[k], 0);
-  return planche(4, "L'échelle, et la moitié qui n'existe pas",
-    "Les mises suivent une progression géométrique. Le premier barreau est une poussière, le dernier porte plus de la moitié du budget — et tout ce qui est sous le plancher de la plateforme ne sera jamais placé.",
+  return planche(3, "L'échelle, et ce que le plancher en supprime",
+    "Les mises suivent une progression géométrique : le premier barreau est une poussière, le dernier porte la moitié du budget. Ce qui tombe sous le minimum de la plateforme n'est jamais placé.",
     grille,
-    `Le barreau du haut demande ${eur(reg.mises_pct[0] * D.meta.budget)}, celui du bas ${eur(reg.mises_pct[np - 1] * D.meta.budget)} :
-     un rapport de <b>1 à ${Math.round(reg.mises_pct[np - 1] / reg.mises_pct[0]).toLocaleString("fr-FR")}</b>.
-     Or aucune plateforme n'accepte un ordre de quelques centimes. Sur ce réglage,
-     <b>${reg.morts.length} barreaux sur ${np} sont morts</b> : il n'en reste que ${vivants}, et ils ne laissent au carnet
-     que ${pct(1 - budgetMort, 1)} du budget. L'échelle réellement posée est bien plus courte que celle du tableur —
-     c'est la première chose que les chiffres ne pouvaient pas dire.`,
-    [["carre a-ach", "barreau posé"], ["carre a-blo", "sous le plancher, jamais posé"]]);
+    `Le barreau du haut demande ${eur(reg.mises_pct[0] * D.meta.budget, 2)}, celui du bas
+     ${eur(reg.mises_pct[np - 1] * D.meta.budget, 0)} : un rapport de
+     <b>1 à ${Math.round(reg.mises_pct[np - 1] / reg.mises_pct[0]).toLocaleString("fr-FR")}</b>.
+     ${reg.morts.length
+       ? `<b>${reg.morts.length} barreaux sur ${np} sont morts</b> : il n'en reste que ${vivants},
+          et ils ne laissent au carnet que ${pct(1 - budgetMort, 1)} du budget.`
+       : `Ici <b>l'échelle entière est posable</b> : c'est ce que permet un faible nombre de paliers,
+          puisque les mises y sont plus grosses.`}`,
+    [["carre a-ach", "barreau posé"], ["carre a-blo", "sous le plancher"]]);
 }
 
-/* ------------------------------- 5 : le papier contre l'executable */
-function planchePlancher() {
-  const W = 1160, H = 400, ML = 232, MR = 118, MT = 30, MB = 40;
-  const [box, svg] = cadre(`0 0 ${W} ${H}`);
-  const lignes = D.reglages.map((reg, k) => {
-    const sim = reg.sims[paire], th = sim.planchers["0"];
-    return { k, reg, papier: th.perf_pct, reel: sim.resume.perf_pct,
-             cyPapier: th.cycles, cyReel: sim.cycles.length, morts: reg.morts.length };
-  }).sort((a, b) => b.reel - a.reel);
-  const vals = lignes.flatMap(l => [l.papier, l.reel]).concat([0, D.paires[paire].hold_pct]);
-  const lo = Math.min(...vals) - .04, hi = Math.max(...vals) + .04;
-  const iw = W - ML - MR, rh = (H - MT - MB) / lignes.length;
-  const X = v => ML + (v - lo) / (hi - lo) * iw;
-
-  for (const v of ticksJolis(lo, hi, 7)) {
-    el("line", { x1: X(v), x2: X(v), y1: MT - 8, y2: H - MB, class: Math.abs(v) < 1e-9 ? "axe-fort" : "axe" }, svg);
-    el("text", { x: X(v), y: H - MB + 14, "text-anchor": "middle", class: "tick" }, svg).textContent = sgn(v, 0);
-  }
-  const hold = D.paires[paire].hold_pct;
-  el("line", { x1: X(hold), x2: X(hold), y1: MT - 8, y2: H - MB, stroke: "var(--blocage)",
-    "stroke-width": 1.4, "stroke-dasharray": "5 3" }, svg);
-  el("text", { x: X(hold), y: MT - 14, "text-anchor": "middle", class: "etiq-f", style: "fill:var(--blocage)" }, svg)
-    .textContent = `ne rien faire : ${sgn(hold, 1)}`;
-
-  lignes.forEach((l, i) => {
-    const y = MT + i * rh + rh / 2, monte = l.reel > l.papier;
-    el("line", { x1: X(l.papier), x2: X(l.reel), y1: y, y2: y,
-      stroke: monte ? "var(--achat)" : "var(--blocage)", "stroke-width": 2, opacity: .5 }, svg);
-    el("circle", { cx: X(l.papier), cy: y, r: 4.5, fill: "var(--surface)",
-      stroke: "var(--ink-3)", "stroke-width": 1.6 }, svg);
-    const c = el("circle", { cx: X(l.reel), cy: y, r: 5.5,
-      fill: monte ? "var(--achat)" : "var(--blocage)",
-      stroke: l.k === iReg ? "var(--ink)" : "transparent", "stroke-width": 1.6 }, svg);
-    survol(c, `<b>${l.reg.nom}</b><br>
-      <span class="t">sur le papier</span> ${sgn(l.papier, 2)} <span class="t">en</span> ${l.cyPapier} <span class="t">cycles</span><br>
-      <span class="t">exécutable</span> <b>${sgn(l.reel, 2)}</b> <span class="t">en</span> ${l.cyReel} <span class="t">cycles</span><br>
-      <span class="t">${l.morts} barreaux sur ${l.reg.paliers} sous le plancher</span>`);
-    c.addEventListener("click", () => { iReg = l.k; document.getElementById("sel-reglage").value = String(l.k); rendu(); });
-    c.style.cursor = "pointer";
-    el("text", { x: ML - 12, y: y - 2, "text-anchor": "end", class: l.k === iReg ? "etiq-f" : "etiq" }, svg)
-      .textContent = l.reg.nom;
-    el("text", { x: ML - 12, y: y + 9, "text-anchor": "end", class: "tick" }, svg)
-      .textContent = `${l.cyPapier} → ${l.cyReel} cycles`;
-    el("text", { x: W - MR + 8, y: y + 3.5, class: "etiq" }, svg)
-      .textContent = `${l.morts}/${l.reg.paliers} barreaux morts`;
-  });
-  el("text", { x: ML, y: 14, class: "etiq" }, svg)
-    .textContent = "cercle creux : la stratégie sur le papier   ·   cercle plein : ce qui était réellement plaçable";
-
-  const moy = a => a.reduce((x, y) => x + y, 0) / a.length;
-  const chute = moy(lignes.map(l => l.papier)) - moy(lignes.map(l => l.reel));
-  const inverses = lignes.filter(l => (l.papier > 0) !== (l.reel > 0)).length;
-  const cyP = lignes.reduce((a, l) => a + l.cyPapier, 0), cyR = lignes.reduce((a, l) => a + l.cyReel, 0);
-  return planche(5, "Le papier contre l'exécutable",
-    "Le même rejeu, deux fois : une fois en autorisant les ordres de quelques centimes, une fois en les refusant comme le ferait la plateforme.",
-    box,
-    `Le classement se retourne. <b>${cyP} cycles deviennent ${cyR}</b> : les quatre cinquièmes des opérations
-     comptées n'auraient jamais pu être passées. ${inverses} réglages sur ${D.reglages.length} changent de signe —
-     et le sens du changement dépend entièrement de la progression des mises : plus le ratio est fort, plus le
-     haut de l'échelle passe sous le plancher, et plus le premier achat est repoussé vers le fond. C'est le
-     rappel le plus utile de cette page : un backtest qui ignore les contraintes d'exécution ne mesure pas la
-     stratégie, il mesure une fiction.`,
-    [["", "exécutable, en hausse"], ["a-blo", "exécutable, en baisse"], ["trait a-blo", "ne rien faire"]]);
-}
-
-/* --------------------------------------------- 6 : la duree vecue des cycles */
+/* --------------------------------------------------- 4 : duree des cycles */
 function plancheDuree() {
-  const s = S(); const cy = s.cycles;
-  const W = 1160, H = 260, ML = 62, MR = 16, MT = 18, MB = 34;
-  const [box, svg] = cadre(`0 0 ${W} ${H}`);
-  if (!cy.length) { box.firstChild.remove(); box.append(h("div", { style: "padding:2rem;color:var(--ink-3)" }, "Aucun cycle.")); }
-  else {
-    const iw = W - ML - MR, ih = H - MT - MB;
-    const dur = cy.map(c => Math.max(1, c[1] - c[0]));
-    const maxD = Math.max(...dur), L = v => Math.log10(v), l0 = 0, l1 = L(Math.max(10, maxD));
-    const X = i => ML + i / Math.max(1, NH - 1) * iw;
-    const Y = d => MT + (1 - (L(d) - l0) / (l1 - l0)) * ih;
+  const s = S(), cy = s.cycles, box = cadre(), st = stats();
+  cadreToile(box, W => Math.max(190, Math.min(280, W * .24)), (svg, W, H) => {
+    if (!cy.length) return;
+    const MG = 52, MD = 12, MT = 18, MB = 24;
+    const iw = W - MG - MD, ih = H - MT - MB;
+    const dur = cy.map(c => Math.max(1, c[1] - c[0])), maxD = Math.max(...dur);
+    const L = v => Math.log10(v), l1 = L(Math.max(10, maxD));
+    const X = i => MG + i / Math.max(1, NH - 1) * iw, Y = d => MT + (1 - L(d) / l1) * ih;
     for (const v of [1, 6, 24, 24 * 7, 24 * 30, 24 * 90, 24 * 365]) {
       if (v > maxD * 1.4) break;
-      el("line", { x1: ML, x2: W - MR, y1: Y(v), y2: Y(v), class: "axe" }, svg);
-      el("text", { x: ML - 7, y: Y(v) + 3.5, "text-anchor": "end", class: "tick" }, svg)
-        .textContent = v < 24 ? v + " h" : v < 24 * 30 ? (v / 24) + " j" : Math.round(v / 24 / 30.4) + " mois";
+      el("line", { x1: MG, x2: W - MD, y1: Y(v), y2: Y(v), class: "axe" }, svg);
+      el("text", { x: MG - 6, y: Y(v) + 4, "text-anchor": "end", class: "tick" }, svg)
+        .textContent = v < 24 ? v + " h" : v < 24 * 30 ? (v / 24) + " j" : Math.round(v / 24 / 30.4) + " m";
     }
     cy.forEach((c, k) => {
-      const d = dur[k], y = Y(d);
-      const r = el("rect", { x: X(c[0]), y, width: Math.max(1.4, X(c[1]) - X(c[0])), height: 2.4,
-        fill: c[2] >= R().paliers - 2 ? "var(--blocage)" : "var(--achat)", opacity: .8 }, svg);
-      survol(r, `<b>Cycle de ${duree(d)}</b><br><span class="t">ouvert</span> ${jj(c[0])} <span class="t">· fermé</span> ${jj(c[1])}<br>
-        ${c[2]} palier${c[2] > 1 ? "s" : ""}, ${eur(c[3])} <span class="t">engagés</span><br>
-        <b>${eur(c[4])}</b> <span class="t">de gain, soit</span> ${sgn(c[5], 2)}`);
+      const r = el("rect", { x: X(c[0]), y: Y(dur[k]), width: Math.max(2, X(c[1]) - X(c[0])),
+        height: 3, fill: c[2] >= R().paliers - 1 ? "var(--blocage)" : "var(--achat)", opacity: .85 }, svg);
+      survol(r, `<b>Cycle de ${duree(dur[k])}</b><br><span class="t">${jj(c[0])} → ${jj(c[1])}</span><br>
+        ${c[2]} palier${c[2] > 1 ? "s" : ""}, ${eur(c[3], 0)} <span class="t">engagés</span><br>
+        <b>${eur(c[4], 2)}</b> <span class="t">soit</span> ${sgn(c[5], 2)}
+        ${c[6] && c[6] !== "limite" ? `<br><span class="t">sortie au ${c[6]}, ${c[7]} crans</span>` : ""}`);
     });
-    for (let i = 0; i < NH; i += Math.ceil(NH / 8 / 24) * 24)
-      el("text", { x: X(i), y: H - 10, "text-anchor": "middle", class: "tick" }, svg).textContent = jj(i);
-    el("text", { x: ML, y: 12, class: "etiq" }, svg).textContent = "chaque trait = un cycle, sa largeur = sa durée réelle";
-  }
-  const st = stats();
-  return planche(6, "Combien de temps dure une position",
-    "Un cycle de quatre heures et un cycle de trois mois comptent tous les deux pour un dans les statistiques. Ici, chaque cycle occupe sa vraie largeur sur l'axe du temps.",
+    const nT = Math.max(2, Math.floor(iw / 88));
+    for (let k = 0; k <= nT; k++) {
+      const i = Math.round((NH - 1) * k / nT);
+      el("text", { x: X(i), y: H - 8, "text-anchor": "middle", class: "tick" }, svg).textContent = jj(i);
+    }
+    el("text", { x: MG, y: 12, class: "etiq" }, svg)
+      .textContent = "un trait = un cycle ; sa largeur est sa durée réelle";
+  });
+  return planche(4, "Combien de temps dure une position",
+    "Un cycle de quatre heures et un cycle de trois mois comptent tous les deux pour un dans les statistiques. Ici chaque cycle occupe sa vraie largeur sur l'axe du temps.",
     box,
-    `La durée médiane est de <b>${duree(st.medianeH)}</b>, mais la plus longue atteint <b>${duree(st.plusLongCycle)}</b> :
-     l'échelle verticale est logarithmique, sans quoi tous les cycles courts s'écraseraient sur la ligne du bas.
-     Les traits rouges sont les cycles descendus au fond de l'échelle — ce sont eux qui portent l'argent,
-     et ce sont eux qui durent. <b>Rapidité et engagement ne vont jamais ensemble.</b>`,
-    [["carre a-ach", "cycle superficiel"], ["carre a-blo", "descendu au fond de l'échelle"]]);
+    `La durée médiane est de <b>${duree(st.medianeH)}</b>, la plus longue atteint
+     <b>${duree(st.plusLongCycle)}</b>. L'échelle verticale est logarithmique, sans quoi tous les
+     cycles courts s'écraseraient sur la ligne du bas. <b>Rapidité et engagement ne vont jamais ensemble.</b>`,
+    [["carre a-ach", "cycle superficiel"], ["carre a-blo", "descendu au fond"]]);
 }
 
-/* -------------------------------------- 7 : les huit captivites, meme axe */
+/* ------------------------------------------------------ 5 : les captivites */
 function plancheCaptivites() {
-  const W = 1160, hL = 30, ML = 250, MR = 16, MT = 26, MB = 26;
-  const H = MT + D.reglages.length * hL + MB;
-  const [box, svg] = cadre(`0 0 ${W} ${H}`);
-  const iw = W - ML - MR, X = i => ML + i / (NH - 1) * iw;
-  for (let i = 0; i < NH; i += Math.ceil(NH / 8 / 24) * 24) {
-    el("line", { x1: X(i), x2: X(i), y1: MT - 6, y2: H - MB + 2, class: "axe" }, svg);
-    el("text", { x: X(i), y: H - 10, "text-anchor": "middle", class: "tick" }, svg).textContent = jj(i);
-  }
-  D.reglages.forEach((reg, k) => {
-    const sim = reg.sims[paire], y = MT + k * hL;
-    el("rect", { x: ML, y: y + 5, width: iw, height: hL - 12, class: "piste" }, svg);
-    const long = sim.segments.length ? Math.max(...sim.segments.map(([a, b]) => b - a + 1)) : 0;
-    for (const [a, b] of sim.segments) {
-      const w = Math.max(1, X(b) - X(a)), grand = (b - a + 1) > 24 * 30;
-      const r = el("rect", { x: X(a), y: y + 5, width: w, height: hL - 12,
-        class: grand ? "piste-aband" : "piste-bloc" }, svg);
-      survol(r, `<b>${reg.nom}</b><br><span class="t">immobilisé du</span> ${jj(a)} <span class="t">au</span> ${jj(b)}<br>
-        <b>${duree(b - a + 1)}</b>`);
+  const box = cadre();
+  cadreToile(box, () => 40 + D.reglages.length * 30, (svg, W, H) => {
+    const MG = Math.min(230, Math.max(120, W * .22)), MD = 12, MT = 24, MB = 22;
+    const hL = (H - MT - MB) / D.reglages.length, iw = W - MG - MD;
+    const X = i => MG + i / (NH - 1) * iw;
+    const nT = Math.max(2, Math.floor(iw / 88));
+    for (let k = 0; k <= nT; k++) {
+      const i = Math.round((NH - 1) * k / nT);
+      el("line", { x1: X(i), x2: X(i), y1: MT - 6, y2: H - MB + 2, class: "axe" }, svg);
+      el("text", { x: X(i), y: H - 6, "text-anchor": "middle", class: "tick" }, svg).textContent = jj(i);
     }
-    const est = k === iReg;
-    const t = el("text", { x: ML - 10, y: y + hL / 2 + 1, "text-anchor": "end",
-      class: est ? "etiq-f" : "etiq" }, svg);
-    t.textContent = `${k + 1}. ${reg.nom} · ${sgn(sim.resume.perf_pct, 1)}`;
-    const t2 = el("text", { x: ML - 10, y: y + hL / 2 + 11, "text-anchor": "end", class: "tick" }, svg);
-    t2.textContent = `prof ${pct(reg.profondeur, 0)} · ${reg.paliers} pal · ×${reg.ratio} · obj ${pct(reg.objectif, 0)}`;
-    if (est) el("rect", { x: ML - 244, y: y + 2, width: W - MR - ML + 244, height: hL - 6,
-      fill: "none", stroke: "var(--achat)", "stroke-width": 1.2 }, svg);
+    D.reglages.forEach((reg, k) => {
+      const sim = reg.sims[M.paire], y = MT + k * hL;
+      el("rect", { x: MG, y: y + 4, width: iw, height: hL - 10, class: "piste" }, svg);
+      for (const [a, b] of sim.segments) {
+        const r = el("rect", { x: X(a), y: y + 4, width: Math.max(1.5, X(b) - X(a)), height: hL - 10,
+          class: (b - a + 1) > 24 * 30 ? "piste-aband" : "piste-bloc" }, svg);
+        survol(r, `<b>${reg.nom}</b><br><span class="t">immobilisé du</span> ${jj(a)}
+          <span class="t">au</span> ${jj(b)}<br><b>${duree(b - a + 1)}</b>`);
+      }
+      const est = k === iReg;
+      //  11 px de mono valent environ 6,6 px par caractere : on coupe soi-meme
+      //  plutot que de laisser le bord gauche le faire
+      const place = Math.max(6, Math.floor((MG - 14) / 6.6));
+      const nom = reg.nom.length > place ? reg.nom.slice(0, place - 1) + "…" : reg.nom;
+      const tx = el("text", { x: MG - 8, y: y + hL / 2 - 1, "text-anchor": "end",
+        class: est ? "etiq-f" : "etiq" }, svg);
+      tx.textContent = `${k + 1}. ${nom}`;
+      if (nom !== reg.nom) survol(tx, `<b>${reg.nom}</b>`);
+      el("text", { x: MG - 8, y: y + hL / 2 + 11, "text-anchor": "end", class: "tick" }, svg)
+        .textContent = `${sgn(sim.resume.perf_pct, 1)} · ${reg.epreuves.reussies}/4 épreuves`;
+      if (est) el("rect", { x: 1, y: y + 2, width: W - 2, height: hL - 6, fill: "none",
+        stroke: "var(--achat)", "stroke-width": 1.2 }, svg);
+    });
+    el("text", { x: MG, y: 13, class: "etiq" }, svg)
+      .textContent = "une piste par réglage, un seul axe du temps, jamais compressé";
   });
-  el("text", { x: ML, y: 14, class: "etiq" }, svg)
-    .textContent = "une piste par réglage, un seul axe du temps, jamais compressé";
   const pires = D.reglages.map(r => {
-    const s = r.sims[paire];
+    const s = r.sims[M.paire];
     return s.segments.length ? Math.max(...s.segments.map(([a, b]) => b - a + 1)) : 0;
-  });
-  return planche(7, "Huit captivités, un seul calendrier",
-    `Les huit réglages sur ${paire}, du plus rentable en haut au moins rentable en bas, alignés sur le même axe. La longueur d'une barre est une durée vécue, pas un chiffre dans un tableau.`,
+  }).filter(x => x);
+  return planche(5, "Huit captivités, un seul calendrier",
+    `Les huit réglages sur ${M.paire}, du plus rentable en haut au moins rentable en bas, alignés sur le même axe. La longueur d'une barre est une durée vécue, pas un chiffre dans un tableau.`,
     box,
-    `Les barres claires sont des immobilisations courtes, les barres pleines des immobilisations de plus d'un mois.
-     Le meilleur réglage garde <b>${duree(Math.min(...pires.filter(x => x)))}</b> au pire ;
-     le plus mauvais reste bloqué <b>${duree(Math.max(...pires))}</b>, soit
-     ${pct(Math.max(...pires) / NH, 0)} de toute la période. Un an et un mois d'histoire tiennent sur cette largeur :
-     mesurez à l'œil ce que représentent ces bandes.`,
+    `Les barres claires sont des immobilisations de moins d'un mois, les barres pleines de plus d'un mois.
+     Le meilleur réglage garde <b>${duree(Math.min(...pires))}</b> au pire ; le plus mauvais reste bloqué
+     <b>${duree(Math.max(...pires))}</b>, soit ${pct(Math.max(...pires) / NH, 0)} de toute la période.`,
     [["carre a-blo-clair", "moins d'un mois"], ["carre a-blo", "plus d'un mois"]]);
 }
 
-/* ----------------------------------------------------- 8 : comment choisir */
+/* ------------------------------------------------------- 6 : comment choisir */
 function plancheChoisir() {
-  const W = 1160, H = 440, ML = 62, MR = 130, MT = 24, MB = 46;
-  const [box, svg] = cadre(`0 0 ${W} ${H}`);
-  const iw = W - ML - MR, ih = H - MT - MB;
-  const pts = D.reglages.map((reg, k) => {
-    const s = reg.sims[paire];
-    const moy = s.jours.engage_moyen.reduce((a, b) => a + b, 0) / s.jours.engage_moyen.length;
-    const long = s.segments.length ? Math.max(...s.segments.map(([a, b]) => b - a + 1)) : 0;
-    return { k, reg, moy, perf: s.resume.perf_pct, long, cycles: s.cycles.length };
+  const box = cadre();
+  cadreToile(box, W => Math.max(280, Math.min(420, W * .36)), (svg, W, H) => {
+    const MG = 52, MD = Math.min(130, Math.max(80, W * .12)), MT = 26, MB = 42;
+    const iw = W - MG - MD, ih = H - MT - MB;
+    const pts = D.reglages.map((reg, k) => {
+      const s = reg.sims[M.paire];
+      const moy = s.jours.engage_moyen.reduce((a, b) => a + b, 0) / s.jours.engage_moyen.length;
+      const long = s.segments.length ? Math.max(...s.segments.map(([a, b]) => b - a + 1)) : 0;
+      return { k, reg, moy, perf: s.resume.perf_pct, long, cycles: s.cycles.length };
+    });
+    const hold = D.paires[M.paire].hold_pct;
+    const py = [...pts.map(p => p.perf), hold, 0];
+    const lo = Math.min(...py) - .04, hi = Math.max(...py) + .05;
+    const X = m => MG + Math.sqrt(Math.max(0, m)) * iw, Y = v => MT + (1 - (v - lo) / (hi - lo)) * ih;
+    const lMax = Math.max(...pts.map(p => p.long)) || 1;
+    for (const v of ticksJolis(lo, hi, Math.max(3, Math.round(ih / 48)))) {
+      el("line", { x1: MG, x2: W - MD, y1: Y(v), y2: Y(v),
+        class: Math.abs(v) < 1e-9 ? "axe-fort" : "axe" }, svg);
+      el("text", { x: MG - 6, y: Y(v) + 4, "text-anchor": "end", class: "tick" }, svg).textContent = sgn(v, 0);
+    }
+    for (const m of [0, .05, .25, .5, 1]) {
+      el("line", { x1: X(m), x2: X(m), y1: MT, y2: MT + ih, class: "axe" }, svg);
+      el("text", { x: X(m), y: H - 24, "text-anchor": "middle", class: "tick" }, svg).textContent = pct(m, 0);
+    }
+    el("text", { x: MG + iw / 2, y: H - 8, "text-anchor": "middle", class: "etiq" }, svg)
+      .textContent = "part du budget engagée en moyenne  ·  échelle en racine";
+    el("line", { x1: MG, x2: W - MD, y1: Y(hold), y2: Y(hold), stroke: "var(--blocage)",
+      "stroke-width": 1.4, "stroke-dasharray": "5 3" }, svg);
+    el("text", { x: W - MD + 5, y: Y(hold) + 4, class: "etiq-f", style: "fill:var(--blocage)" }, svg)
+      .textContent = `attendre : ${sgn(hold, 1)}`;
+    for (const p of pts) {
+      const r = 5 + 10 * (p.long / lMax), solide = p.reg.epreuves.reussies === 4;
+      const c = el("circle", { cx: X(p.moy), cy: Y(p.perf), r,
+        fill: p.k === iReg ? "var(--achat)" : "transparent",
+        stroke: solide ? "var(--achat)" : "var(--blocage)",
+        "stroke-dasharray": solide ? null : "3 2", "stroke-width": p.k === iReg ? 2 : 1.4 }, svg);
+      survol(c, `<b>${p.reg.nom}</b><br><span class="t">performance</span> <b>${sgn(p.perf, 2)}</b>
+        <span class="t">· engagé</span> ${pct(p.moy, 1)}<br>
+        <span class="t">plus long blocage</span> ${duree(p.long)} <span class="t">·</span> ${p.cycles} <span class="t">cycles</span><br>
+        <b>épreuves ${p.reg.epreuves.reussies}/4</b>`);
+      c.style.cursor = "pointer";
+      c.addEventListener("click", () => {
+        iReg = p.k; document.getElementById("sel-reglage").value = String(p.k); rendu();
+      });
+      el("text", { x: X(p.moy), y: Y(p.perf) - r - 5, "text-anchor": "middle",
+        class: p.k === iReg ? "etiq-f" : "etiq" }, svg).textContent = p.reg.nom;
+    }
   });
-  const hold = D.paires[paire].hold_pct;
-  const py = [...pts.map(p => p.perf), hold, 0];
-  const lo = Math.min(...py) - .05, hi = Math.max(...py) + .05;
-  const X = m => ML + Math.sqrt(m) * iw, Y = v => MT + (1 - (v - lo) / (hi - lo)) * ih;
-  const lMax = Math.max(...pts.map(p => p.long)) || 1;
-
-  for (const v of ticksJolis(lo, hi, 6)) {
-    el("line", { x1: ML, x2: W - MR, y1: Y(v), y2: Y(v), class: Math.abs(v) < 1e-9 ? "axe-fort" : "axe" }, svg);
-    el("text", { x: ML - 7, y: Y(v) + 3.5, "text-anchor": "end", class: "tick" }, svg).textContent = sgn(v, 0);
-  }
-  for (const m of [0, .01, .05, .1, .25, .5, .75, 1]) {
-    el("line", { x1: X(m), x2: X(m), y1: MT, y2: MT + ih, class: "axe" }, svg);
-    el("text", { x: X(m), y: H - 26, "text-anchor": "middle", class: "tick" }, svg).textContent = pct(m, 0);
-  }
-  el("text", { x: ML + iw / 2, y: H - 8, "text-anchor": "middle", class: "etiq" }, svg)
-    .textContent = "part du budget engagée en moyenne  (échelle en racine : les valeurs minuscules restent lisibles)";
-
-  el("line", { x1: ML, x2: W - MR, y1: Y(hold), y2: Y(hold), stroke: "var(--blocage)", "stroke-width": 1.4, "stroke-dasharray": "5 3" }, svg);
-  el("text", { x: W - MR + 6, y: Y(hold) + 3.5, class: "etiq-f", style: "fill:var(--blocage)" }, svg)
-    .textContent = `acheter et attendre : ${sgn(hold, 1)}`;
-
-  for (const p of pts) {
-    const r = 5 + 11 * (p.long / lMax);
-    //  un reglage qui echoue aux epreuves est dessine en pointille : il occupe la
-    //  meme place que les autres, mais on ne peut pas le confondre avec eux
-    const solide = p.reg.epreuves.reussies === 4;
-    const c = el("circle", { cx: X(p.moy), cy: Y(p.perf), r,
-      fill: p.k === iReg ? "var(--achat)" : "var(--achat-doux)",
-      stroke: solide ? "var(--achat)" : "var(--blocage)",
-      "stroke-dasharray": solide ? null : "3 2",
-      "stroke-width": p.k === iReg ? 2 : 1.4 }, svg);
-    survol(c, `<b>${p.reg.nom}</b><br><span class="t">prof</span> ${pct(p.reg.profondeur, 0)}
-      <span class="t">· ${p.reg.paliers} paliers · ratio</span> ×${p.reg.ratio} <span class="t">· obj</span> ${pct(p.reg.objectif, 0)}<br>
-      <span class="t">performance</span> <b>${sgn(p.perf, 2)}</b> <span class="t">· engagé</span> ${pct(p.moy, 2)}<br>
-      <span class="t">plus long blocage</span> ${duree(p.long)} <span class="t">·</span> ${p.cycles} <span class="t">cycles</span><br>
-      <b>épreuves ${p.reg.epreuves.reussies}/4</b><span class="t">${p.reg.epreuves.reussies < 4
-        ? " — échoue : " + Object.entries(p.reg.epreuves.passe).filter(([, v]) => !v).map(([k]) => k).join(", ")
-        : " — voisinage, paires, trimestres, résolutions"}</span>`);
-    c.addEventListener("click", () => { iReg = p.k; document.getElementById("sel-reglage").value = String(p.k); rendu(); });
-    c.style.cursor = "pointer";
-    el("text", { x: X(p.moy), y: Y(p.perf) - r - 5, "text-anchor": "middle",
-      class: p.k === iReg ? "etiq-f" : "etiq" }, svg).textContent = p.reg.nom;
-  }
-  const bons = pts.filter(p => p.perf > 0).length;
-  const meilleur = pts.reduce((a, b) => b.perf > a.perf ? b : a);
-  return planche(8, "Comment choisir, et ce que ça coûte",
-    "Chaque cercle est un réglage. Sa hauteur est ce qu'il a rapporté, sa position horizontale la part du budget qu'il mobilisait, son diamètre la plus longue immobilisation qu'il a imposée.",
+  return planche(6, "Comment choisir, et ce que ça coûte",
+    "Chaque cercle est un réglage : sa hauteur est ce qu'il a rapporté, sa position horizontale la part du budget qu'il mobilisait, son diamètre la plus longue immobilisation qu'il a imposée.",
     box,
-    `Il n'existe aucun cercle en haut à droite et petit : <b>engager beaucoup, gagner, et se dénouer vite ne vont jamais ensemble.</b>
-     ${bons} réglages sur ${D.reglages.length} finissent positifs, et tous battent le simple fait d'acheter et d'attendre,
-     qui perdait ${pct(Math.abs(hold), 1)} sur la période. Les cercles en pointillé rouge échouent à au moins une épreuve de
-     robustesse — <b>et c'est le cas du plus rentable</b>. Un réglage qui gagne le plus est souvent celui qui a le mieux épousé
-     ce chemin de prix précis, pas celui qui a trouvé un mécanisme. Cliquez un cercle pour recharger la page sur ce réglage.`,
+    `Il n'existe aucun cercle en haut à droite et petit : <b>engager beaucoup, gagner, et se dénouer vite
+     ne vont jamais ensemble.</b> Les cercles en pointillé rouge échouent à au moins une épreuve de
+     robustesse — <b>et c'est le cas du plus rentable</b>. Cliquez un cercle pour recharger la page dessus.`,
     [["", "passe les 4 épreuves"], ["a-blo", "en échoue au moins une"], ["trait a-blo", "acheter et attendre"]]);
 }
 
 /* ------------------------------------------------------------------ tuiles */
 function tuiles() {
-  const st = stats(), s = S();
+  const st = stats(), s = S(), r = R();
   const T = [
     ["Performance", sgn(st.perf, 2), st.perf >= 0 ? "pos" : "neg",
-      `sur ${paire} · rang ${R().rang}/${D.reglages.length} par gain, `
-      + `${sgn(R().gain_moyen, 1)} en moyenne sur les 3 paires`],
-    ["Cycles par semaine", st.parSemaine.toLocaleString("fr-FR", { maximumFractionDigits: 2 }),
-      st.parSemaine >= 2 ? "pos" : "", `${st.cycles} cycles sur ${D.meta.jours} jours`],
-    ["Acheter et attendre", sgn(st.hold, 1), st.hold >= 0 ? "pos" : "neg", `le repère, sur la même fenêtre`],
-    ["Engagé en moyenne", pct(st.moy, 2), "", `pic à ${pct(st.pic, 0)} du budget`],
-    ["Rendu par l'argent au travail", sgn(st.surEngage, 0), st.surEngage >= 0 ? "pos" : "neg", "performance ÷ engagement moyen"],
-    ["Durée médiane d'un cycle", duree(st.medianeH), "", `la plus longue : ${duree(st.plusLongCycle)}`],
-    ["Plus long blocage", duree(st.plusLong), st.plusLong > 24 * 60 ? "neg" : "", `${pct(st.engPct, 0)} du temps avec de l'argent dehors`],
-    ["Abandons", String(st.abandons), st.abandons ? "neg" : "", st.abandons ? `${st.jourAband} jours sous le seuil` : "jamais sous le seuil"],
-    ...(R().cliquet_pas != null ? [["Sorties au stop",
-      `${Math.round(100 * (S().sorties.stop + S().sorties.trou) / Math.max(1, st.cycles))} %`,
-      "", `${S().crans_moyens} crans en moyenne · tarif taker ${pct(R().frais_taker, 2)}`]] : []),
-    ["Épreuves passées", `${R().epreuves.reussies}/4`,
-      R().epreuves.reussies === 4 ? "pos" : R().epreuves.reussies <= 2 ? "neg" : "",
-      Object.entries(R().epreuves.passe).filter(([, v]) => !v).map(([k]) => k).join(", ") || "voisinage, paires, trimestres, résolutions"],
+      `sur ${M.paire} · rang ${r.rang}/${D.reglages.length}, ${sgn(r.gain_moyen, 1)} sur les 3 paires`],
+    ["Épreuves passées", `${r.epreuves.reussies}/4`,
+      r.epreuves.reussies === 4 ? "pos" : r.epreuves.reussies <= 2 ? "neg" : "",
+      Object.entries(r.epreuves.passe).filter(([, v]) => !v).map(([k]) => "échoue : " + k).join(", ")
+        || "voisinage, paires, trimestres, résolutions"],
+    ["Acheter et attendre", sgn(st.hold, 1), st.hold >= 0 ? "pos" : "neg", "le repère, même fenêtre"],
+    ["Cycles par semaine", nb(st.parSemaine, 2), "", `${st.cycles} cycles · médiane ${duree(st.medianeH)}`],
+    ["Engagé en moyenne", pct(st.moy, 1), "", `pic à ${pct(st.pic, 0)} du budget`],
+    ["Plus long blocage", duree(st.plusLong), st.plusLong > 24 * 60 ? "neg" : "",
+      `${pct(st.engPct, 0)} du temps avec de l'argent dehors`],
+    ["Abandons", String(st.abandons), st.abandons ? "neg" : "",
+      st.abandons ? `${st.jourAband} jours sous le seuil` : "jamais sous le seuil"],
+    ...(r.cliquet_pas != null ? [["Sorties au stop",
+      pct((s.sorties_type.stop + s.sorties_type.trou) / Math.max(1, st.cycles), 0), "",
+      `${s.crans_moyens} crans en moyenne · taker ${pct(r.frais_taker, 2)}`]] : []),
   ];
   const g = h("div", { class: "tuiles" });
   for (const [k, v, c, n] of T) g.append(h("div", { class: "tuile" },
@@ -879,21 +1116,84 @@ function tuiles() {
   return g;
 }
 
-/* ------------------------------------------------------------------ rendu */
+/* ================================================================== CABLAGE */
+function chiffresPaire(sym) {
+  const P = D.paires[sym], n = NH - 1;
+  const der = P.close[n], veille = P.close[Math.max(0, n - 24)];
+  let hi = -Infinity, lo = Infinity, vol = 0;
+  for (let i = Math.max(0, n - 23); i <= n; i++) {
+    hi = Math.max(hi, P.haut[i]); lo = Math.min(lo, P.bas[i]); vol += P.vol[i];
+  }
+  return { der, var24: der / veille - 1, hi, lo, vol, hold: P.hold_pct };
+}
+
+function majPaires() {
+  const box = document.getElementById("paires");
+  box.replaceChildren();
+  for (const sym of D.meta.paires) {
+    const c = chiffresPaire(sym);
+    const b = h("button", { class: "paire-onglet", type: "button", role: "tab",
+      "aria-selected": String(sym === M.paire),
+      onclick: () => { M.paire = sym; majPaires(); majStats(); M.toile.rendre(true); rendu(); } },
+      h("span", { class: "p" }, sym),
+      h("span", { class: "v" }, nb(c.der, dec(c.der))),
+      h("span", { class: "d " + (c.var24 >= 0 ? "haut" : "bas") }, sgn(c.var24, 2)));
+    box.append(b);
+  }
+}
+
+function majStats() {
+  const c = chiffresPaire(M.paire), box = document.getElementById("stats");
+  const st = [
+    ["Dernier", nb(c.der, dec(c.der)) + " €", ""],
+    ["24 h", sgn(c.var24, 2), c.var24 >= 0 ? "haut" : "bas"],
+    ["24 h haut", nb(c.hi, dec(c.hi)), ""],
+    ["24 h bas", nb(c.lo, dec(c.lo)), ""],
+    ["24 h volume", compact(c.vol), ""],
+    ["400 jours", sgn(c.hold, 1), c.hold >= 0 ? "haut" : "bas"],
+    ["Fenêtre", `${jj(0)} → ${jj(NH - 1)}`, ""],
+  ];
+  box.replaceChildren(...st.map(([k, v, cl]) =>
+    h("div", { class: "stat" }, h("span", { class: "k" }, k), h("span", { class: "v " + cl }, v))));
+}
+
+function majOutils() {
+  const bu = document.getElementById("unites");
+  bu.replaceChildren(...UNITES.map(([nom, n]) =>
+    h("button", { type: "button", "aria-pressed": String(M.unite === n),
+      onclick: () => { M.unite = n; bornerVue(); majOutils(); } }, nom)));
+  const bp = document.getElementById("portees");
+  const spanCourant = M.h1 - M.h0;
+  bp.replaceChildren(...PORTEES.map(([nom, n]) =>
+    h("button", { type: "button", "aria-pressed": String(Math.abs(spanCourant - Math.min(n, NH)) < 2),
+      onclick: () => {
+        const span = Math.min(n, NH - 1);
+        M.h1 = NH - 1; M.h0 = M.h1 - span;
+        M.unite = uniteAuto(span); bornerVue(); majOutils();
+      } }, nom)));
+  const bc = document.getElementById("calques");
+  bc.replaceChildren(...[["Moyennes", "ma"], ["Volume", "vol"], ["Ordres", "ordres"]].map(([nom, k]) =>
+    h("button", { type: "button", "aria-pressed": String(M.calques[k]),
+      onclick: () => { M.calques[k] = !M.calques[k]; majOutils(); } }, nom)));
+  M.toile && M.toile.rendre(true);
+}
+
 function rendu() {
+  for (const t of TOILES.splice(0)) t.detruire && t.detruire();
   const app = document.getElementById("app");
-  app.replaceChildren(tuiles(), plancheOrdres(), plancheCycle(), plancheArgent(),
-    plancheEchelle(), planchePlancher(), plancheDuree(), plancheCaptivites(), plancheChoisir());
+  app.replaceChildren(tuiles(), plancheCycle(), plancheArgent(), plancheEchelle(),
+    plancheDuree(), plancheCaptivites(), plancheChoisir());
   for (const p of app.querySelectorAll(".pastille")) {
     const c = p.className;
-    if (c.includes("a-ach")) p.style.background = "var(--achat)";
-    else if (c.includes("a-ven")) p.style.background = "var(--vente)";
-    else if (c.includes("a-blo-clair")) { p.style.background = "var(--blocage)"; p.style.opacity = ".55"; }
-    else if (c.includes("a-blo")) p.style.background = "var(--blocage)";
-    else if (c.includes("a-prix")) p.style.background = "var(--prix)";
-    else if (c.includes("a-gris")) p.style.background = "var(--ink-3)";
-    else p.style.background = "var(--achat)";
+    p.style.background = c.includes("a-ven") ? "var(--vente)"
+      : c.includes("a-blo-clair") ? "var(--blocage)"
+      : c.includes("a-blo") ? "var(--blocage)"
+      : c.includes("a-prix") ? "var(--prix)"
+      : c.includes("a-gris") ? "var(--ink-3)"
+      : "var(--achat)";
+    if (c.includes("a-blo-clair")) p.style.opacity = ".5";
   }
+  M.calques.ordres && M.toile && M.toile.rendre(true);
   cache();
 }
 
@@ -901,21 +1201,19 @@ const selR = document.getElementById("sel-reglage");
 D.reglages.forEach((r, k) => {
   const cad = D.meta.paires.reduce((a, s) => a + r.sims[s].cycles_par_semaine, 0) / D.meta.paires.length;
   selR.append(h("option", { value: String(k) },
-    `${k + 1}. ${sgn(r.gain_moyen, 1)} moy. · épreuves ${r.epreuves.reussies}/4 — ${r.nom} — `
+    `${k + 1}. ${sgn(r.gain_moyen, 1)} · ${r.epreuves.reussies}/4 épreuves — ${r.nom} — `
     + `prof ${pct(r.profondeur, 0)}, ${r.paliers} paliers, ×${r.ratio}, objectif ${pct(r.objectif, 1)}, `
-    + `${cad.toFixed(1)} cycles/sem${r.suivre_hausse ? ", suit la hausse" : ""}`
-    + `${r.cliquet_pas != null ? `, cliquet ${pct(r.cliquet_pas, 1)}/${pct(r.cliquet_retrait, 1)}` : ""}`));
+    + `${nb(cad, 1)} cycles/sem`
+    + (r.cliquet_pas != null ? `, cliquet ${pct(r.cliquet_pas, 1)}/${pct(r.cliquet_retrait, 1)}` : "")));
 });
-selR.value = String(iReg);
+selR.value = "0";
 selR.addEventListener("change", () => { iReg = +selR.value; cycleChoisi = null; rendu(); });
 
-const selP = document.getElementById("sel-paire");
-for (const p of D.meta.paires) {
-  const b = h("button", { class: "puce", type: "button", "aria-pressed": String(p === paire),
-    onclick: () => { paire = p; cycleChoisi = null;
-      for (const x of selP.children) x.setAttribute("aria-pressed", String(x.textContent === p));
-      rendu(); } }, p);
-  selP.append(b);
-}
+M.unite = uniteAuto(NH);
+majPaires(); majStats();
+M.toile = new Toile(document.getElementById("toile-marche"),
+  W => Math.max(300, Math.min(520, W * .46)), dessinerMarche);
+brancherGestes(M.toile);
+majOutils();
 rendu();
 </script>
