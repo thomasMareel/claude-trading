@@ -866,6 +866,9 @@ function tuiles() {
     ["Durée médiane d'un cycle", duree(st.medianeH), "", `la plus longue : ${duree(st.plusLongCycle)}`],
     ["Plus long blocage", duree(st.plusLong), st.plusLong > 24 * 60 ? "neg" : "", `${pct(st.engPct, 0)} du temps avec de l'argent dehors`],
     ["Abandons", String(st.abandons), st.abandons ? "neg" : "", st.abandons ? `${st.jourAband} jours sous le seuil` : "jamais sous le seuil"],
+    ...(R().cliquet_pas != null ? [["Sorties au stop",
+      `${Math.round(100 * (S().sorties.stop + S().sorties.trou) / Math.max(1, st.cycles))} %`,
+      "", `${S().crans_moyens} crans en moyenne · tarif taker ${pct(R().frais_taker, 2)}`]] : []),
     ["Épreuves passées", `${R().epreuves.reussies}/4`,
       R().epreuves.reussies === 4 ? "pos" : R().epreuves.reussies <= 2 ? "neg" : "",
       Object.entries(R().epreuves.passe).filter(([, v]) => !v).map(([k]) => k).join(", ") || "voisinage, paires, trimestres, résolutions"],
@@ -900,7 +903,8 @@ D.reglages.forEach((r, k) => {
   selR.append(h("option", { value: String(k) },
     `${k + 1}. ${sgn(r.gain_moyen, 1)} moy. · épreuves ${r.epreuves.reussies}/4 — ${r.nom} — `
     + `prof ${pct(r.profondeur, 0)}, ${r.paliers} paliers, ×${r.ratio}, objectif ${pct(r.objectif, 1)}, `
-    + `${cad.toFixed(1)} cycles/sem${r.suivre_hausse ? ", suit la hausse" : ""}`));
+    + `${cad.toFixed(1)} cycles/sem${r.suivre_hausse ? ", suit la hausse" : ""}`
+    + `${r.cliquet_pas != null ? `, cliquet ${pct(r.cliquet_pas, 1)}/${pct(r.cliquet_retrait, 1)}` : ""}`));
 });
 selR.value = String(iReg);
 selR.addEventListener("change", () => { iReg = +selR.value; cycleChoisi = null; rendu(); });

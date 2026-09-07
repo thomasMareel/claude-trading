@@ -43,6 +43,10 @@ from src.storage import Storage  # noqa: E402
 #  construire les cinq nouvelles versions. La geometrie est figee ; seuls le
 #  seuil et les reglages du cliquet varient.
 BASES = [
+    #  L'echelle gagnante du banc sur la grille seule, en tete : c'est la seule
+    #  comparaison equitable. La tester ailleurs revient a demander au cliquet de
+    #  rattraper un handicap de geometrie.
+    ("Le vainqueur du banc", dict(profondeur=0.50, paliers=3, ratio=3.3, depart_sous=0.02)),
     ("Tres profond, 3 paliers", dict(profondeur=0.40, paliers=3, ratio=3.9, depart_sous=0.04,
                                      reancrage_min=0.02)),
     ("Profond, 4 paliers", dict(profondeur=0.50, paliers=4, ratio=2.0, reancrage_min=0.02)),

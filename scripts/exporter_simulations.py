@@ -34,7 +34,7 @@ from src.grille import GrilleError, Reglages, rejouer, resume  # noqa: E402
 from src.storage import Storage  # noqa: E402
 
 HEURE = 3_600_000
-GENRE = {"achat": 0, "vente": 1, "abandon": 2}
+GENRE = {"achat": 0, "vente": 1, "abandon": 2, "cliquet": 3}
 
 #  DEUX PAS DE TEMPS, et il faut les distinguer.
 #  On SIMULE au pas fin : le moteur ne connait d'une bougie que quatre nombres
@@ -82,29 +82,36 @@ PLANCHERS_COMPARES = (0.0, 5.0)
 #  vente_meme_bougie=False partout : on refuse de compter un aller-retour boucle
 #  dans la bougie de son achat, car rien dans les donnees ne peut le prouver.
 REGLAGES = [
-    #  Le vainqueur des epreuves de robustesse, apres extension de la recherche
-    #  au-dela des bornes precedentes. Trois paliers seulement : le plancher de
-    #  la plateforme autorise alors une progression bien plus agressive, donc un
-    #  prix de revient plus bas et un rebond a attendre plus court. Tous ses
-    #  voisins restent positifs, son pire trimestre ne perd que 2,2 points, et
-    #  son creux est deux fois moins profond que celui des echelles denses.
-    dict(cle="solide-50-3", nom="Le plus solide", profondeur=0.50, paliers=3, ratio=3.3,
+    #  L'echelle gagnante du banc, sans cliquet. Trois paliers seulement : le
+    #  plancher de la plateforme autorise alors une progression bien plus
+    #  agressive, donc un prix de revient plus bas et un rebond plus court.
+    dict(cle="solide-50-3", nom="La grille seule", profondeur=0.50, paliers=3, ratio=3.3,
          objectif_net=0.04, depart_sous=0.02, suivre_hausse=True),
-    dict(cle="solide-50-3-o3", nom="Solide, objectif 3 %", profondeur=0.50, paliers=3,
-         ratio=2.8, objectif_net=0.03, depart_sous=0.02, suivre_hausse=True),
-    #  Le premier du classement BRUT, garde pour la comparaison : il gagne le plus
-    #  et son resultat varie de 6,3 points selon la finesse des bougies.
-    dict(cle="brut-40-3", nom="Le plus rentable, mais fragile", profondeur=0.40, paliers=3,
-         ratio=3.9, objectif_net=0.08, depart_sous=0.04, reancrage_min=0.02, suivre_hausse=True),
-    dict(cle="six-paliers", nom="Six paliers", profondeur=0.50, paliers=6, ratio=1.7,
-         objectif_net=0.05, depart_sous=0.02, reancrage_min=0.02, suivre_hausse=True),
+    #  La meme, avec le cliquet. Elle affiche le meilleur chiffre de toute la
+    #  recherche et c'est un mirage : +13,7 % en cinq minutes, mais +8,7 % en
+    #  horaire et +10,1 % a la minute. Sur les donnees les plus fideles elle
+    #  passe DERRIERE la grille seule. Gardee dans la page comme contre-exemple.
+    dict(cle="cliquet-4", nom="Cliquet, seuil 4 %", profondeur=0.50, paliers=3, ratio=3.3,
+         objectif_net=0.04, depart_sous=0.02, suivre_hausse=True,
+         cliquet_pas=0.02, cliquet_retrait=0.015),
+    #  Le seul cliquet stable entre resolutions (0,5 point d'ecart) et le seul a
+    #  battre reellement la grille seule. Il le paie par un creux de 39 % contre
+    #  15, et par un voisin immediat qui repasse dans le rouge.
+    dict(cle="cliquet-8", nom="Cliquet, seuil 8 %", profondeur=0.50, paliers=3, ratio=3.3,
+         objectif_net=0.08, depart_sous=0.02, suivre_hausse=True,
+         cliquet_pas=0.04, cliquet_retrait=0.015),
+    #  Le bras de controle : un stop pose au seuil et jamais remonte. Il isole ce
+    #  que coute le passage d'un ordre limite a un ordre au marche.
+    dict(cle="stop-fixe", nom="Stop fixe, sans cliquet", profondeur=0.50, paliers=3,
+         ratio=3.3, objectif_net=0.04, depart_sous=0.02, suivre_hausse=True,
+         cliquet_pas=10.0, cliquet_retrait=0.002),
+    dict(cle="solide-50-3-o3", nom="La grille seule, objectif 3 %", profondeur=0.50,
+         paliers=3, ratio=2.8, objectif_net=0.03, depart_sous=0.02, suivre_hausse=True),
     #  Le creux le moins profond de toute la recherche : -9 %.
     dict(cle="prudent-60-5", nom="Le moins risque", profondeur=0.60, paliers=5, ratio=2.4,
          objectif_net=0.08, depart_sous=0.04, reancrage_min=0.02, suivre_hausse=True),
     dict(cle="patient-30", nom="Patient", profondeur=0.30, paliers=12, ratio=1.3,
          objectif_net=0.03, suivre_hausse=True),
-    dict(cle="p15-14-r22-o3", nom="L'ancien equilibre", profondeur=0.15, paliers=14,
-         ratio=2.2, objectif_net=0.03, suivre_hausse=False),
     dict(cle="p08-14-r18-o2", nom="Le tableau d'origine", profondeur=0.08, paliers=14,
          ratio=1.8, objectif_net=0.02, suivre_hausse=False),
 
@@ -319,6 +326,8 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
             "id": cle, "nom": nom, "profondeur": rg.profondeur, "paliers": rg.paliers,
             "ratio": rg.ratio, "objectif": rg.objectif_net, "abandon_sous": rg.abandon_sous,
             "suivre_hausse": rg.suivre_hausse, "vente_meme_bougie": rg.vente_meme_bougie,
+            "cliquet_pas": rg.cliquet_pas, "cliquet_retrait": rg.cliquet_retrait,
+            "frais_taker": rg.frais_taker, "glissement_stop": rg.glissement_stop,
             "epreuves": epreuves(params, brut, autres, frais, budget),
             "prix_pct": [arrondi(p, 6) for p, _ in ech],
             "mises_pct": [arrondi(e, 8) for _, e in ech],
@@ -341,9 +350,14 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
                 "revients": marches(r["suivi"], 2, par_heure),
                 "sorties": marches(r["suivi"], 3, par_heure),
                 "segments": segments_engages(r["deploiement"], par_heure),
+                # [ouvert, ferme, paliers, investi, gain, gain %, sortie, crans]
                 "cycles": [[c.ouvert_le // HEURE - t0 // HEURE, c.ferme_le // HEURE - t0 // HEURE,
                             c.paliers, arrondi(c.investi, 2), arrondi(c.gain, 4),
-                            arrondi(c.gain_pct, 6)] for c in r["cycles"]],
+                            arrondi(c.gain_pct, 6), c.sortie, c.crans] for c in r["cycles"]],
+                "sorties": {g: sum(1 for c in r["cycles"] if c.sortie == g)
+                            for g in ("limite", "stop", "trou")},
+                "crans_moyens": arrondi(
+                    sum(c.crans for c in r["cycles"]) / len(r["cycles"]), 3) if r["cycles"] else 0.0,
                 "jours": journalier(r["deploiement"], r["equity"], budget, 24 * par_heure),
                 # ce que le meme reglage aurait donne sous d'autres planchers :
                 # sans cette colonne, la page ne pourrait pas montrer combien du
@@ -374,7 +388,7 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
     return {
         "meta": {
             "budget": budget, "frais": frais, "t0": t0, "pas": HEURE, "heures": n,
-            "jours": n // 24, "paires": list(paires), "genres": ["achat", "vente", "abandon"],
+            "jours": n // 24, "paires": list(paires), "genres": ["achat", "vente", "abandon", "cliquet"],
             "pas_simulation": PAS_SIM, "pas_affichage": PAS_VUE, "plancher": PLANCHER,
             "seuils_epreuves": SEUILS,
         },
