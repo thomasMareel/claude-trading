@@ -706,3 +706,56 @@ def test_la_courbure_ne_deplace_ni_le_premier_ni_le_dernier_barreau():
 def test_une_courbure_absurde_est_refusee():
     with pytest.raises(GrilleError, match="courbure"):
         Reglages(espacement="puissance", courbure=0)
+
+
+# ============================================ revue adversariale du 8 septembre
+def test_une_bougie_qui_traverse_l_echelle_puis_le_seuil_achete_quand_meme():
+    """Trouve par six chasseurs sur six. L'abandon etait pose AVANT la boucle
+    d'achats, et barreaux_a_poser() rend une liste vide des qu'il est pose : une
+    bougie qui traverse toute l'echelle PUIS le seuil n'achetait donc aucun
+    barreau, alors que le prix les avait bien visites en descendant. Biais
+    defavorable a la strategie."""
+    r0 = Reglages(profondeur=0.10, paliers=5, ratio=2.0, objectif_net=0.02,
+                  frais=0.001, abandon_sous=0.05)
+    d0 = Descente("BTC/EUR", 100.0, 1000.0, r0)
+    assert d0.seuil_abandon == pytest.approx(85.5)
+    assert min(p for p, _ in d0.echelle) == pytest.approx(90.0), "tous les barreaux sont au-dessus"
+
+    b = [bougie(0, 100, 100, 85, 86)]          # traverse les 5 barreaux, puis le seuil
+    r = rejouer("BTC/EUR", b, r0, 1000.0, reference=100.0)
+    d = r["descente_en_cours"]
+    assert r["abandons"] == 1 and d.abandonnee, "le seuil est bien franchi"
+    assert d.remplis == [0, 1, 2, 3, 4], \
+        "les barreaux traverses AVANT le seuil doivent etre achetes"
+    assert d.barreaux_a_poser() == [], "et plus rien n'est pose ensuite"
+
+
+def test_un_barreau_ajoute_ne_peut_pas_etre_revendu_dans_sa_propre_bougie():
+    """Trouve par cinq chasseurs sur six. trop_tot comparait ts a ouverte_le,
+    l'horodatage du PREMIER achat du lot : un barreau ajoute plus tard, au bas
+    d'une bougie haussiere, pouvait etre revendu au haut de la MEME bougie.
+    C'est exactement l'aller-retour intra-bougie que l'option pretend interdire,
+    et le biais est FAVORABLE a la strategie."""
+    r0 = Reglages(profondeur=0.10, paliers=5, ratio=2.0, objectif_net=0.02,
+                  frais=0.001, vente_meme_bougie=False)
+    b = [bougie(0, 100, 100, 99, 99),          # achat du barreau 0 a 100
+         bougie(H, 98, 101, 97, 100)]          # haussiere : achat du barreau 1 puis vente
+    r = rejouer("BTC/EUR", b, r0, 1000.0, reference=100.0)
+    achats = [e for e in r["journal"] if e.genre == "achat"]
+    assert [e.palier for e in achats] == [0, 1]
+    assert achats[1].ts == H, "le barreau 1 est bien achete dans la seconde bougie"
+    assert r["cycles"] == [], \
+        "aucune vente ne doit avoir lieu dans la bougie d'un achat"
+
+
+def test_le_lot_reste_vendable_a_la_bougie_suivant_le_dernier_achat():
+    """La garde ne doit pas devenir une interdiction permanente."""
+    r0 = Reglages(profondeur=0.10, paliers=5, ratio=2.0, objectif_net=0.02,
+                  frais=0.001, vente_meme_bougie=False)
+    b = [bougie(0, 100, 100, 99, 99),
+         bougie(H, 98, 101, 97, 100),          # achat du barreau 1, vente interdite
+         bougie(2 * H, 100, 101, 100, 101)]    # bougie suivante : la vente a lieu
+    r = rejouer("BTC/EUR", b, r0, 1000.0, reference=100.0)
+    assert len(r["cycles"]) == 1
+    assert r["cycles"][0].ferme_le == 2 * H
+    assert r["cycles"][0].gain_pct == pytest.approx(0.02)

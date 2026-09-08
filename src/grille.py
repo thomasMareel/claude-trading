@@ -188,6 +188,12 @@ class Descente:
     budget: float
     reglages: Reglages
     ouverte_le: int | None = None                # horodatage ms du premier achat
+    dernier_achat_le: int | None = None          # horodatage ms du dernier achat
+    #  Deux horodatages, parce qu'ils repondent a deux questions. ouverte_le date
+    #  le cycle, pour sa duree. dernier_achat_le garde l'interdiction de
+    #  l'aller-retour intra-bougie : la comparer a ouverte_le ne protegeait que
+    #  le PREMIER barreau du lot, si bien qu'un barreau ajoute au bas d'une
+    #  bougie haussiere pouvait etre revendu au haut de la meme bougie.
     #  None, pas 0 : un horodatage a zero est un instant valide, et le tester
     #  avec `if not ouverte_le` le confondait avec l'absence d'achat.
     remplis: list[int] = field(default_factory=list)   # indices des barreaux achetes
@@ -318,6 +324,7 @@ class Descente:
         self.cumul_unites += unites
         if self.ouverte_le is None:
             self.ouverte_le = ts
+        self.dernier_achat_le = ts
         return euros, unites
 
     def vendre(self, prix: float, *, au_marche: bool = False) -> dict[str, float]:
@@ -338,7 +345,8 @@ class Descente:
             "paliers": len(self.remplis), "prix_revient": self.prix_revient,
         }
         (self.remplis, self.cumul_euros, self.cumul_unites, self.ouverte_le,
-         self.stop, self.crans, self.arme_le) = [], 0.0, 0.0, None, 0.0, 0, None
+         self.dernier_achat_le, self.stop, self.crans,
+         self.arme_le) = [], 0.0, 0.0, None, None, 0.0, 0, None
         return detail
 
     def valeur(self, prix: float) -> float:
@@ -485,7 +493,7 @@ def rejouer(
             #  que le bas a ete visite avant le haut ET que l'ordre limite de vente a
             #  ete servi au sommet de la meche. Les interdire donne la borne basse.
             trop_tot = (not reglages.vente_meme_bougie
-                        and d.ouverte_le is not None and ts <= d.ouverte_le)
+                        and d.dernier_achat_le is not None and ts <= d.dernier_achat_le)
             if monte:
                 #  Le cliquet ne lit JAMAIS le haut d'une bougie : ni pour armer, ni
                 #  pour monter, ni pour sortir. Un robot qui se reveille a la cloture
@@ -512,12 +520,10 @@ def rejouer(
                         and d.arme_le is not None and ts > d.arme_le and l <= d.stop):
                     sortir(max(l, d.stop * (1 - reglages.glissement_stop)), "stop")
                     break
-                if l <= d.seuil_abandon and not d.abandonnee:
-                    d.abandonnee = True
-                    abandons += 1
-                    if trace:
-                        journal.append(Evenement(ts, "abandon", d.seuil_abandon, -1, 0.0,
-                                                 d.prix_revient, 0.0))
+                #  Acheter D'ABORD, abandonner ENSUITE. Le seuil est sous le
+                #  dernier barreau : une bougie qui l'atteint a donc traverse
+                #  toute l'echelle en descendant. Poser l'abandon avant la boucle
+                #  vidait barreaux_a_poser() et faisait perdre ces achats reels.
                 for i, prix, euros in d.barreaux_a_poser():
                     if l <= prix and cash >= euros - 1e-9:
                         d.acheter(i, prix, ts)
@@ -525,6 +531,12 @@ def rejouer(
                         if trace:
                             journal.append(Evenement(ts, "achat", prix, i, euros,
                                                      d.prix_revient, 0.0))
+                if l <= d.seuil_abandon and not d.abandonnee:
+                    d.abandonnee = True
+                    abandons += 1
+                    if trace:
+                        journal.append(Evenement(ts, "abandon", d.seuil_abandon, -1, 0.0,
+                                                 d.prix_revient, 0.0))
 
         #  Le cliquet vit a la cloture : c'est le seul instant qu'un robot qui se
         #  reveille une fois par bougie observe reellement. Armer ou monter d'abord,
@@ -532,7 +544,7 @@ def rejouer(
         #  peut donc pas se declencher dans la foulee.
         if cliquet and not ferme and d.cumul_unites:
             trop_tot = (not reglages.vente_meme_bougie
-                        and d.ouverte_le is not None and ts <= d.ouverte_le)
+                        and d.dernier_achat_le is not None and ts <= d.dernier_achat_le)
             if not trop_tot and d.armer_ou_monter(c, ts) and trace:
                 journal.append(Evenement(ts, "cliquet", d.stop, d.crans, 0.0,
                                          d.prix_revient, 0.0))
