@@ -15,6 +15,10 @@
   --rule:#D6DEDC; --rule-fort:#B2BFBB;
   --achat:#0E7C86; --vente:#B0700A; --blocage:#A34A3A;
   --hausse:#0B8F63; --baisse:#C0392E;
+  /*  Un trait et un aplat n'ont pas les memes contraintes. Les jetons -plein
+      sont assombris pour porter du texte clair ; --sur-vif est ce texte. */
+  --achat-plein:#0C6E70; --hausse-plein:#0A7A54; --baisse-plein:#B23A2E;
+  --hausse-txt:#0A7A54; --sur-vif:#FFFFFF;
   --dort:#C7D1CE; --prix:#3F4B47;
   --ombre:0 1px 2px rgba(20,29,28,.06), 0 10px 28px -14px rgba(20,29,28,.22);
   --focus:#0E7C86;
@@ -26,6 +30,8 @@
     --rule:#27332F; --rule-fort:#3A4844;
     --achat:#45C2CE; --vente:#DDA33F; --blocage:#DB7A63;
     --hausse:#22C58B; --baisse:#EB6B5F;
+    --achat-plein:#45C2CE; --hausse-plein:#22C58B; --baisse-plein:#EB6B5F;
+    --hausse-txt:#22C58B; --sur-vif:#0E1413;
     --dort:#2C3937; --prix:#93A19D;
     --ombre:0 1px 2px rgba(0,0,0,.35), 0 10px 28px -14px rgba(0,0,0,.7);
     --focus:#45C2CE;
@@ -37,6 +43,8 @@
   --rule:#27332F; --rule-fort:#3A4844;
   --achat:#45C2CE; --vente:#DDA33F; --blocage:#DB7A63;
   --hausse:#22C58B; --baisse:#EB6B5F;
+  --achat-plein:#45C2CE; --hausse-plein:#22C58B; --baisse-plein:#EB6B5F;
+  --hausse-txt:#22C58B; --sur-vif:#0E1413;
   --dort:#2C3937; --prix:#93A19D;
   --ombre:0 1px 2px rgba(0,0,0,.35), 0 10px 28px -14px rgba(0,0,0,.7);
   --focus:#45C2CE;
@@ -55,7 +63,7 @@ button{font:inherit; color:inherit}
 :focus-visible{outline:2px solid var(--focus); outline-offset:2px; border-radius:3px}
 .num{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
   font-variant-numeric:tabular-nums}
-.haut{color:var(--hausse)} .bas{color:var(--baisse)}
+.haut{color:var(--hausse-txt)} .bas{color:var(--baisse)}
 
 /* ------------------------------------------------------------------ trame */
 .large{width:min(1240px,100% - 2rem); margin-inline:auto}
@@ -100,10 +108,13 @@ h1 em{font-style:italic; color:var(--achat)}
 .groupe-b button{background:var(--surface); border:none; padding:.3rem .55rem; cursor:pointer;
   font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-2); white-space:nowrap}
 .groupe-b button:hover{background:var(--surface-3)}
-.groupe-b button[aria-pressed="true"]{background:var(--achat); color:#fff; font-weight:500}
+.groupe-b button[aria-pressed="true"]{background:var(--achat-plein); color:var(--sur-vif);
+  font-weight:500}
 .lab-o{font-family:"IBM Plex Mono",monospace; font-size:.62rem; letter-spacing:.11em;
   text-transform:uppercase; color:var(--ink-3)}
 .bascule{margin-left:auto; display:flex; gap:.4rem; align-items:center}
+#detail-reglage{flex:1 1 100%; font-size:.73rem; color:var(--ink-3); min-width:0;
+  overflow-wrap:anywhere}
 
 .toile{position:relative; width:100%; cursor:crosshair; touch-action:pan-y}
 /*  Seul le chandelier capture le doigt, parce qu'il s'y deplace et s'y zoome.
@@ -128,6 +139,7 @@ select{font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--ink);
                    linear-gradient(135deg,currentColor 50%,transparent 50%);
   background-position:calc(100% - 15px) 52%,calc(100% - 10px) 52%;
   background-size:5px 5px,5px 5px; background-repeat:no-repeat}
+
 
 /* ------------------------------------------------------------------ tuiles */
 .tuiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr)); gap:1px;
@@ -167,8 +179,8 @@ select{font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--ink);
 .puce{font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-2);
   background:var(--surface); border:1px solid var(--rule); border-radius:3px;
   padding:.28rem .55rem; cursor:pointer; white-space:nowrap}
-.puce[aria-pressed="true"]{background:var(--achat); border-color:var(--achat);
-  color:#fff; font-weight:500}
+.puce[aria-pressed="true"]{background:var(--achat-plein); border-color:var(--achat-plein);
+  color:var(--sur-vif); font-weight:500}
 .puce:hover{border-color:var(--rule-fort)}
 
 /* ------------------------------------------------------------------ dessin */
@@ -237,6 +249,7 @@ footer b{color:var(--ink-2)}
   <div class="large barre-in">
     <span class="lab-o">Réglage, du plus au moins rentable</span>
     <select id="sel-reglage"></select>
+    <span class="num" id="detail-reglage"></span>
   </div>
 </div>
 
@@ -437,6 +450,7 @@ const M = {
   unite: 24,
   h0: 0, h1: NH - 1,                    // fenetre visible, en indices horaires
   calques: { ma: true, vol: true, ordres: true },
+  uniteManuelle: false,
   croix: null,
 };
 
@@ -448,8 +462,15 @@ function uniteAuto(heures) {
   for (const [, n] of UNITES) if (Math.abs(heures / n - vise) < Math.abs(heures / best - vise)) best = n;
   return best;
 }
+/** Apres tout changement de fenetre, l'unite redescend avec le zoom. Sans
+ *  cela le plancher de fenetre — douze bougies — restait celui de l'unite
+ *  initiale : a une bougie par 72 heures on ne pouvait pas zoomer sous
+ *  trente-six jours, et la molette cessait simplement de repondre. */
+const suivreZoom = () => {
+  if (!M.uniteManuelle) M.unite = uniteAuto(M.h1 - M.h0);
+};
 const bornerVue = () => {
-  const span = Math.max(M.unite * 12, Math.min(NH, M.h1 - M.h0));
+  const span = Math.max(24, Math.min(NH, M.h1 - M.h0));
   M.h0 = Math.max(0, Math.min(NH - 1 - span, M.h0));
   M.h1 = Math.min(NH - 1, M.h0 + span);
 };
@@ -484,7 +505,10 @@ function dessinerMarche(svg, W, H) {
   const nT = Math.max(2, Math.floor(iw / 92));
   for (let k = 0; k < vis.length; k += Math.max(1, Math.ceil(vis.length / nT))) {
     el("line", { x1: X(k), x2: X(k), y1: MT, y2: MT + hPrix + hVol, class: "axe" }, svg);
-    el("text", { x: X(k), y: H - 8, "text-anchor": "middle", class: "tick" }, svg)
+    //  une date fait 72 px : au bord, "middle" en coupe la moitie
+    el("text", { x: X(k), y: H - 8, class: "tick",
+      "text-anchor": k === 0 ? "start" : k + Math.max(1, Math.ceil(vis.length / nT)) >= vis.length
+        ? "end" : "middle" }, svg)
       .textContent = M.unite >= 24 ? jj(vis[k].i) : jjh(vis[k].i);
   }
 
@@ -545,6 +569,7 @@ function dessinerMarche(svg, W, H) {
   }
 
   //  les ordres du reglage selectionne, poses sur le chandelier
+  M.ordres = {};
   if (M.calques.ordres) {
     const s = S(), go = el("g", {}, svg);
     const mises = R().mises_pct, mMax = Math.max(...mises);
@@ -555,18 +580,17 @@ function dessinerMarche(svg, W, H) {
       const x = X(k), y = Y(prix);
       if (y < MT - 4 || y > MT + hPrix + 4) continue;
       const t = 4 + 3.5 * Math.sqrt(euros / (mMax * D.meta.budget));
-      const n = genre === 0
-        ? el("path", { d: `M${x} ${y + t}L${x + t} ${y - t * .6}L${x - t} ${y - t * .6}Z`,
-            class: "m-achat", stroke: "var(--surface)", "stroke-width": .7 }, go)
-        : el("path", { d: `M${x} ${y - t}L${x + t} ${y + t * .6}L${x - t} ${y + t * .6}Z`,
-            class: "m-vente", stroke: "var(--surface)", "stroke-width": .7 }, go);
-      survol(n, genre === 0
-        ? `<b>Achat · barreau ${pal + 1}</b><br><span class="t">${jjh(i)}</span><br>
-           ${eur(euros, 2)} <span class="t">à</span> ${eur(prix)}<br>
-           <span class="t">prix de revient après :</span> ${eur(revient)}`
-        : `<b>Vente du lot entier</b><br><span class="t">${jjh(i)}</span><br>
-           ${eur(euros, 2)} <span class="t">reçus, gain</span> <b>${eur(gain, 2)}</b><br>
-           <span class="t">revient</span> ${eur(revient)} <span class="t">→</span> ${eur(prix)}`);
+      //  PAS de survol ici : le reticule reecrit l'infobulle a chaque mouvement
+      //  de souris, et le dernier ecrivain gagne. Les sept lignes d'infobulle
+      //  d'un ordre etaient donc du code injoignable. L'ordre est desormais lu
+      //  par le reticule lui-meme, dans la meme boite que l'OHLC.
+      if (genre === 0)
+        el("path", { d: `M${x} ${y + t}L${x + t} ${y - t * .6}L${x - t} ${y - t * .6}Z`,
+          class: "m-achat", stroke: "var(--surface)", "stroke-width": .7 }, go);
+      else
+        el("path", { d: `M${x} ${y - t}L${x + t} ${y + t * .6}L${x - t} ${y + t * .6}Z`,
+          class: "m-vente", stroke: "var(--surface)", "stroke-width": .7 }, go);
+      (M.ordres[k] || (M.ordres[k] = [])).push({ genre, prix, pal, euros, gain, i });
     }
   }
 
@@ -574,9 +598,9 @@ function dessinerMarche(svg, W, H) {
   const der = vis[vis.length - 1];
   el("line", { x1: 0, x2: iw, y1: Y(der.c), y2: Y(der.c), stroke: "var(--ink-3)",
     "stroke-width": 1, "stroke-dasharray": "4 3", opacity: .8 }, svg);
-  const bg = el("rect", { x: iw + 1, y: Y(der.c) - 9, width: MR - 2, height: 18,
-    fill: der.c >= der.o ? "var(--hausse)" : "var(--baisse)", rx: 2 }, svg);
-  el("text", { x: iw + 6, y: Y(der.c) + 4, fill: "#fff",
+  el("rect", { x: iw + 1, y: Y(der.c) - 9, width: MR - 2, height: 18,
+    fill: der.c >= der.o ? "var(--hausse-plein)" : "var(--baisse-plein)", rx: 2 }, svg);
+  el("text", { x: iw + 6, y: Y(der.c) + 4, fill: "var(--sur-vif)",
     style: "font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600" }, svg)
     .textContent = der.c >= 1000 ? nb(der.c, 0) : nb(der.c, 2);
 
@@ -599,8 +623,8 @@ function croixSur(evt) {
   const prix = g.lo + (1 - (y - g.MT) / g.hPrix) * (g.hi - g.lo);
   if (y >= g.MT && y <= g.MT + g.hPrix) {
     el("rect", { x: g.iw + 1, y: y - 9, width: g.MR - 2, height: 18,
-      fill: "var(--ink-2)", rx: 2 }, M.gCroix);
-    el("text", { x: g.iw + 6, y: y + 4, fill: "var(--surface)",
+      fill: "var(--ink)", rx: 2 }, M.gCroix);
+    el("text", { x: g.iw + 6, y: y + 4, fill: "var(--sur-vif)",
       style: "font-family:'IBM Plex Mono',monospace;font-size:11px" }, M.gCroix)
       .textContent = prix >= 1000 ? nb(prix, 0) : nb(prix, 2);
   }
@@ -611,7 +635,12 @@ function croixSur(evt) {
     <span class="t">B</span> ${nb(b.l, dec(b.l))} <span class="t">C</span>
       <b class="${v}">${nb(b.c, dec(b.c))}</b><br>
     <span class="t">variation</span> <b class="${v}">${sgn(b.c / b.o - 1, 2)}</b><br>
-    <span class="t">volume</span> ${compact(b.v)}`);
+    <span class="t">volume</span> ${compact(b.v)}`
+    + ((M.ordres[k] || []).map(o => o.genre === 0
+        ? `<br><b style="color:var(--achat)">achat barreau ${o.pal + 1}</b> ${eur(o.euros, 2)}
+           <span class="t">à</span> ${eur(o.prix)}`
+        : `<br><b style="color:var(--vente)">vente</b> ${eur(o.euros, 2)}
+           <span class="t">gain</span> ${eur(o.gain, 2)}`).join("")));
 }
 
 /* --------------------------------------------------- zoom, deplacement, doigt */
@@ -634,9 +663,9 @@ function brancherGestes(toile) {
     if (pointeurs.size === 2) {
       const [a, b] = [...pointeurs.values()];
       const f = ecart0 / (Math.abs(a - b) || 1);
-      const span = Math.max(M.unite * 12, Math.min(NH, Math.round(span0 * f)));
+      const span = Math.max(24, Math.min(NH, Math.round(span0 * f)));
       M.h0 = Math.round(centre0 - span / 2); M.h1 = M.h0 + span;
-      bornerVue(); toile.rendre(true); return;
+      bornerVue(); suivreZoom(); majOutils(); return;
     }
     if (glisse) {
       const g = M.geo; if (!g) return;
@@ -662,12 +691,14 @@ function brancherGestes(toile) {
     const r = toile.svg.getBoundingClientRect();
     const f = Math.max(0, Math.min(1, (e.clientX - r.left) / g.iw));
     const span = M.h1 - M.h0;
-    const nouveau = Math.max(M.unite * 12, Math.min(NH, Math.round(span * (e.deltaY > 0 ? 1.25 : .8))));
+    const nouveau = Math.max(24, Math.min(NH, Math.round(span * (e.deltaY > 0 ? 1.25 : .8))));
     const ancre = M.h0 + f * span;
     M.h0 = Math.round(ancre - f * nouveau); M.h1 = M.h0 + nouveau;
-    bornerVue(); toile.rendre(true);
+    bornerVue(); suivreZoom(); majOutils();
   }, { passive: false });
-  n.addEventListener("dblclick", () => { M.h0 = 0; M.h1 = NH - 1; M.unite = uniteAuto(NH); majOutils(); });
+  n.addEventListener("dblclick", () => {
+    M.h0 = 0; M.h1 = NH - 1; M.uniteManuelle = false; suivreZoom(); majOutils();
+  });
 }
 
 /* ================================================================== ETAT */
@@ -768,7 +799,8 @@ function plancheCycle() {
     const nT = Math.max(2, Math.floor(iw / 88));
     for (let k = 0; k <= nT; k++) {
       const i = i0 + Math.round((i1 - i0) * k / nT);
-      el("text", { x: X(i), y: H - 8, "text-anchor": "middle", class: "tick" }, svg)
+      el("text", { x: X(i), y: H - 8, class: "tick",
+        "text-anchor": k === 0 ? "start" : k === nT ? "end" : "middle" }, svg)
         .textContent = (i1 - i0) > 24 * 10 ? jjc(i) : jjh(i);
     }
     rungs.forEach((p, k) => {
@@ -843,7 +875,8 @@ function plancheArgent() {
     const nT = Math.max(2, Math.floor(iw / 88));
     for (let k = 0; k <= nT; k++) {
       const jour = Math.round((n - 1) * k / nT);
-      el("text", { x: X(jour), y: H - 8, "text-anchor": "middle", class: "tick" }, svg)
+      el("text", { x: X(jour), y: H - 8, class: "tick",
+        "text-anchor": k === 0 ? "start" : k === nT ? "end" : "middle" }, svg)
         .textContent = jj(jour * 24);
     }
     const zone = el("rect", { x: MG, y: MT, width: iw, height: ih, fill: "transparent" }, svg);
@@ -873,7 +906,11 @@ function plancheEchelle() {
   cadreToile(g1, W => Math.max(180, 40 + np * 22), (svg, W, H) => {
     const MG = 26, MD = 66, MT = 6, MB = 26;
     const mises = reg.mises_pct.map(m => m * D.meta.budget), morts = new Set(reg.morts);
-    const lo1 = Math.log10(Math.min(0.01, ...mises)), hi1 = Math.log10(Math.max(...mises) * 1.3);
+    //  ancre juste sous le plancher de la plateforme, l'element de comparaison
+    //  utile ; descendre a 0,01 EUR gaspillait trois decades sur cinq et rendait
+    //  toutes les barres semblables
+    const lo1 = Math.log10(Math.min(reg.mise_min * 0.5, ...mises));
+    const hi1 = Math.log10(Math.max(...mises) * 1.3);
     const XL = v => MG + (Math.log10(Math.max(v, Math.pow(10, lo1))) - lo1) / (hi1 - lo1) * (W - MG - MD);
     const bh = (H - MT - MB) / np;
     for (let e = Math.ceil(lo1); e <= hi1; e++) {
@@ -918,7 +955,7 @@ function plancheEchelle() {
         class: "tick" }, svg).textContent = k;
     }
     el("line", { x1: MG, x2: W - MD, y1: H - MB, y2: H - MB, class: "axe-fort" }, svg);
-    el("text", { x: W - MD + 5, y: H - MB + 4, class: "tick" }, svg).textContent = "paliers";
+    el("text", { x: W - MD + 5, y: H - MB + 4, class: "tick" }, svg).textContent = "pal.";
   });
   grille.append(g1, g2);
   const vivants = np - reg.morts.length;
@@ -964,7 +1001,8 @@ function plancheDuree() {
     const nT = Math.max(2, Math.floor(iw / 88));
     for (let k = 0; k <= nT; k++) {
       const i = Math.round((NH - 1) * k / nT);
-      el("text", { x: X(i), y: H - 8, "text-anchor": "middle", class: "tick" }, svg).textContent = jj(i);
+      el("text", { x: X(i), y: H - 8, class: "tick",
+        "text-anchor": k === 0 ? "start" : k === nT ? "end" : "middle" }, svg).textContent = jj(i);
     }
     el("text", { x: MG, y: 12, class: "etiq" }, svg)
       .textContent = "un trait = un cycle ; sa largeur est sa durée réelle";
@@ -989,7 +1027,8 @@ function plancheCaptivites() {
     for (let k = 0; k <= nT; k++) {
       const i = Math.round((NH - 1) * k / nT);
       el("line", { x1: X(i), x2: X(i), y1: MT - 6, y2: H - MB + 2, class: "axe" }, svg);
-      el("text", { x: X(i), y: H - 6, "text-anchor": "middle", class: "tick" }, svg).textContent = jj(i);
+      el("text", { x: X(i), y: H - 6, class: "tick",
+        "text-anchor": k === 0 ? "start" : k === nT ? "end" : "middle" }, svg).textContent = jj(i);
     }
     D.reglages.forEach((reg, k) => {
       const sim = reg.sims[M.paire], y = MT + k * hL;
@@ -1001,16 +1040,22 @@ function plancheCaptivites() {
           <span class="t">au</span> ${jj(b)}<br><b>${duree(b - a + 1)}</b>`);
       }
       const est = k === iReg;
-      //  11 px de mono valent environ 6,6 px par caractere : on coupe soi-meme
-      //  plutot que de laisser le bord gauche le faire
-      const place = Math.max(6, Math.floor((MG - 14) / 6.6));
-      const nom = reg.nom.length > place ? reg.nom.slice(0, place - 1) + "…" : reg.nom;
+      //  Mesurer, pas estimer : getComputedTextLength donne la largeur reelle,
+      //  prefixe de rang compris, et la seconde ligne est mesuree aussi. Treize
+      //  etiquettes sur seize etaient coupees net par le bord gauche.
       const tx = el("text", { x: MG - 8, y: y + hL / 2 - 1, "text-anchor": "end",
         class: est ? "etiq-f" : "etiq" }, svg);
-      tx.textContent = `${k + 1}. ${nom}`;
-      if (nom !== reg.nom) survol(tx, `<b>${reg.nom}</b>`);
-      el("text", { x: MG - 8, y: y + hL / 2 + 11, "text-anchor": "end", class: "tick" }, svg)
-        .textContent = `${sgn(sim.resume.perf_pct, 1)} · ${reg.epreuves.reussies}/4 épreuves`;
+      const t2 = el("text", { x: MG - 8, y: y + hL / 2 + 11, "text-anchor": "end",
+        class: "tick" }, svg);
+      t2.textContent = `${sgn(sim.resume.perf_pct, 1)} · ${reg.epreuves.reussies}/4`;
+      const entier = `${k + 1}. ${reg.nom}`;
+      let nom = entier;
+      tx.textContent = nom;
+      while (tx.getComputedTextLength() > MG - 14 && nom.length > 6) {
+        nom = nom.slice(0, -2) + "…";
+        tx.textContent = nom;
+      }
+      if (nom !== entier) survol(tx, `<b>${reg.nom}</b>`);
       if (est) el("rect", { x: 1, y: y + 2, width: W - 2, height: hL - 6, fill: "none",
         stroke: "var(--achat)", "stroke-width": 1.2 }, svg);
     });
@@ -1089,6 +1134,70 @@ function plancheChoisir() {
     [["", "passe les 4 épreuves"], ["a-blo", "en échoue au moins une"], ["trait a-blo", "acheter et attendre"]]);
 }
 
+/* ------------------------------------------- 7 : la distribution des chutes */
+function plancheChutes() {
+  const C = D.chutes;
+  if (!C || !C.histogramme) return null;
+  const box = cadre();
+  cadreToile(box, W => Math.max(240, Math.min(340, W * .3)), (svg, W, H) => {
+    const MG = 52, MD = 58, MT = 20, MB = 42;
+    const iw = W - MG - MD, ih = H - MT - MB;
+    const hist = C.histogramme, nmax = Math.max(...hist.map(x => x.n));
+    const bw = iw / hist.length;
+    for (const f of [0, .25, .5, .75, 1]) {
+      const y = MT + (1 - f) * ih;
+      el("line", { x1: MG, x2: W - MD, y1: y, y2: y, class: f === 0 ? "axe-fort" : "axe" }, svg);
+      el("text", { x: MG - 6, y: y + 4, "text-anchor": "end", class: "tick" }, svg)
+        .textContent = Math.round(f * nmax);
+    }
+    //  la courbe cumulee partage l'axe des tranches mais pas celui des comptes :
+    //  elle est donc graduee a DROITE, et on ne melange pas deux natures sur un
+    //  meme axe
+    hist.forEach((x, k) => {
+      const hh = x.n / nmax * ih;
+      const r = el("rect", { x: MG + k * bw + 2, y: MT + ih - hh, width: Math.max(2, bw - 4),
+        height: Math.max(0, hh), class: "barre-m" }, svg);
+      survol(r, `<b>${x.n} chutes</b> <span class="t">sur ${C.total}</span><br>
+        <span class="t">creux entre</span> ${pct(1 - x.a, 0)} <span class="t">et</span>
+        ${pct(1 - Math.min(1, x.de), 0)} <span class="t">sous la moyenne 24 h</span><br>
+        <b>${pct(x.n / C.total, 1)}</b> <span class="t">du total</span>`);
+      if (k % 2 === 0 || bw > 46)
+        el("text", { x: MG + k * bw + bw / 2, y: H - MB + 14, "text-anchor": "middle",
+          class: "tick" }, svg).textContent = x.de === 0 ? "<-30" : nb(-(1 - x.a) * 100, 0);
+    });
+    const YC = f => MT + (1 - f) * ih;
+    let d = "";
+    C.cumul.forEach((c, k) => {
+      const x = MG + iw * (k + .5) / C.cumul.length;
+      d += (k ? "L" : "M") + x.toFixed(1) + " " + YC(c.part / (C.cumul[0].part || 1)).toFixed(1);
+    });
+    el("path", { d, fill: "none", stroke: "var(--vente)", "stroke-width": 1.8 }, svg);
+    for (const f of [0, .5, 1]) {
+      el("text", { x: W - MD + 6, y: YC(f) + 4, class: "tick", style: "fill:var(--vente)" }, svg)
+        .textContent = pct(f * C.cumul[0].part, 0);
+    }
+    el("text", { x: MG + iw / 2, y: H - 8, "text-anchor": "middle", class: "etiq" }, svg)
+      .textContent = "profondeur du creux, en % sous la moyenne des 24 h precedentes";
+    el("text", { x: MG, y: 13, class: "etiq" }, svg)
+      .textContent = `${C.total} chutes · barres : combien · courbe : part cumulee`;
+  });
+  const c5 = C.cumul.find(x => x.seuil === 0.95), c10 = C.cumul.find(x => x.seuil === 0.90);
+  return planche(7, "Où les chutes s'arrêtent",
+    `Un mouvement de baisse continu, du sommet local au creux atteint avant retournement, clos par un rebond de ${pct(C.rebond, 0)}. Sa profondeur est mesurée contre la moyenne des 24 heures qui précèdent son sommet — la référence qu'on observe, pas la mèche qu'on ne connaîtra qu'après.`,
+    box,
+    `Sur ${C.total} chutes, <b>${pct(C.cumul[0].part, 0)} s'arrêtent avant −1 %</b>,
+     ${pct(c5 ? c5.part : 0, 1)} atteignent −5 %, ${pct(c10 ? c10.part : 0, 1)} atteignent −10 %,
+     et <b>aucune ne dépasse ${pct(1 - C.pire, 0)}</b>. Or le plus bas des 400 jours vaut
+     ${Object.entries(C.bas_400j).map(([s, v]) => `${pct(v, 0)} sur ${s.split("/")[0]}`).join(", ")}
+     de la moyenne : cette baisse ne s'est jamais produite d'un coup, elle s'est accumulée sur des
+     milliers de chutes séparées dont chacune a ré-ancré la référence. C'est pourquoi placer le
+     dernier barreau au plus bas absolu ne sert à rien tant que la référence suit le marché.
+     Enfin, <b>${pct(C.part_sous_12h, 1)} des chutes bouclent leur aller-retour en moins de douze
+     heures</b>, médiane ${nb(C.duree_mediane_h, 1)} h : la cadence n'est pas bridée par le marché.`,
+    [["carre a-ach", "nombre de chutes"], ["trait a-ven", "part cumulée"]]);
+}
+
+
 /* ------------------------------------------------------------------ tuiles */
 function tuiles() {
   const st = stats(), s = S(), r = R();
@@ -1161,7 +1270,7 @@ function majOutils() {
   const bu = document.getElementById("unites");
   bu.replaceChildren(...UNITES.map(([nom, n]) =>
     h("button", { type: "button", "aria-pressed": String(M.unite === n),
-      onclick: () => { M.unite = n; bornerVue(); majOutils(); } }, nom)));
+      onclick: () => { M.unite = n; M.uniteManuelle = true; bornerVue(); majOutils(); } }, nom)));
   const bp = document.getElementById("portees");
   const spanCourant = M.h1 - M.h0;
   bp.replaceChildren(...PORTEES.map(([nom, n]) =>
@@ -1169,7 +1278,7 @@ function majOutils() {
       onclick: () => {
         const span = Math.min(n, NH - 1);
         M.h1 = NH - 1; M.h0 = M.h1 - span;
-        M.unite = uniteAuto(span); bornerVue(); majOutils();
+        M.uniteManuelle = false; suivreZoom(); bornerVue(); majOutils();
       } }, nom)));
   const bc = document.getElementById("calques");
   bc.replaceChildren(...[["Moyennes", "ma"], ["Volume", "vol"], ["Ordres", "ordres"]].map(([nom, k]) =>
@@ -1178,11 +1287,28 @@ function majOutils() {
   M.toile && M.toile.rendre(true);
 }
 
+function detailReglage() {
+  const r = R();
+  const cad = D.meta.paires.reduce((a, s) => a + r.sims[s].cycles_par_semaine, 0)
+    / D.meta.paires.length;
+  const rate = Object.entries(r.epreuves.passe).filter(([, v]) => !v).map(([k]) => k);
+  document.getElementById("detail-reglage").textContent =
+    `profondeur ${pct(r.profondeur, 0)} · ${r.paliers} paliers · progression ×${r.ratio}`
+    + ` · premier barreau ${pct(-(r.depart_sous || 0), 0)} · objectif ${pct(r.objectif, 1)}`
+    + ` · ${nb(cad, 1)} cycles/semaine`
+    + (r.cliquet_pas != null ? ` · cliquet ${pct(r.cliquet_pas, 1)}/${pct(r.cliquet_retrait, 1)}` : "")
+    + (rate.length ? ` · échoue à : ${rate.join(", ")}` : " · passe les 4 épreuves");
+}
+
 function rendu() {
+  //  rendu() detruit les noeuds : une infobulle epinglee sur l'un d'eux ne
+  //  pourrait plus jamais etre desepinglee, et toutes les autres resteraient
+  //  muettes. On relache avant de reconstruire.
+  epingle = null;
   for (const t of TOILES.splice(0)) t.detruire && t.detruire();
   const app = document.getElementById("app");
-  app.replaceChildren(tuiles(), plancheCycle(), plancheArgent(), plancheEchelle(),
-    plancheDuree(), plancheCaptivites(), plancheChoisir());
+  app.replaceChildren(...[tuiles(), plancheCycle(), plancheArgent(), plancheEchelle(),
+    plancheDuree(), plancheCaptivites(), plancheChoisir(), plancheChutes()].filter(Boolean));
   for (const p of app.querySelectorAll(".pastille")) {
     const c = p.className;
     p.style.background = c.includes("a-ven") ? "var(--vente)"
@@ -1193,19 +1319,17 @@ function rendu() {
       : "var(--achat)";
     if (c.includes("a-blo-clair")) p.style.opacity = ".5";
   }
+  detailReglage();
   M.calques.ordres && M.toile && M.toile.rendre(true);
   cache();
 }
 
 const selR = document.getElementById("sel-reglage");
-D.reglages.forEach((r, k) => {
-  const cad = D.meta.paires.reduce((a, s) => a + r.sims[s].cycles_par_semaine, 0) / D.meta.paires.length;
-  selR.append(h("option", { value: String(k) },
-    `${k + 1}. ${sgn(r.gain_moyen, 1)} · ${r.epreuves.reussies}/4 épreuves — ${r.nom} — `
-    + `prof ${pct(r.profondeur, 0)}, ${r.paliers} paliers, ×${r.ratio}, objectif ${pct(r.objectif, 1)}, `
-    + `${nb(cad, 1)} cycles/sem`
-    + (r.cliquet_pas != null ? `, cliquet ${pct(r.cliquet_pas, 1)}/${pct(r.cliquet_retrait, 1)}` : "")));
-});
+//  Une ligne de menu natif ne se met pas en forme et se fait tronquer par le
+//  widget : de 96 a 131 caracteres, elle etait illisible et incomparable d'une
+//  ligne a l'autre. Le detail du reglage courant descend sous la barre.
+D.reglages.forEach((r, k) => selR.append(h("option", { value: String(k) },
+  `${k + 1}. ${sgn(r.gain_moyen, 1)} · ${r.epreuves.reussies}/4 — ${r.nom}`)));
 selR.value = "0";
 selR.addEventListener("change", () => { iReg = +selR.value; cycleChoisi = null; rendu(); });
 

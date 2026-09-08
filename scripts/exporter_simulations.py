@@ -82,36 +82,29 @@ PLANCHERS_COMPARES = (0.0, 5.0)
 #  vente_meme_bougie=False partout : on refuse de compter un aller-retour boucle
 #  dans la bougie de son achat, car rien dans les donnees ne peut le prouver.
 REGLAGES = [
-    #  L'echelle gagnante du banc, sans cliquet. Trois paliers seulement : le
-    #  plancher de la plateforme autorise alors une progression bien plus
-    #  agressive, donc un prix de revient plus bas et un rebond plus court.
-    dict(cle="solide-50-3", nom="La grille seule", profondeur=0.50, paliers=3, ratio=3.3,
+    #  LA FAMILLE DEDUITE DES CHUTES. Rapide — quatre cycles par semaine, la
+    #  meilleure cadence rentable mesuree — mais fragile : reduire sa profondeur
+    #  d'un cinquieme la fait passer de +11 % a -6,5 %. Elle est reglee juste
+    #  au-dela du point ou la plupart des chutes s'arretent, ce qui est puissant
+    #  sur CE marche et ne se transporte pas.
+    dict(cle="cadence-2", nom="Cadence, depart -2 %", profondeur=0.12, paliers=8, ratio=1.6,
+         objectif_net=0.01, depart_sous=0.02, suivre_hausse=True),
+    dict(cle="cadence-3", nom="Cadence, depart -3 %", profondeur=0.12, paliers=8, ratio=1.6,
+         objectif_net=0.01, depart_sous=0.03, suivre_hausse=True),
+    dict(cle="cadence-10", nom="Cadence, 10 paliers", profondeur=0.12, paliers=10, ratio=1.4,
+         objectif_net=0.01, depart_sous=0.03, suivre_hausse=True),
+    dict(cle="cadence-15", nom="Cadence, 15 % de profondeur", profondeur=0.15, paliers=10,
+         ratio=1.4, objectif_net=0.01, depart_sous=0.03, suivre_hausse=True),
+    #  LA FAMILLE PROFONDE, archivee mais gardee comme repere. Lente — un cycle
+    #  toutes les trois semaines — mais tous ses voisins restent positifs, son
+    #  creux vaut la moitie, et les trois finesses de bougies la donnent au meme
+    #  nombre a quatre dixiemes pres.
+    dict(cle="profonde-4", nom="Profonde et robuste", profondeur=0.50, paliers=3, ratio=3.3,
          objectif_net=0.04, depart_sous=0.02, suivre_hausse=True),
-    #  La meme, avec le cliquet. Elle affiche le meilleur chiffre de toute la
-    #  recherche et c'est un mirage : +13,7 % en cinq minutes, mais +8,7 % en
-    #  horaire et +10,1 % a la minute. Sur les donnees les plus fideles elle
-    #  passe DERRIERE la grille seule. Gardee dans la page comme contre-exemple.
-    dict(cle="cliquet-4", nom="Cliquet, seuil 4 %", profondeur=0.50, paliers=3, ratio=3.3,
-         objectif_net=0.04, depart_sous=0.02, suivre_hausse=True,
-         cliquet_pas=0.02, cliquet_retrait=0.015),
-    #  Le seul cliquet stable entre resolutions (0,5 point d'ecart) et le seul a
-    #  battre reellement la grille seule. Il le paie par un creux de 39 % contre
-    #  15, et par un voisin immediat qui repasse dans le rouge.
-    dict(cle="cliquet-8", nom="Cliquet, seuil 8 %", profondeur=0.50, paliers=3, ratio=3.3,
-         objectif_net=0.08, depart_sous=0.02, suivre_hausse=True,
-         cliquet_pas=0.04, cliquet_retrait=0.015),
-    #  Le bras de controle : un stop pose au seuil et jamais remonte. Il isole ce
-    #  que coute le passage d'un ordre limite a un ordre au marche.
-    dict(cle="stop-fixe", nom="Stop fixe, sans cliquet", profondeur=0.50, paliers=3,
-         ratio=3.3, objectif_net=0.04, depart_sous=0.02, suivre_hausse=True,
-         cliquet_pas=10.0, cliquet_retrait=0.002),
-    dict(cle="solide-50-3-o3", nom="La grille seule, objectif 3 %", profondeur=0.50,
-         paliers=3, ratio=2.8, objectif_net=0.03, depart_sous=0.02, suivre_hausse=True),
-    #  Le creux le moins profond de toute la recherche : -9 %.
+    dict(cle="profonde-3", nom="Profonde, objectif 3 %", profondeur=0.50, paliers=3, ratio=2.8,
+         objectif_net=0.03, depart_sous=0.02, suivre_hausse=True),
     dict(cle="prudent-60-5", nom="Le moins risque", profondeur=0.60, paliers=5, ratio=2.4,
          objectif_net=0.08, depart_sous=0.04, reancrage_min=0.02, suivre_hausse=True),
-    dict(cle="patient-30", nom="Patient", profondeur=0.30, paliers=12, ratio=1.3,
-         objectif_net=0.03, suivre_hausse=True),
     dict(cle="p08-14-r18-o2", nom="Le tableau d'origine", profondeur=0.08, paliers=14,
          ratio=1.8, objectif_net=0.02, suivre_hausse=False),
 
@@ -270,6 +263,40 @@ def epreuves(spec: dict, brut: dict, autres: dict, frais: float, budget: float) 
     }
 
 
+def chutes_mesurees() -> dict:
+    """La distribution des chutes, si scripts/etudier_chutes.py l'a produite.
+
+    Une chute est un mouvement de baisse continu, du sommet local au creux
+    atteint avant retournement, mesure contre la moyenne des 24 heures qui
+    precedent son sommet. C'est cette distribution qui dit ou poser les
+    barreaux — et c'est elle qui a montre qu'aucune chute unique ne depasse
+    -22 %, alors que le plus bas des 400 jours est 50 % sous la moyenne.
+    """
+    f = Path("docs/chutes.json")
+    if not f.exists():
+        return {}
+    d = json.loads(f.read_text(encoding="utf-8"))
+    tout = [c for v in d["paires"].values() for c in v["chutes"]]
+    if not tout:
+        return {}
+    n = len(tout)
+    tranches = [(0.99, 1.01), (0.98, 0.99), (0.97, 0.98), (0.96, 0.97), (0.95, 0.96),
+                (0.93, 0.95), (0.90, 0.93), (0.85, 0.90), (0.80, 0.85), (0.75, 0.80),
+                (0.70, 0.75), (0.0, 0.70)]
+    return {
+        "total": n, "rebond": d["rebond"],
+        "histogramme": [{"de": a, "a": b, "n": sum(1 for x in tout if a <= x["ratio24"] < b)}
+                        for a, b in tranches],
+        "cumul": [{"seuil": s, "part": arrondi(
+            sum(1 for x in tout if x["ratio24"] <= s) / n, 5)}
+            for s in (0.99, 0.98, 0.97, 0.96, 0.95, 0.93, 0.90, 0.85, 0.80, 0.75, 0.70)],
+        "pire": arrondi(min(x["ratio24"] for x in tout), 5),
+        "duree_mediane_h": arrondi(sorted(x["heures"] + x["reprise_h"] for x in tout)[n // 2], 3),
+        "part_sous_12h": arrondi(sum(1 for x in tout if x["heures"] + x["reprise_h"] <= 12) / n, 5),
+        "bas_400j": {s: arrondi(v["bas_vs_moyenne"], 5) for s, v in d["paires"].items()},
+    }
+
+
 def exporter(cfg, st: Storage, budget: float) -> dict:
     frais = float(cfg.get("exchange.fee_rate", 0.001))
     par_heure = {"1m": 60, "5m": 12, "15m": 4, "1h": 1}[PAS_SIM]
@@ -337,6 +364,8 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
             "id": cle, "nom": nom, "profondeur": rg.profondeur, "paliers": rg.paliers,
             "ratio": rg.ratio, "objectif": rg.objectif_net, "abandon_sous": rg.abandon_sous,
             "suivre_hausse": rg.suivre_hausse, "vente_meme_bougie": rg.vente_meme_bougie,
+            "depart_sous": rg.depart_sous, "espacement": rg.espacement,
+            "courbure": rg.courbure,
             "cliquet_pas": rg.cliquet_pas, "cliquet_retrait": rg.cliquet_retrait,
             "frais_taker": rg.frais_taker, "glissement_stop": rg.glissement_stop,
             "epreuves": epreuves(params, brut, autres, frais, budget),
@@ -409,6 +438,7 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
         },
         "paires": paires,
         "reglages": sorties,
+        "chutes": chutes_mesurees(),
     }
 
 

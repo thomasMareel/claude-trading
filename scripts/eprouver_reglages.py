@@ -47,6 +47,8 @@ VOISINAGE = {
     "paliers": ("+", -2, 2),
     "cliquet_pas": ("x", 0.5, 2.0),
     "cliquet_retrait": ("x", 0.5, 2.0),
+    "courbure": ("x", 0.8, 1.25),
+    "depart_sous": ("x", 0.7, 1.4),
 }
 
 
