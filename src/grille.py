@@ -379,6 +379,11 @@ class Cycle:
     heures: float
     sortie: str = "limite"   # "limite" | "stop" | "trou"
     crans: int = 0           # crans montes par le cliquet avant la sortie
+    reference: float = 0.0   # prix de reference de l'echelle qui a servi
+    #  La reference est celle EN VIGUEUR PENDANT le cycle. Sans elle, une page
+    #  qui veut redessiner l'echelle doit la relire dans la serie des marches, ou
+    #  elle tombe sur la reference d'APRES la vente — decalee d'un pour cent en
+    #  mediane, de quatre dans le pire cas.
 
 
 @dataclass
@@ -465,13 +470,13 @@ def rejouer(
             """Solde le lot au marche et ouvre une descente au prix du moment."""
             nonlocal d, cash, ferme
             ouvert = ts if d.ouverte_le is None else d.ouverte_le
-            crans = d.crans
+            crans, ref_cycle = d.crans, d.reference
             det = d.vendre(px, au_marche=True)
             cash += det["recu"]
             cycles.append(Cycle(
                 symbole, ouvert, ts, det["paliers"], det["investi"], det["recu"],
                 det["gain"], det["gain_pct"], det["prix_revient"], px,
-                (ts - ouvert) / 3_600_000, genre, crans,
+                (ts - ouvert) / 3_600_000, genre, crans, ref_cycle,
             ))
             if trace:
                 journal.append(Evenement(ts, "vente", px, -1, det["recu"],
@@ -502,12 +507,13 @@ def rejouer(
                     px = d.prix_sortie
                     # lire l'ouverture AVANT de vendre : vendre() remet la descente a zero
                     ouvert = ts if d.ouverte_le is None else d.ouverte_le
+                    ref_cycle = d.reference
                     det = d.vendre(px)
                     cash += det["recu"]
                     cycles.append(Cycle(
                         symbole, ouvert, ts, det["paliers"], det["investi"],
                         det["recu"], det["gain"], det["gain_pct"], det["prix_revient"], px,
-                        (ts - ouvert) / 3_600_000, "limite", 0,
+                        (ts - ouvert) / 3_600_000, "limite", 0, ref_cycle,
                     ))
                     if trace:
                         journal.append(Evenement(ts, "vente", px, -1, det["recu"],

@@ -302,15 +302,24 @@ const h = (t, a = {}, ...kids) => {
   return n;
 };
 const dateDe = i => new Date(T0 + i * HEURE);
-const jj = i => dateDe(i).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit" });
-const jjc = i => dateDe(i).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+//  timeZone UTC obligatoire : sans elle la date suit le fuseau du lecteur
+//  pendant que l'heure reste en UTC, et les deux moities de l'etiquette
+//  designent des instants differents. A Tokyo, 3600 heures sur 9600 etaient
+//  datees d'un jour de trop, y compris la ligne "Fenetre" du recapitulatif.
+const UTC = { timeZone: "UTC" };
+const jj = i => dateDe(i).toLocaleDateString("fr-FR",
+  { ...UTC, day: "2-digit", month: "short", year: "2-digit" });
+const jjc = i => dateDe(i).toLocaleDateString("fr-FR", { ...UTC, day: "2-digit", month: "short" });
 const jjh = i => jjc(i) + " " + String(dateDe(i).getUTCHours()).padStart(2, "0") + "h";
 const dec = v => v >= 1000 ? 2 : v >= 10 ? 2 : v >= 1 ? 3 : 4;
 const nb = (v, d) => v.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
 const eur = (v, d) => nb(v, d === undefined ? dec(v) : d) + " €";
 const pct = (v, d = 1) => nb(v * 100, d) + " %";
 const sgn = (v, d = 1) => (v >= 0 ? "+" : "") + pct(v, d);
-const duree = hh => hh < 48 ? `${Math.round(hh)} h` : hh < 24 * 90 ? `${Math.round(hh / 24)} j`
+//  Sous l'heure on compte en minutes : arrondir a l'heure faisait afficher
+//  "0 h" a 204 cycles sur 2237, qui durent de cinq a cinquante-cinq minutes.
+const duree = hh => hh < 1 ? `${Math.max(1, Math.round(hh * 60))} min`
+  : hh < 48 ? `${Math.round(hh)} h` : hh < 24 * 90 ? `${Math.round(hh / 24)} j`
   : `${(hh / 24 / 30.4).toFixed(1)} mois`;
 const compact = v => v >= 1e9 ? (v / 1e9).toFixed(1) + " Md" : v >= 1e6 ? (v / 1e6).toFixed(1) + " M"
   : v >= 1e3 ? (v / 1e3).toFixed(1) + " k" : nb(v, 1);
@@ -721,8 +730,8 @@ function stats() {
     cinq: tot > 0 ? gains.slice(0, 5).reduce((a, b) => a + b, 0) / tot : 0,
     hold: D.paires[M.paire].hold_pct,
     jourAband: s.jours.abandon.reduce((a, b) => a + b, 0),
-    medianeH: s.cycles.length ? s.cycles.map(c => c[1] - c[0]).sort((a, b) => a - b)[s.cycles.length >> 1] : 0,
-    plusLongCycle: s.cycles.length ? Math.max(...s.cycles.map(c => c[1] - c[0])) : 0,
+    medianeH: s.cycles.length ? s.cycles.map(c => c[8]).sort((a, b) => a - b)[s.cycles.length >> 1] : 0,
+    plusLongCycle: s.cycles.length ? Math.max(...s.cycles.map(c => c[8])) : 0,
   };
 }
 
@@ -781,7 +790,9 @@ function plancheCycle() {
   cadreToile(box, W => Math.max(260, Math.min(430, W * .38)), (svg, W, H) => {
     const MG = 58, MD = Math.min(150, Math.max(96, W * .17)), MT = 10, MB = 24;
     const P = D.paires[M.paire], iw = W - MG - MD, ih = H - MT - MB;
-    const ref = marche(s.references, c[0]), rungs = R().prix_pct.map(p => ref * p);
+    //  la reference PORTEE par le cycle, et non relue dans les marches a son
+    //  indice horaire : cette relecture rendait celle d'APRES la vente
+    const ref = c[11], rungs = R().prix_pct.map(p => ref * p);
     const evs = s.journal.filter(e => e[0] >= i0 && e[0] <= i1 && e[1] <= 1);
     let lo = Infinity, hi = -Infinity;
     for (let i = i0; i <= i1; i++) { lo = Math.min(lo, P.bas[i]); hi = Math.max(hi, P.haut[i]); }
@@ -818,13 +829,21 @@ function plancheCycle() {
       let dd = "", ouvert = false;
       for (let i = i0; i <= i1; i++) {
         const v = marche(serie, i);
-        if (!v) { ouvert = false; continue; }
+        //  zero veut dire "aucun lot", pas "aucune donnee" : la dichotomie garde
+        //  la derniere marche de l'heure, donc le zero pose apres la vente
+        if (v == null || v <= 0) { ouvert = false; continue; }
         dd += (ouvert ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1) + " ";
         ouvert = true;
       }
       if (dd) el("path", { class: cls, d: dd }, svg);
     };
     esc(s.sorties, "sortie-l"); esc(s.revients, "revient-l");
+    //  Un cycle boucle dans l'heure n'a aucune marche a son propre indice : ses
+    //  deux traits disparaissaient. On les pose alors depuis ce que le cycle
+    //  porte lui-meme, sur toute sa largeur.
+    if (c[1] === c[0]) for (const [v, cls] of [[c[10], "sortie-l"], [c[9], "revient-l"]])
+      if (v > 0 && v >= lo && v <= hi)
+        el("path", { class: cls, d: `M${X(c[0])} ${Y(v)}L${X(c[1] + 1)} ${Y(v)}` }, svg);
     for (const [i, genre, prix, pal, euros, revient, gain] of evs) {
       const x = X(i), y = Y(prix);
       const n = genre === 0
@@ -1214,7 +1233,7 @@ function tuiles() {
     ["Plus long blocage", duree(st.plusLong), st.plusLong > 24 * 60 ? "neg" : "",
       `${pct(st.engPct, 0)} du temps avec de l'argent dehors`],
     ["Abandons", String(st.abandons), st.abandons ? "neg" : "",
-      st.abandons ? `${st.jourAband} jours sous le seuil` : "jamais sous le seuil"],
+      st.abandons ? `${st.jourAband} jours en abandon, sans nouvel achat` : "jamais sous le seuil"],
     ...(r.cliquet_pas != null ? [["Sorties au stop",
       pct((s.sorties_type.stop + s.sorties_type.trou) / Math.max(1, st.cycles), 0), "",
       `${s.crans_moyens} crans en moyenne · taker ${pct(r.frais_taker, 2)}`]] : []),

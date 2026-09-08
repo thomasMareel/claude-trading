@@ -390,10 +390,19 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
                 "revients": marches(r["suivi"], 2, par_heure),
                 "sorties": marches(r["suivi"], 3, par_heure),
                 "segments": segments_engages(r["deploiement"], par_heure),
-                # [ouvert, ferme, paliers, investi, gain, gain %, sortie, crans]
+                #  [ouvert, ferme, paliers, investi, gain, gain %, sortie, crans,
+                #   heures REELLES, revient, prix de sortie, reference qui a servi]
+                #  Les indices d'ouverture et de fermeture sont ramenes a l'heure
+                #  pour l'affichage, mais neuf pour cent des cycles se bouclent
+                #  DANS une heure : lus seuls, ils annoncent une duree nulle et
+                #  font relire a la page la reference d'APRES la vente. Les
+                #  quatre derniers champs portent donc ce que le moteur sait.
                 "cycles": [[c.ouvert_le // HEURE - t0 // HEURE, c.ferme_le // HEURE - t0 // HEURE,
                             c.paliers, arrondi(c.investi, 2), arrondi(c.gain, 4),
-                            arrondi(c.gain_pct, 6), c.sortie, c.crans] for c in r["cycles"]],
+                            arrondi(c.gain_pct, 6), c.sortie, c.crans,
+                            arrondi(c.heures, 4), arrondi(c.prix_revient, 4),
+                            arrondi(c.prix_sortie, 4), arrondi(c.reference, 4)]
+                           for c in r["cycles"]],
                 #  PAS "sorties" : cette cle porte deja la serie des prix de
                 #  sortie, quelques lignes plus haut. La collision ecrasait
                 #  silencieusement la serie, et le trait pointille de la sortie

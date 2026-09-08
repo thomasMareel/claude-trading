@@ -759,3 +759,17 @@ def test_le_lot_reste_vendable_a_la_bougie_suivant_le_dernier_achat():
     assert len(r["cycles"]) == 1
     assert r["cycles"][0].ferme_le == 2 * H
     assert r["cycles"][0].gain_pct == pytest.approx(0.02)
+
+
+def test_un_cycle_garde_la_reference_qui_a_servi_et_non_celle_d_apres():
+    """La page redessinait l'echelle d'un cycle en relisant la reference dans la
+    serie des marches, a l'indice de son OUVERTURE ramene a l'heure. Sur un
+    cycle boucle dans l'heure, cette lecture rend la reference d'APRES la vente,
+    decalee de plus d'un pour cent. Le Cycle la porte maintenant lui-meme."""
+    b = [bougie(0, 100, 100, 89, 90), bougie(H, 90, 99, 90, 99)]
+    r = rejouer("BTC/EUR", b, R, 1000.0, reference=100.0)
+    assert len(r["cycles"]) == 1
+    c = r["cycles"][0]
+    assert c.reference == pytest.approx(100.0), "celle de l'echelle qui a servi"
+    assert r["descente_en_cours"].reference == pytest.approx(99.0), "et non celle d'apres"
+    assert c.heures == pytest.approx(1.0)
