@@ -1,11 +1,11 @@
 {
- "maj": "2026-09-08T19:47:30+00:00",
+ "maj": "2026-09-08T20:48:38+00:00",
  "depuis": 1788896400000,
- "jours": 0.0,
- "budget_total": 0.0,
- "equity_total": 0.0,
+ "jours": 0.05,
+ "budget_total": 1000.0,
+ "equity_total": 1000.0,
  "perf_total": 0.0,
- "hold_moyen": 0.0,
+ "hold_moyen": -0.003524,
  "reglage": {
   "profondeur": 0.5,
   "paliers": 3,
@@ -25,5 +25,81 @@
   ],
   "pas": "5m"
  },
- "paires": []
+ "paires": [
+  {
+   "paire": "BTC/EUR",
+   "equity": 200.0,
+   "perf": 0.0,
+   "cycles": 0,
+   "engage": 0.0,
+   "barreaux": 0,
+   "reference": 67636.2,
+   "prix": 67582.4,
+   "revient": 0.0,
+   "sortie": 0.0,
+   "abandonnee": false,
+   "bougies": 13,
+   "hold": -0.000747
+  },
+  {
+   "paire": "ETH/EUR",
+   "equity": 200.0,
+   "perf": 0.0,
+   "cycles": 0,
+   "engage": 0.0,
+   "barreaux": 0,
+   "reference": 2142.06,
+   "prix": 2137.71,
+   "revient": 0.0,
+   "sortie": 0.0,
+   "abandonnee": false,
+   "bougies": 13,
+   "hold": -0.001948
+  },
+  {
+   "paire": "XRP/EUR",
+   "equity": 200.0,
+   "perf": 0.0,
+   "cycles": 0,
+   "engage": 0.0,
+   "barreaux": 0,
+   "reference": 1.2273,
+   "prix": 1.22,
+   "revient": 0.0,
+   "sortie": 0.0,
+   "abandonnee": false,
+   "bougies": 13,
+   "hold": -0.007935
+  },
+  {
+   "paire": "SOL/EUR",
+   "equity": 200.0,
+   "perf": 0.0,
+   "cycles": 0,
+   "engage": 0.0,
+   "barreaux": 0,
+   "reference": 89.12,
+   "prix": 88.87,
+   "revient": 0.0,
+   "sortie": 0.0,
+   "abandonnee": false,
+   "bougies": 13,
+   "hold": -0.002672
+  },
+  {
+   "paire": "DOGE/EUR",
+   "equity": 200.0,
+   "perf": 0.0,
+   "cycles": 0,
+   "engage": 0.0,
+   "barreaux": 0,
+   "reference": 0.07779,
+   "prix": 0.07727,
+   "revient": 0.0,
+   "sortie": 0.0,
+   "abandonnee": false,
+   "bougies": 13,
+   "hold": -0.004318
+  }
+ ]
 }

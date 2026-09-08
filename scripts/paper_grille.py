@@ -47,16 +47,41 @@ PAIRES = ["BTC/EUR", "ETH/EUR", "XRP/EUR", "SOL/EUR", "DOGE/EUR"]
 BUDGET = 200.0          # 1000 EUR au total, repartis a parts egales
 PAS = "5m"              # le pas auquel toute l'etude a ete menee
 
-#  L'echelle profonde. Sur le panier choisi par regle, c'est la SEULE famille
-#  qui reste positive : les echelles courtes finissent immobilisees a cent
-#  pour cent. Elle passe aussi les quatre epreuves du banc (voisinage, paires,
-#  trimestres, trois finesses de bougies), ce qu'aucune autre n'a fait.
-#  Contrepartie assumee et mesuree : des cycles tres longs, loin des douze
-#  heures visees. Sur ce panier, viser douze heures imposait une echelle courte
-#  qui perd de l'argent.
-REGLAGE = dict(profondeur=0.50, paliers=3, ratio=3.3, objectif_net=0.04,
-               depart_sous=0.02, suivre_hausse=True, vente_meme_bougie=False,
-               mise_min=12.0)
+#  DEUX ECHELLES TOURNENT EN PARALLELE, sur les MEMES paires et le MEME budget.
+#  Tout ce qui les separe est la forme de l'echelle : la comparaison est donc
+#  lisible, ce qui ne serait plus vrai si l'une d'elles avait aussi un autre
+#  panier ou une autre mise. Leurs departs different d'une heure — chacune part
+#  a l'instant ou SON reglage a ete fige, jamais avant : reculer le depart de la
+#  seconde la ferait juger sur une heure deja connue de qui l'a reglee.
+#
+#  "3paliers"  L'echelle profonde issue du balayage. Sur le panier choisi par
+#              regle, c'est la seule famille restee positive : les echelles
+#              courtes finissent immobilisees a cent pour cent. Elle passe les
+#              quatre epreuves du banc (voisinage, paires, trimestres, trois
+#              finesses de bougies). Contrepartie mesuree : des cycles tres
+#              longs, loin des douze heures visees.
+#
+#  "8paliers"  Celle que vous decrivez : premier barreau plus bas, mises plus
+#              petites, beaucoup de barreaux, objectif ramene a 2 % nets.
+#              UNE CONTRAINTE LA DEFORME, et il faut la dire : le plancher de
+#              12 EUR par ordre (config.yaml, min_order_value) impose, sur un
+#              budget de 200 EUR reparti en 8 barreaux, une progression d'au
+#              plus 1,20 — au-dela, les premiers barreaux tomberaient sous le
+#              plancher et ne seraient jamais poses. Une vraie progression
+#              geometrique a 8 barreaux (raison 1,6) demanderait 840 EUR sur la
+#              SEULE paire. A 200 EUR par paire, "grosses mises en bas" et
+#              "huit barreaux" ne peuvent pas coexister : c'est une mesure, pas
+#              un choix. L'echelle ci-dessous est donc la plus progressive que
+#              le plancher autorise.
+PROFILS = {
+    "3paliers": dict(profondeur=0.50, paliers=3, ratio=3.3, objectif_net=0.04,
+                     depart_sous=0.02, suivre_hausse=True, vente_meme_bougie=False,
+                     mise_min=12.0),
+    "8paliers": dict(profondeur=0.50, paliers=8, ratio=1.20, objectif_net=0.02,
+                     depart_sous=0.02, suivre_hausse=True, vente_meme_bougie=False,
+                     mise_min=12.0),
+}
+REGLAGE = PROFILS["3paliers"]      # remplace par --profil, sans changer le defaut
 
 
 def etat_json(chemin: Path) -> dict:
@@ -74,9 +99,11 @@ def bougies_locales(st: Storage, s: str, depuis: int) -> list[tuple]:
             for r in rows]
 
 
-def un_cycle(cfg, st: Storage, x: Exchange, etat: dict, sortie: Path, verbeux: bool = True) -> dict:
+def un_cycle(cfg, st: Storage, x: Exchange, etat: dict, sortie: Path, verbeux: bool = True,
+             reglage: dict | None = None) -> dict:
+    reglage = reglage or REGLAGE
     frais = float(cfg.get("exchange.fee_rate", 0.001))
-    rg = Reglages(frais=frais, **REGLAGE)
+    rg = Reglages(frais=frais, **reglage)
     maintenant = int(time.time() * 1000)
 
     #  On ne lit que des bougies CLOSES : la derniere en cours mentirait, et
@@ -132,7 +159,7 @@ def un_cycle(cfg, st: Storage, x: Exchange, etat: dict, sortie: Path, verbeux: b
         "budget_total": total_bud, "equity_total": round(total_eq, 2),
         "perf_total": round(total_eq / total_bud - 1, 6) if total_bud else 0.0,
         "hold_moyen": round(sum(l["hold"] for l in lignes) / len(lignes), 6) if lignes else 0.0,
-        "reglage": {**REGLAGE, "budget": BUDGET, "paires": PAIRES, "pas": PAS},
+        "reglage": {**reglage, "budget": BUDGET, "paires": PAIRES, "pas": PAS},
         "paires": lignes,
     }
     sortie.parent.mkdir(parents=True, exist_ok=True)
@@ -146,10 +173,18 @@ def un_cycle(cfg, st: Storage, x: Exchange, etat: dict, sortie: Path, verbeux: b
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--once", action="store_true")
+    ap.add_argument("--profil", default="3paliers", choices=sorted(PROFILS),
+                    help="quelle echelle faire tourner ; chacune a son propre journal")
     ap.add_argument("--intervalle", type=int, default=60, help="secondes entre deux reveils")
-    ap.add_argument("--etat", default="docs/data/paper_grille_etat.json")
-    ap.add_argument("--sortie", default="docs/data/paper_grille.json")
+    ap.add_argument("--etat", default=None)
+    ap.add_argument("--sortie", default=None)
     args = ap.parse_args()
+    #  Le profil d'origine garde SES fichiers, au nom inchange : le processus
+    #  qui tourne deja depuis le 8 septembre continue d'y ecrire sans rupture.
+    suffixe = "" if args.profil == "3paliers" else f"_{args.profil}"
+    args.etat = args.etat or f"docs/data/paper_grille{suffixe}_etat.json"
+    args.sortie = args.sortie or f"docs/data/paper_grille{suffixe}.json"
+    reglage = PROFILS[args.profil]
 
     cfg = load_config()
     st = Storage(cfg.get("storage.db_path"), None)
@@ -161,14 +196,18 @@ def main() -> int:
         #  a servi a choisir les reglages et ne peut pas les juger.
         etat["depuis"] = int(time.time() * 1000) // 300_000 * 300_000
         chemin.parent.mkdir(parents=True, exist_ok=True)
-        print(f"Depart du paper trading : {datetime.fromtimestamp(etat['depuis']/1000, timezone.utc)}")
+        print(f"Depart du paper trading [{args.profil}] : "
+              f"{datetime.fromtimestamp(etat['depuis']/1000, timezone.utc)}")
         print(f"  {len(PAIRES)} paires x {BUDGET:.0f} EUR = {len(PAIRES)*BUDGET:.0f} EUR")
-        print(f"  echelle : profondeur {REGLAGE['profondeur']:.0%}, {REGLAGE['paliers']} paliers, "
-              f"x{REGLAGE['ratio']}, objectif {REGLAGE['objectif_net']:.0%}\n", flush=True)
+        mises = Reglages(frais=0.001, **reglage).echelle(1.0, BUDGET)
+        print("  mises, du haut vers le bas : "
+              + ", ".join(f"{e:.0f}" for _, e in mises) + " EUR")
+        print(f"  echelle : profondeur {reglage['profondeur']:.0%}, {reglage['paliers']} paliers, "
+              f"x{reglage['ratio']}, objectif {reglage['objectif_net']:.0%}\n", flush=True)
 
     while True:
         try:
-            un_cycle(cfg, st, x, etat, Path(args.sortie))
+            un_cycle(cfg, st, x, etat, Path(args.sortie), reglage=reglage)
         except Exception as e:                           # noqa: BLE001
             print(f"cycle en erreur : {type(e).__name__} {str(e)[:120]}", flush=True)
         chemin.write_text(json.dumps(etat), encoding="utf-8")

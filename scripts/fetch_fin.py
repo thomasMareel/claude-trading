@@ -80,24 +80,37 @@ def main() -> int:
     row = st._conn.execute(
         "SELECT MIN(ts) a, MAX(ts) b FROM candles WHERE symbol=? AND timeframe='1h'",
         (cfg.symbols[0],)).fetchone()   # fenetre de reference, toujours BTC/EUR
-    jusqu_a = args.fin or (int(row["b"]) + 3_600_000)
+    jusqu_a = args.fin or (int(row['b']) + 3_600_000)
     depuis = jusqu_a - args.days * 86_400_000
-    if row["a"] and depuis < int(row["a"]):
-        depuis = int(row["a"])
+    #  On ne se bride PLUS sur l'historique horaire deja en base : demander
+    #  mille jours quand la base n'en contient que quatre cents doit remonter
+    #  plus loin, pas se faire tronquer en silence.
 
     symboles = args.paires.split(",") if args.paires else cfg.symbols
     attendu = args.days * 1440 // MINUTES[args.tf]
     print(f"{len(symboles)} paires x ~{attendu} bougies {args.tf} "
           f"(~{attendu // 300 * len(symboles)} appels)", flush=True)
     t0 = time.time()
+    pas_ms = MINUTES[args.tf] * 60_000
     for s in symboles:
-        deja = st._conn.execute(
-            "SELECT MAX(ts) m FROM candles WHERE symbol=? AND timeframe=?", (s, args.tf)).fetchone()["m"]
-        debut = max(depuis, int(deja) + MINUTES[args.tf] * 60_000) if deja else depuis
-        if debut >= jusqu_a:
+        r = st._conn.execute(
+            "SELECT MIN(ts) a, MAX(ts) b FROM candles WHERE symbol=? AND timeframe=?",
+            (s, args.tf)).fetchone()
+        #  Deux trous possibles, et le script n'en voyait qu'un : reprendre au
+        #  dernier point connu ne remonte JAMAIS en arriere. Demander mille jours
+        #  a une paire qui en a quatre cents ne rapportait donc rien du tout.
+        trous = []
+        if r["a"] is None:
+            trous.append((depuis, jusqu_a))
+        else:
+            if depuis < int(r["a"]):
+                trous.append((depuis, int(r["a"])))              # le passe manquant
+            if int(r["b"]) + pas_ms < jusqu_a:
+                trous.append((int(r["b"]) + pas_ms, jusqu_a))    # le present manquant
+        if not trous:
             print(f"  {s:<10} deja complet", flush=True)
             continue
-        n = charger(x, st, s, args.tf, debut, jusqu_a)
+        n = sum(charger(x, st, s, args.tf, a, b) for a, b in trous)
         total = st.candle_count(s, args.tf)
         print(f"  {s:<10} +{n:>7} bougies {args.tf}  (total en base : {total})", flush=True)
     print(f"termine en {(time.time() - t0) / 60:.1f} min", flush=True)
