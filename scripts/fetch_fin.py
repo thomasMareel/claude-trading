@@ -64,6 +64,8 @@ def charger(x: Exchange, st: Storage, symbole: str, tf: str, depuis: int, jusqu_
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--tf", default="5m", choices=sorted(MINUTES))
+    ap.add_argument("--paires", default=None,
+                    help="liste separee par des virgules ; defaut : celles de config.yaml")
     ap.add_argument("--days", type=int, default=400)
     ap.add_argument("--fin", type=int, default=None,
                     help="horodatage ms de fin ; par defaut celui de l'historique 1h en base")
@@ -77,17 +79,18 @@ def main() -> int:
     #  sans quoi les deux jeux ne seraient pas comparables.
     row = st._conn.execute(
         "SELECT MIN(ts) a, MAX(ts) b FROM candles WHERE symbol=? AND timeframe='1h'",
-        (cfg.symbols[0],)).fetchone()
+        (cfg.symbols[0],)).fetchone()   # fenetre de reference, toujours BTC/EUR
     jusqu_a = args.fin or (int(row["b"]) + 3_600_000)
     depuis = jusqu_a - args.days * 86_400_000
     if row["a"] and depuis < int(row["a"]):
         depuis = int(row["a"])
 
+    symboles = args.paires.split(",") if args.paires else cfg.symbols
     attendu = args.days * 1440 // MINUTES[args.tf]
-    print(f"{len(cfg.symbols)} paires x ~{attendu} bougies {args.tf} "
-          f"(~{attendu // 300 * len(cfg.symbols)} appels)", flush=True)
+    print(f"{len(symboles)} paires x ~{attendu} bougies {args.tf} "
+          f"(~{attendu // 300 * len(symboles)} appels)", flush=True)
     t0 = time.time()
-    for s in cfg.symbols:
+    for s in symboles:
         deja = st._conn.execute(
             "SELECT MAX(ts) m FROM candles WHERE symbol=? AND timeframe=?", (s, args.tf)).fetchone()["m"]
         debut = max(depuis, int(deja) + MINUTES[args.tf] * 60_000) if deja else depuis
