@@ -1,0 +1,29 @@
+{
+ "maj": "2026-09-08T19:47:30+00:00",
+ "depuis": 1788896400000,
+ "jours": 0.0,
+ "budget_total": 0.0,
+ "equity_total": 0.0,
+ "perf_total": 0.0,
+ "hold_moyen": 0.0,
+ "reglage": {
+  "profondeur": 0.5,
+  "paliers": 3,
+  "ratio": 3.3,
+  "objectif_net": 0.04,
+  "depart_sous": 0.02,
+  "suivre_hausse": true,
+  "vente_meme_bougie": false,
+  "mise_min": 12.0,
+  "budget": 200.0,
+  "paires": [
+   "BTC/EUR",
+   "ETH/EUR",
+   "XRP/EUR",
+   "SOL/EUR",
+   "DOGE/EUR"
+  ],
+  "pas": "5m"
+ },
+ "paires": []
+}

@@ -18,3 +18,5 @@ docs/epreuve-*.json
 docs/comparaison-*.json
 docs/archives/*/*.json
 docs/archives/*/ancien-*.html
+docs/data/paper_grille.log
+docs/data/paper_grille_etat.json
