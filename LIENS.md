@@ -7,6 +7,8 @@ Un seul point d'entrée pour tout ce qui a été construit. À garder sous la ma
 | Quoi | Lien |
 |---|---|
 | **Le tableau de bord** (état du bot, courbes, journal, mandats, critères du protocole) | https://thomasmareel.github.io/claude-trading/ |
+| **Trois grilles en direct** (les trois paper trading de grille : échelles, ordres, comparaison) | https://thomasmareel.github.io/claude-trading/paper.html |
+| **Les simulations sur 400 jours** (réglages comparés, graphiques, cycles) | https://thomasmareel.github.io/claude-trading/simulations.html |
 | Demander quelque chose à Claude (ouvre une demande GitHub pré-remplie) | https://github.com/thomasMareel/claude-trading/issues/new?template=demande.yml |
 | Ouvrir Claude Code pour discuter directement | https://claude.ai/code |
 

@@ -1,11 +1,14 @@
 {
- "maj": "2026-09-08T20:49:12+00:00",
+ "maj": "2026-09-09T06:29:05+00:00",
+ "profil": "8paliers",
+ "titre": "Huit barreaux, panier de cinq",
+ "explication": "La meme idee avec huit ordres etales de -2 % a -52 %, un objectif ramene a 2 % nets, donc des ventes plus frequentes. Le plancher de 12 EUR par ordre impose ici une progression de 1,20 seulement : les mises vont de 12 a 43 EUR, presque plates. Ce bot engage donc plus d'argent haut dans la descente que le precedent \u2014 il gagne plus souvent en marche calme et prend un trou plus profond dans une baisse durable.",
  "depuis": 1788900000000,
- "jours": 0.0,
- "budget_total": 0.0,
- "equity_total": 0.0,
+ "jours": 0.41,
+ "budget_total": 1000.0,
+ "equity_total": 1000.0,
  "perf_total": 0.0,
- "hold_moyen": 0.0,
+ "hold_moyen": 0.008045,
  "reglage": {
   "profondeur": 0.5,
   "paliers": 8,
@@ -25,5 +28,351 @@
   ],
   "pas": "5m"
  },
- "paires": []
+ "paires": [
+  {
+   "paire": "BTC/EUR",
+   "equity": 200.0,
+   "perf": 0.0,
+   "cycles": 0,
+   "engage": 0.0,
+   "barreaux": 0,
+   "reference": 68193.8,
+   "prix": 68063.8,
+   "revient": 0.0,
+   "sortie": 0.0,
+   "abandonnee": false,
+   "bougies": 117,
+   "hold": 0.005403,
+   "echelle": [
+    {
+     "prix": 66829.924,
+     "mise": 12.12,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 61958.938286,
+     "mise": 14.55,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 57087.952571,
+     "mise": 17.46,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 52216.966857,
+     "mise": 20.95,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 47345.981143,
+     "mise": 25.14,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 42474.995429,
+     "mise": 30.16,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 37604.009714,
+     "mise": 36.2,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 32733.024,
+     "mise": 43.43,
+     "rempli": false,
+     "mort": false
+    }
+   ],
+   "part_engage": 0.0,
+   "duree_moyenne_h": 0.0,
+   "gain_realise": 0,
+   "journal": []
+  },
+  {
+   "paire": "ETH/EUR",
+   "equity": 200.0,
+   "perf": 0.0,
+   "cycles": 0,
+   "engage": 0.0,
+   "barreaux": 0,
+   "reference": 2159.3,
+   "prix": 2151.55,
+   "revient": 0.0,
+   "sortie": 0.0,
+   "abandonnee": false,
+   "bougies": 117,
+   "hold": 0.004655,
+   "echelle": [
+    {
+     "prix": 2116.114,
+     "mise": 12.12,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 1961.878286,
+     "mise": 14.55,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 1807.642571,
+     "mise": 17.46,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 1653.406857,
+     "mise": 20.95,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 1499.171143,
+     "mise": 25.14,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 1344.935429,
+     "mise": 30.16,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 1190.699714,
+     "mise": 36.2,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 1036.464,
+     "mise": 43.43,
+     "rempli": false,
+     "mort": false
+    }
+   ],
+   "part_engage": 0.0,
+   "duree_moyenne_h": 0.0,
+   "gain_realise": 0,
+   "journal": []
+  },
+  {
+   "paire": "XRP/EUR",
+   "equity": 200.0,
+   "perf": 0.0,
+   "cycles": 0,
+   "engage": 0.0,
+   "barreaux": 0,
+   "reference": 1.2372,
+   "prix": 1.2372,
+   "revient": 0.0,
+   "sortie": 0.0,
+   "abandonnee": false,
+   "bougies": 117,
+   "hold": 0.0139,
+   "echelle": [
+    {
+     "prix": 1.212456,
+     "mise": 12.12,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 1.124085,
+     "mise": 14.55,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 1.035713,
+     "mise": 17.46,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 0.947342,
+     "mise": 20.95,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 0.85897,
+     "mise": 25.14,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 0.770599,
+     "mise": 30.16,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 0.682227,
+     "mise": 36.2,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 0.593856,
+     "mise": 43.43,
+     "rempli": false,
+     "mort": false
+    }
+   ],
+   "part_engage": 0.0,
+   "duree_moyenne_h": 0.0,
+   "gain_realise": 0,
+   "journal": []
+  },
+  {
+   "paire": "SOL/EUR",
+   "equity": 200.0,
+   "perf": 0.0,
+   "cycles": 0,
+   "engage": 0.0,
+   "barreaux": 0,
+   "reference": 89.94,
+   "prix": 89.94,
+   "revient": 0.0,
+   "sortie": 0.0,
+   "abandonnee": false,
+   "bougies": 117,
+   "hold": 0.010131,
+   "echelle": [
+    {
+     "prix": 88.1412,
+     "mise": 12.12,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 81.716914,
+     "mise": 14.55,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 75.292629,
+     "mise": 17.46,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 68.868343,
+     "mise": 20.95,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 62.444057,
+     "mise": 25.14,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 56.019771,
+     "mise": 30.16,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 49.595486,
+     "mise": 36.2,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 43.1712,
+     "mise": 43.43,
+     "rempli": false,
+     "mort": false
+    }
+   ],
+   "part_engage": 0.0,
+   "duree_moyenne_h": 0.0,
+   "gain_realise": 0,
+   "journal": []
+  },
+  {
+   "paire": "DOGE/EUR",
+   "equity": 200.0,
+   "perf": 0.0,
+   "cycles": 0,
+   "engage": 0.0,
+   "barreaux": 0,
+   "reference": 0.07814,
+   "prix": 0.0779,
+   "revient": 0.0,
+   "sortie": 0.0,
+   "abandonnee": false,
+   "bougies": 117,
+   "hold": 0.006138,
+   "echelle": [
+    {
+     "prix": 0.076577,
+     "mise": 12.12,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 0.070996,
+     "mise": 14.55,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 0.065414,
+     "mise": 17.46,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 0.059833,
+     "mise": 20.95,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 0.054251,
+     "mise": 25.14,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 0.04867,
+     "mise": 30.16,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 0.043089,
+     "mise": 36.2,
+     "rempli": false,
+     "mort": false
+    },
+    {
+     "prix": 0.037507,
+     "mise": 43.43,
+     "rempli": false,
+     "mort": false
+    }
+   ],
+   "part_engage": 0.0,
+   "duree_moyenne_h": 0.0,
+   "gain_realise": 0,
+   "journal": []
+  }
+ ]
 }

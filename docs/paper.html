@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trois grilles en direct</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#EEF1F0; --surface:#FFFFFF; --surface-2:#F5F8F7; --surface-3:#EAEFED;
+  --ink:#141D1C; --ink-2:#485552; --ink-3:#5F6D6A;
+  --rule:#D6DEDC; --rule-fort:#B2BFBB;
+  --achat:#0E7C86; --vente:#B0700A; --blocage:#A34A3A;
+  --hausse:#0A7A54; --baisse:#C0392E;
+  --dort:#C7D1CE; --prix:#3F4B47; --sur-vif:#FFFFFF;
+  --ombre:0 1px 2px rgba(20,29,28,.06), 0 10px 28px -14px rgba(20,29,28,.22);
+  --focus:#0E7C86;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E1413; --surface:#161E1D; --surface-2:#1C2625; --surface-3:#243130;
+    --ink:#E6ECEA; --ink-2:#A6B4B0; --ink-3:#8A9995;
+    --rule:#27332F; --rule-fort:#3A4844;
+    --achat:#45C2CE; --vente:#DDA33F; --blocage:#DB7A63;
+    --hausse:#22C58B; --baisse:#EB6B5F;
+    --dort:#2C3937; --prix:#93A19D; --sur-vif:#0E1413;
+    --ombre:0 1px 2px rgba(0,0,0,.35), 0 10px 28px -14px rgba(0,0,0,.7);
+    --focus:#45C2CE;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E1413; --surface:#161E1D; --surface-2:#1C2625; --surface-3:#243130;
+  --ink:#E6ECEA; --ink-2:#A6B4B0; --ink-3:#8A9995;
+  --rule:#27332F; --rule-fort:#3A4844;
+  --achat:#45C2CE; --vente:#DDA33F; --blocage:#DB7A63;
+  --hausse:#22C58B; --baisse:#EB6B5F;
+  --dort:#2C3937; --prix:#93A19D; --sur-vif:#0E1413;
+  --ombre:0 1px 2px rgba(0,0,0,.35), 0 10px 28px -14px rgba(0,0,0,.7);
+  --focus:#45C2CE;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.55; -webkit-text-size-adjust:100%}
+.enveloppe{max-width:1080px; margin:0 auto; padding:20px 16px 72px}
+h1,h2,h3{font-family:"Newsreader",Georgia,serif; font-weight:500; margin:0; text-wrap:balance}
+h1{font-size:clamp(1.7rem,5vw,2.5rem); line-height:1.15; letter-spacing:-.01em}
+h2{font-size:clamp(1.25rem,3.4vw,1.7rem); line-height:1.2}
+h3{font-size:1.02rem; font-weight:600}
+p{margin:.55em 0}
+.num{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--ink-3); margin:0 0 .35em}
+.sourdine{color:var(--ink-2)}
+.h{color:var(--hausse)} .b{color:var(--baisse)}
+header.tete{padding:8px 0 22px; border-bottom:1px solid var(--rule); margin-bottom:26px}
+header.tete p{max-width:62ch; color:var(--ink-2); margin:.7em 0 0}
+.liens{display:flex; flex-wrap:wrap; gap:14px; margin-top:16px; font-size:.85rem}
+.liens a{color:var(--achat); text-decoration:none; border-bottom:1px solid transparent}
+.liens a:hover,.liens a:focus-visible{border-bottom-color:currentColor}
+:focus-visible{outline:2px solid var(--focus); outline-offset:2px; border-radius:3px}
+
+/* ---- bandeau de comparaison ---- */
+.compare{display:grid; gap:12px; grid-template-columns:1fr; margin-bottom:34px}
+@media(min-width:760px){.compare{grid-template-columns:repeat(3,1fr)}}
+.carte{background:var(--surface); border:1px solid var(--rule); border-radius:10px;
+  padding:16px 16px 14px; box-shadow:var(--ombre); display:flex; flex-direction:column; gap:2px}
+.carte .nom{font-family:"Newsreader",Georgia,serif; font-size:1.08rem; line-height:1.25}
+.carte .gros{font-size:1.85rem; line-height:1.1; margin:.25em 0 .05em}
+.carte .sous{font-size:.8rem; color:var(--ink-2)}
+.pastille{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px;
+  vertical-align:middle; background:var(--dort)}
+.pastille.vif{background:var(--hausse)}
+.pastille.froid{background:var(--blocage)}
+
+/* ---- une section par bot ---- */
+.bot{background:var(--surface); border:1px solid var(--rule); border-radius:12px;
+  padding:20px 18px; margin-bottom:22px; box-shadow:var(--ombre)}
+.bot > .intro{max-width:70ch; color:var(--ink-2); font-size:.93rem}
+.reglage-ligne{font-size:.78rem; color:var(--ink-3); margin-top:.5em}
+.stats{display:grid; gap:10px; grid-template-columns:repeat(2,1fr); margin:18px 0 4px}
+@media(min-width:620px){.stats{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:900px){.stats{grid-template-columns:repeat(6,1fr)}}
+.stat{background:var(--surface-2); border:1px solid var(--rule); border-radius:8px; padding:9px 11px}
+.stat .k{font-size:.68rem; color:var(--ink-3); text-transform:uppercase; letter-spacing:.08em}
+.stat .v{font-size:1.12rem; margin-top:1px}
+
+.echelles{display:grid; gap:14px; grid-template-columns:1fr; margin-top:20px}
+@media(min-width:700px){.echelles{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:980px){.echelles{grid-template-columns:repeat(3,1fr)}}
+.ech{background:var(--surface-2); border:1px solid var(--rule); border-radius:9px; padding:12px}
+.ech .titre{display:flex; justify-content:space-between; align-items:baseline; gap:8px;
+  margin-bottom:2px}
+.ech .titre .p{font-weight:600; font-size:.92rem}
+.ech .titre .v{font-size:.82rem; color:var(--ink-2)}
+.ech svg{display:block; width:100%}
+
+.tableau{width:100%; overflow-x:auto; margin-top:18px}
+table{border-collapse:collapse; width:100%; font-size:.84rem; min-width:640px}
+th,td{padding:7px 9px; text-align:right; border-bottom:1px solid var(--rule); white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{font-size:.68rem; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-3);
+  font-weight:500; border-bottom:1px solid var(--rule-fort)}
+tbody tr:last-child td{border-bottom:none}
+
+.journal{margin-top:18px; font-size:.83rem}
+.journal ol{list-style:none; margin:.4em 0 0; padding:0; display:flex; flex-direction:column; gap:2px}
+.journal li{display:grid; grid-template-columns:auto auto 1fr auto; gap:10px; align-items:baseline;
+  padding:4px 8px; border-radius:5px; background:var(--surface-2)}
+.journal .genre{font-size:.7rem; letter-spacing:.06em; text-transform:uppercase}
+.journal .achat{color:var(--achat)} .journal .vente{color:var(--vente)}
+.vide{color:var(--ink-3); font-size:.87rem; padding:14px 0}
+.legende{display:flex; flex-wrap:wrap; gap:14px; font-size:.75rem; color:var(--ink-3);
+  margin-top:12px}
+.legende span{display:inline-flex; align-items:center; gap:5px}
+.puce{width:9px; height:9px; border-radius:50%; display:inline-block}
+footer{margin-top:36px; padding-top:18px; border-top:1px solid var(--rule);
+  font-size:.8rem; color:var(--ink-3); max-width:70ch}
+</style>
+</head>
+<body>
+<div class="enveloppe">
+
+<header class="tete">
+  <p class="eyebrow">paper trading — donnees publiques, aucun ordre transmis</p>
+  <h1>Trois grilles en direct</h1>
+  <p>Trois robots posent la meme strategie de descente sur le vrai marche, en temps
+     reel, sans engager un centime. Ils ne different que par la FORME de leur echelle
+     d'achat. Chacun a demarre a l'instant ou son reglage a ete fige : rien de ce qui
+     s'affiche ici n'a servi a le choisir, et c'est le seul juge honnete dont on
+     dispose.</p>
+  <nav class="liens">
+    <a href="./">Tableau de bord du bot Claude</a>
+    <a href="simulations.html">Simulations sur 400 jours</a>
+    <a href="https://github.com/thomasMareel/claude-trading">Code source</a>
+  </nav>
+</header>
+
+<section class="compare" id="compare" aria-label="Comparaison des trois grilles"></section>
+<div id="bots"></div>
+
+<footer>
+  <p>Les bougies sont lues closes, jamais celle en cours. Les ordres sont supposes
+     LIMITES, donc au tarif maker de 0,10 % et sans glissement. Un ordre est refuse
+     sous 12 EUR, comme sur la plateforme. Le repere « ne rien faire » achete au
+     premier prix, garde, et paie les memes frais aller-retour.</p>
+  <p id="maj"></p>
+</footer>
+
+</div>
+<script>
+const SOURCES = [
+  {f:"data/paper_grille.json",                   id:"3paliers"},
+  {f:"data/paper_grille_8paliers.json",          id:"8paliers"},
+  {f:"data/paper_grille_8paliers_concentre.json",id:"8paliers_concentre"},
+];
+//  Les titres et les explications viennent du JSON quand le bot les publie ; ces
+//  valeurs ne servent que le temps qu'un bot lance avant la mise a jour reecrive
+//  son journal, pour que la page ne soit jamais vide ni muette.
+const SECOURS = {
+  "3paliers": {titre:"Trois barreaux, panier de cinq", explication:
+    "Trois ordres d'achat sous le prix, avec l'essentiel de l'argent tout en bas. "+
+    "Le lot entier est revendu des que le prix repasse 4 % nets au-dessus du prix de "+
+    "revient moyen."},
+  "8paliers": {titre:"Huit barreaux, panier de cinq", explication:
+    "Huit ordres etales de -2 % a -52 %, objectif 2 % nets. Le plancher de 12 EUR par "+
+    "ordre impose ici des mises presque plates."},
+  "8paliers_concentre": {titre:"Huit barreaux, tout sur une paire", explication:
+    "Les mille euros sur BTC seul, ce qui libere une vraie progression des mises. "+
+    "Barreaux resserres en haut, etires en bas."},
+};
+
+const pct  = (v,d=2) => (v>=0?"+":"") + (v*100).toFixed(d) + " %";
+const eur  = (v,d=2) => v.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d}) + " €";
+const sgn  = v => v > 0 ? "h" : (v < 0 ? "b" : "");
+const esc  = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function prixCourt(v){
+  if (!isFinite(v) || v === 0) return "—";
+  const d = v >= 1000 ? 0 : v >= 10 ? 2 : v >= 0.1 ? 4 : 6;
+  return v.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d});
+}
+function duree(ms){
+  const h = ms / 3600000;
+  if (h < 48) return h.toFixed(1).replace(".",",") + " h";
+  return (h/24).toFixed(1).replace(".",",") + " j";
+}
+function quand(ts){
+  const d = new Date(ts);
+  const p = n => String(n).padStart(2,"0");
+  return p(d.getUTCDate())+"/"+p(d.getUTCMonth()+1)+" "+p(d.getUTCHours())+":"+p(d.getUTCMinutes());
+}
+
+/*  Un SVG dessine en PIXELS REELS. Un viewBox fixe etire le texte a des tailles
+    illisibles quand la carte change de largeur ; on mesure donc le conteneur et on
+    redessine, a l'ouverture, au redimensionnement, et quand la carte apparait.  */
+class Toile {
+  constructor(parent, hauteur, dessiner){
+    this.el = parent; this.hauteur = hauteur; this.dessiner = dessiner;
+    this.svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+    this.svg.setAttribute("role","img");
+    this.svg.setAttribute("aria-label", parent.dataset.titre || "echelle d'achat");
+    parent.appendChild(this.svg);
+    this.l = 0;
+    if (window.ResizeObserver){
+      this.ro = new ResizeObserver(() => this.rendre());
+      this.ro.observe(parent);
+    }
+    window.addEventListener("resize", () => this.rendre());
+    this.rendre(true);
+    requestAnimationFrame(() => this.rendre(true));
+  }
+  rendre(force){
+    const l = Math.max(180, Math.round(this.el.clientWidth || 0));
+    if (!l) return;
+    const h = Math.round(this.hauteur(l));
+    if (!force && l === this.l && h === this.h) return;
+    this.l = l; this.h = h;
+    this.svg.setAttribute("width", l);
+    this.svg.setAttribute("height", h);
+    this.svg.setAttribute("viewBox", `0 0 ${l} ${h}`);
+    while (this.svg.firstChild) this.svg.removeChild(this.svg.firstChild);
+    this.dessiner(this.svg, l, h);
+  }
+}
+function el(nom, attrs, texte){
+  const n = document.createElementNS("http://www.w3.org/2000/svg", nom);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (texte != null) n.textContent = texte;
+  return n;
+}
+
+/*  L'echelle d'une paire : le rail des barreaux, du prix de reference vers le bas.
+    Un barreau plein a ete achete ; un barreau creux attend ; un barreau barre est
+    sous le minimum de la plateforme et ne sera jamais pose. Le prix du moment et,
+    si un lot est detenu, le prix de revient et la cible de vente sont poses dessus. */
+function dessinerEchelle(svg, L, H, p){
+  const G = 58, D = 54, T = 28, B = 16;      // marges gauche/droite/haut/bas
+  const x0 = G, x1 = L - D;
+  const ref = p.reference || p.prix;
+  const bas = p.echelle && p.echelle.length ? p.echelle[p.echelle.length-1].prix : ref*0.5;
+  const haut = Math.max(ref, p.prix, p.sortie || 0) * 1.005;
+  const min = Math.min(bas, p.prix) * 0.995;
+  const y = v => T + (haut - v) / (haut - min || 1) * (H - T - B);
+
+  svg.appendChild(el("line",{x1:x0,y1:T,x2:x0,y2:H-B,stroke:"var(--rule-fort)","stroke-width":1}));
+  //  Le prix de reference — d'ou l'echelle est posee. Son etiquette va a GAUCHE :
+  //  tant que rien n'est achete, la reference et le prix du moment se confondent,
+  //  et deux etiquettes a droite se chevauchaient.
+  const yr = y(ref);
+  svg.appendChild(el("line",{x1:x0-6,y1:yr,x2:x1,y2:yr,stroke:"var(--rule-fort)",
+    "stroke-width":1,"stroke-dasharray":"1 3"}));
+  //  au-DESSUS du trait : juste en dessous se trouve deja l'etiquette du premier
+  //  barreau, a deux pour cent seulement, et les deux se chevauchaient.
+  svg.appendChild(el("text",{x:x0-9,y:yr-5,"text-anchor":"end","font-size":9,
+    fill:"var(--ink-3)","font-family":'"IBM Plex Mono",monospace'},"ref."));
+
+  (p.echelle||[]).forEach((br,i) => {
+    const yy = y(br.prix);
+    const c = br.mort ? "var(--dort)" : (br.rempli ? "var(--achat)" : "var(--rule-fort)");
+    svg.appendChild(el("line",{x1:x0,y1:yy,x2:x0+11,y2:yy,stroke:c,"stroke-width":1.5}));
+    svg.appendChild(el("circle",{cx:x0+11,cy:yy,r:br.rempli?5:3.6,fill:br.rempli?c:"var(--surface-2)",
+      stroke:c,"stroke-width":1.5}));
+    svg.appendChild(el("text",{x:x0-9,y:yy+3.4,"text-anchor":"end","font-size":9.5,
+      fill:br.rempli?"var(--ink)":"var(--ink-3)","font-family":'"IBM Plex Mono",monospace'},
+      ((br.prix/ref-1)*100).toFixed(0)+"%"));
+    svg.appendChild(el("text",{x:x0+20,y:yy+3.4,"font-size":9.5,
+      fill:br.rempli?"var(--ink-2)":"var(--ink-3)","font-family":'"IBM Plex Mono",monospace'},
+      Math.round(br.mise)+" €"));
+  });
+
+  //  Le prix du moment. Quand il colle a la reference, on le decale d'un cheveu
+  //  pour que les deux traits restent lisibles au lieu de n'en faire qu'un.
+  const yp = y(p.prix);
+  const colle = Math.abs(yp - yr) < 3;
+  svg.appendChild(el("line",{x1:x0-4,y1:yp,x2:x1,y2:yp,stroke:"var(--prix)","stroke-width":1.6}));
+  svg.appendChild(el("text",{x:x1,y:(colle ? yp - 6 : yp - 4),"text-anchor":"end","font-size":10,
+    fill:"var(--prix)","font-family":'"IBM Plex Mono",monospace',"font-weight":600},
+    prixCourt(p.prix)));
+
+  // le lot detenu : ce qu'il coute, et a quel prix il part
+  if (p.revient > 0){
+    const yv = y(p.revient);
+    svg.appendChild(el("line",{x1:x0,y1:yv,x2:x1,y2:yv,stroke:"var(--blocage)",
+      "stroke-width":1,"stroke-dasharray":"4 3"}));
+    svg.appendChild(el("text",{x:x1,y:yv+11,"text-anchor":"end","font-size":9.5,
+      fill:"var(--blocage)","font-family":'"IBM Plex Mono",monospace'},"revient"));
+    if (p.sortie > 0 && p.sortie <= haut){
+      const ys = y(p.sortie);
+      svg.appendChild(el("line",{x1:x0,y1:ys,x2:x1,y2:ys,stroke:"var(--vente)",
+        "stroke-width":1.4,"stroke-dasharray":"5 3"}));
+      svg.appendChild(el("text",{x:x1,y:(Math.abs(ys - yp) < 12 ? ys - 13 : ys - 4),
+        "text-anchor":"end","font-size":9.5, fill:"var(--vente)",
+        "font-family":'"IBM Plex Mono",monospace'},"vend a "+prixCourt(p.sortie)));
+    }
+  }
+}
+
+function carte(d, id){
+  const t = (d && d.titre) || SECOURS[id].titre;
+  if (!d) return `<article class="carte"><div class="nom">${esc(t)}</div>
+    <div class="gros num sourdine">—</div><div class="sous">pas encore de releve</div></article>`;
+  const frais = (Date.now() - Date.parse(d.maj)) < 8*60000;
+  const ecart = d.perf_total - d.hold_moyen;
+  return `<article class="carte">
+    <div class="nom">${esc(t)}</div>
+    <div class="gros num ${sgn(d.perf_total)}">${pct(d.perf_total)}</div>
+    <div class="sous num">${eur(d.equity_total)} sur ${eur(d.budget_total,0)}</div>
+    <div class="sous">repere <span class="num ${sgn(d.hold_moyen)}">${pct(d.hold_moyen)}</span>,
+      ecart <span class="num ${sgn(ecart)}">${pct(ecart)}</span></div>
+    <div class="sous" style="margin-top:6px">
+      <span class="pastille ${frais?"vif":"froid"}"></span>${frais?"en marche":"silencieux"} ·
+      <span class="num">${duree(Date.now()-d.depuis)}</span> de mesure</div>
+  </article>`;
+}
+
+function section(d, id){
+  const t = (d && d.titre) || SECOURS[id].titre;
+  const ex = (d && d.explication) || SECOURS[id].explication;
+  if (!d) return `<section class="bot"><p class="eyebrow">${esc(id)}</p><h2>${esc(t)}</h2>
+    <p class="intro">${esc(ex)}</p><p class="vide">Ce robot n'a pas encore publie de releve.</p></section>`;
+
+  const r = d.reglage, P = d.paires || [];
+  const cycles = P.reduce((a,x)=>a+x.cycles,0);
+  const engage = P.reduce((a,x)=>a+x.engage,0);
+  const gains  = P.reduce((a,x)=>a+(x.gain_realise||0),0);
+  const forme = r.espacement === "puissance"
+    ? `barreaux resserres en haut (courbure ${String(r.courbure).replace(".",",")})`
+    : "barreaux equidistants";
+  const stats = [
+    ["book",            eur(d.equity_total),                 ""],
+    ["performance",     pct(d.perf_total),                   sgn(d.perf_total)],
+    ["ne rien faire",   pct(d.hold_moyen),                   sgn(d.hold_moyen)],
+    ["gains encaisses", eur(gains),                          sgn(gains)],
+    ["capital engage",  eur(engage,0)+" / "+eur(d.budget_total,0), ""],
+    ["cycles clos",     String(cycles),                      ""],
+  ].map(([k,v,c]) => `<div class="stat"><div class="k">${k}</div>
+      <div class="v num ${c}">${v}</div></div>`).join("");
+
+  const lignes = P.map(p => `<tr>
+      <td>${esc(p.paire)}</td>
+      <td class="num">${prixCourt(p.prix)}</td>
+      <td class="num">${prixCourt(p.reference)}</td>
+      <td class="num">${p.barreaux} / ${(p.echelle||[]).length||r.paliers}</td>
+      <td class="num">${eur(p.engage,0)}</td>
+      <td class="num">${p.revient>0?prixCourt(p.revient):"—"}</td>
+      <td class="num">${p.sortie>0?prixCourt(p.sortie):"—"}</td>
+      <td class="num">${p.cycles}</td>
+      <td class="num ${sgn(p.perf)}">${pct(p.perf)}</td>
+      <td class="num ${sgn(p.hold)}">${pct(p.hold)}</td>
+    </tr>`).join("");
+
+  const evts = P.flatMap(p => (p.journal||[]).map(e => ({...e, paire:p.paire})))
+                .sort((a,b)=>b.ts-a.ts).slice(0,14);
+  const journal = evts.length ? `<ol>${evts.map(e => `<li>
+      <span class="num sourdine">${quand(e.ts)}</span>
+      <span class="genre ${e.genre}">${e.genre}</span>
+      <span class="num">${esc(e.paire)} a ${prixCourt(e.prix)}</span>
+      <span class="num">${eur(e.euros)}${e.gain!=null?` · <span class="${sgn(e.gain)}">${
+        (e.gain>=0?"+":"")+e.gain.toFixed(2)} €</span>`:""}</span>
+    </li>`).join("")}</ol>` : `<p class="vide">Aucun ordre pour le moment : le prix
+      n'est pas encore descendu jusqu'au premier barreau.</p>`;
+
+  return `<section class="bot">
+    <p class="eyebrow">${esc(id)} · ${P.length} paire${P.length>1?"s":""} ·
+       ${eur(r.budget,0)} par paire</p>
+    <h2>${esc(t)}</h2>
+    <p class="intro">${esc(ex)}</p>
+    <p class="reglage-ligne num">profondeur ${(r.profondeur*100).toFixed(0)} % ·
+      ${r.paliers} barreaux · progression x${String(r.ratio).replace(".",",")} ·
+      objectif ${(r.objectif_net*100).toFixed(0)} % nets · premier barreau a
+      -${(r.depart_sous*100).toFixed(0)} % · ${forme} ·
+      depuis le ${new Date(d.depuis).toISOString().slice(0,16).replace("T"," ")} UTC</p>
+    <div class="stats">${stats}</div>
+    <div class="echelles">${P.map(p => `<div class="ech" data-paire="${esc(p.paire)}">
+        <div class="titre"><span class="p">${esc(p.paire)}</span>
+          <span class="v num ${sgn(p.perf)}">${pct(p.perf)}</span></div>
+        <div class="toile"></div></div>`).join("")}</div>
+    <div class="legende">
+      <span><i class="puce" style="background:var(--achat)"></i>barreau achete</span>
+      <span><i class="puce" style="background:var(--surface-2);border:1.5px solid var(--rule-fort)"></i>barreau en attente</span>
+      <span><i class="puce" style="background:var(--dort)"></i>sous le minimum, jamais pose</span>
+      <span><i class="puce" style="background:var(--blocage)"></i>prix de revient</span>
+      <span><i class="puce" style="background:var(--vente)"></i>prix de vente vise</span>
+    </div>
+    <div class="tableau"><table>
+      <thead><tr><th>paire</th><th>prix</th><th>reference</th><th>barreaux</th>
+        <th>engage</th><th>revient</th><th>vend a</th><th>cycles</th>
+        <th>performance</th><th>ne rien faire</th></tr></thead>
+      <tbody>${lignes}</tbody></table></div>
+    <div class="journal"><h3>Derniers ordres</h3>${journal}</div>
+  </section>`;
+}
+
+async function charger(){
+  const jeux = await Promise.all(SOURCES.map(async s => {
+    try {
+      const r = await fetch(s.f + "?t=" + Date.now(), {cache:"no-store"});
+      if (!r.ok) return null;
+      const d = await r.json();
+      return (d && d.paires && d.paires.length) ? d : null;
+    } catch(e){ return null; }
+  }));
+  document.getElementById("compare").innerHTML =
+    SOURCES.map((s,i) => carte(jeux[i], s.id)).join("");
+  document.getElementById("bots").innerHTML =
+    SOURCES.map((s,i) => section(jeux[i], s.id)).join("");
+
+  //  les echelles, une fois le HTML pose : chacune dans sa propre toile mesuree
+  document.querySelectorAll(".bot").forEach((sec, i) => {
+    const d = jeux[i];
+    if (!d) return;
+    sec.querySelectorAll(".ech").forEach(carte => {
+      const p = d.paires.find(x => x.paire === carte.dataset.paire);
+      if (!p || !p.echelle) {
+        carte.querySelector(".toile").innerHTML =
+          '<p class="vide">echelle publiee au prochain releve</p>';
+        return;
+      }
+      const toile = carte.querySelector(".toile");
+      toile.dataset.titre = "Echelle d'achat de " + p.paire + " : " + p.barreaux
+        + " barreau(x) achete(s) sur " + p.echelle.length;
+      new Toile(toile,
+                () => 26 + Math.max(8, p.echelle.length) * 21,
+                (svg,L,H) => dessinerEchelle(svg,L,H,p));
+    });
+  });
+
+  const maj = jeux.filter(Boolean).map(d => d.maj).sort().pop();
+  document.getElementById("maj").textContent = maj
+    ? "Dernier releve : " + maj.replace("T"," ").replace("+00:00"," UTC") +
+      ". La page se rafraichit toute seule toutes les deux minutes."
+    : "Aucun releve disponible.";
+}
+charger();
+setInterval(charger, 120000);
+</script>
+</body>
+</html>

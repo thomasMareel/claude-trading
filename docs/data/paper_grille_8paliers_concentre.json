@@ -1,0 +1,30 @@
+{
+ "maj": "2026-09-09T06:29:51+00:00",
+ "profil": "8paliers_concentre",
+ "titre": "Huit barreaux, tout sur une paire",
+ "explication": "Huit barreaux avec une VRAIE progression : les mille euros sur une seule paire liberent la raison 1,6, donc des mises de 14 a 384 EUR, les grosses tout en bas. Les barreaux ne sont pas equidistants : ils sont resserres en haut (-2, -3, -6, -11 %) et etires en bas (-19, -28, -40, -53 %), parce qu'une echelle reguliere descendant a -53 % place la moitie de ses barreaux la ou le prix ne va jamais \u2014 mesure faite, le dernier barreau n'etait alors achete aucune fois en 900 jours. Le prix de cette forme est l'abandon de la repartition. Sur 900 jours de passe elle rend moins que BTC laisse tranquille (+5,7 % contre +11,8 %) mais avec un creux de -18 % au lieu de -53 %. Ce qui est teste ici est donc une assurance, pas un moteur.",
+ "depuis": 1788935100000,
+ "jours": 0.0,
+ "budget_total": 0.0,
+ "equity_total": 0.0,
+ "perf_total": 0.0,
+ "hold_moyen": 0.0,
+ "reglage": {
+  "profondeur": 0.51,
+  "paliers": 8,
+  "ratio": 1.6,
+  "objectif_net": 0.02,
+  "depart_sous": 0.02,
+  "espacement": "puissance",
+  "courbure": 2.0,
+  "suivre_hausse": true,
+  "vente_meme_bougie": false,
+  "mise_min": 12.0,
+  "budget": 1000.0,
+  "paires": [
+   "BTC/EUR"
+  ],
+  "pas": "5m"
+ },
+ "paires": []
+}

@@ -46,7 +46,12 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ""
 Write-Host "=== redemarrage du bot ===" -ForegroundColor Cyan
-Get-CimInstance Win32_Process | Where-Object { ($_.Name -eq 'python.exe' -and $_.CommandLine -like '*run_loop*') -or ($_.Name -eq 'cmd.exe' -and $_.CommandLine -like '*start_paper*') } | ForEach-Object { try { Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop } catch {} }
+# On ne tue QUE le bot LLM et son chien de garde. Le motif large '*start_paper*'
+# attrapait aussi start_paper_grille.bat et start_paper_8paliers*.bat, qui font
+# tourner les paper trading de GRILLE : ceux-la n'utilisent aucune cle d'API,
+# rien ne justifie de les redemarrer, et les arreter effacerait des semaines de
+# mesure puisque la ligne suivante ne relance que start_paper_detached.bat.
+Get-CimInstance Win32_Process | Where-Object { ($_.Name -eq 'python.exe' -and $_.CommandLine -like '*run_loop*') -or ($_.Name -eq 'cmd.exe' -and $_.CommandLine -like '*start_paper_detached*') } | ForEach-Object { try { Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop } catch {} }
 Start-Sleep -Seconds 2
 $r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = "cmd.exe /c `"$root\start_paper_detached.bat`""; CurrentDirectory = $root }
 if ($r.ReturnValue -eq 0) {

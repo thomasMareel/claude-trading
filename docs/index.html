@@ -221,6 +221,10 @@
 
   .error { border: 1px solid var(--critical); border-radius: 6px; padding: 1rem; background: var(--surface); font-size: .9rem; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+nav.pages{display:flex; flex-wrap:wrap; gap:14px; margin-top:.75rem; font-size:.86rem}
+nav.pages a{color:var(--accent,#0E7C86); text-decoration:none;
+  border-bottom:1px solid transparent}
+nav.pages a:hover,nav.pages a:focus-visible{border-bottom-color:currentColor}
 </style>
 </head>
 <body>
@@ -234,6 +238,10 @@
       <button class="theme" id="theme" type="button" aria-label="Changer de thème">Thème : auto</button>
     </div>
     <div class="strip" id="strip"><span class="pill"><span class="dot"></span>chargement des relevés…</span></div>
+    <nav class="pages" aria-label="Les autres pages">
+      <a href="paper.html">Trois grilles en direct</a>
+      <a href="simulations.html">Simulations sur 400 jours</a>
+    </nav>
   </header>
   <div id="banners" style="display:flex;flex-direction:column;gap:.6rem"></div>
   <section id="kpis"></section>
