@@ -137,6 +137,12 @@ footer{margin-top:34px; padding-top:18px; border-top:1px solid var(--rule);
     <div class="etat"><span>BTC · ETH · SOL</span><span>400 jours</span><span>pas de 5 min</span></div>
   </a>
 
+  <a class="porte" href="journal.html">
+    <div class="haut"><h3>Journal de bord</h3><span class="fleche">→</span></div>
+    <p>Tout ce qui a change, date, y compris les erreurs trouvees dans nos propres
+       resultats et ce qu'elles coutaient. Rien n'y est reecrit apres coup.</p>
+    <div class="etat" id="etat-journal"><span>chargement…</span></div>
+  </a>
 </div>
 
 <section class="constats">
@@ -196,9 +202,9 @@ async function lire(f){
   catch(e){ return null; }
 }
 (async function(){
-  const [a,b,c] = await Promise.all([
+  const [a,b,c,jrn] = await Promise.all([
     lire("data/paper_grille.json"), lire("data/paper_grille_8paliers.json"),
-    lire("data/paper_grille_8paliers_concentre.json"),
+    lire("data/paper_grille_8paliers_concentre.json"), lire("data/journal.json"),
   ]);
   const jeux = [a,b,c].filter(d => d && d.paires && d.paires.length);
   const n = document.getElementById("etat-paper");
@@ -215,6 +221,14 @@ async function lire(f){
       + jeux.map(d => `<span>${nomCourt[d.profil]||d.profil} <b class="${sgn(d.perf_total)}">`
           + `${pct(d.perf_total)}</b></span>`).join("");
   }
+  const nj = document.getElementById("etat-journal");
+  if (jrn && jrn.entrees && jrn.entrees.length){
+    const corr = jrn.entrees.filter(e => e.etiquette === "correction").length;
+    nj.innerHTML = `<span><b>${jrn.entrees.length}</b> entrees</span>`
+      + `<span><b>${corr}</b> corrections publiees</span>`
+      + `<span>depuis le ${jrn.entrees[jrn.entrees.length-1].date.slice(0,10)}</span>`;
+  } else nj.innerHTML = "<span>indisponible</span>";
+
   const majs = jeux.map(d => d.maj).sort();
   document.getElementById("maj").textContent = majs.length
     ? "Dernier relevé : " + majs[majs.length-1].replace("T"," ").replace("+00:00"," UTC") + "."

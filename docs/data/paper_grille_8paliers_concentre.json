@@ -1,14 +1,14 @@
 {
- "maj": "2026-09-13T14:36:57+00:00",
+ "maj": "2026-09-13T17:34:06+00:00",
  "profil": "8paliers_concentre",
  "titre": "Huit barreaux, dix paires",
  "explication": "Dix experiences independantes menees en parallele sous la MEME echelle, mille euros chacune, pour isoler ce que la paire change. Ce n'est pas un portefeuille de dix mille euros : c'est un dispositif de mesure. L'echelle a huit barreaux avec une vraie progression des mises \u2014 14 a 384 EUR, les grosses tout en bas \u2014 que le plancher de 12 EUR par ordre interdit des qu'on repartit un budget plus petit. Les barreaux ne sont pas equidistants : resserres en haut (-2, -3, -6, -11 %) et etires en bas (-19, -28, -40, -53 %), parce qu'une echelle reguliere descendant a -53 % place la moitie de ses barreaux la ou le prix ne va jamais. Sur 900 jours de passe, la meme echelle va de +5,3 % par bloc de cent jours sur UNI a -1,1 % sur ADA : six points d'ecart pour une echelle identique, et c'est precisement ce que le direct doit confirmer ou non.",
  "depuis": 1789300200000,
- "jours": 0.11,
+ "jours": 0.24,
  "budget_total": 10000.0,
- "equity_total": 10000.0,
- "perf_total": 0.0,
- "hold_moyen": 0.003717,
+ "equity_total": 10000.29,
+ "perf_total": 2.9e-05,
+ "hold_moyen": 0.009202,
  "reglage": {
   "profondeur": 0.51,
   "paliers": 8,
@@ -43,58 +43,58 @@
    "cycles": 0,
    "engage": 0.0,
    "barreaux": 0,
-   "reference": 66530.7,
-   "prix": 66497.2,
+   "reference": 66749.1,
+   "prix": 66677.4,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 33,
-   "hold": 0.001887,
+   "bougies": 68,
+   "hold": 0.004602,
    "echelle": [
     {
-     "prix": 65200.086,
+     "prix": 65414.118,
      "mise": 14.3,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 64507.623612,
+     "prix": 64719.382469,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 62430.236449,
+     "prix": 62635.175878,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 58967.92451,
+     "prix": 59161.498224,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 54120.687796,
+     "prix": 54298.34951,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 47888.526306,
+     "prix": 48045.729735,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 40271.440041,
+     "prix": 40403.638898,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 31269.429,
+     "prix": 31372.077,
      "mise": 383.94,
      "rempli": false,
      "mort": false
@@ -112,58 +112,58 @@
    "cycles": 0,
    "engage": 0.0,
    "barreaux": 0,
-   "reference": 2149.28,
-   "prix": 2147.44,
+   "reference": 2165.37,
+   "prix": 2161.33,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 33,
-   "hold": 0.000937,
+   "bougies": 68,
+   "hold": 0.007412,
    "echelle": [
     {
-     "prix": 2106.2944,
+     "prix": 2122.0626,
      "mise": 14.3,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 2083.924343,
+     "prix": 2099.525076,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 2016.814171,
+     "prix": 2031.912502,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 1904.963886,
+     "prix": 1919.22488,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 1748.373486,
+     "prix": 1761.462208,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 1547.042971,
+     "prix": 1558.624488,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 1300.972343,
+     "prix": 1310.711718,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 1010.1616,
+     "prix": 1017.7239,
      "mise": 383.94,
      "rempli": false,
      "mort": false
@@ -181,58 +181,58 @@
    "cycles": 0,
    "engage": 0.0,
    "barreaux": 0,
-   "reference": 1.164,
-   "prix": 1.1638,
+   "reference": 1.1695,
+   "prix": 1.1695,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 33,
-   "hold": 0.001529,
+   "bougies": 68,
+   "hold": 0.006435,
    "echelle": [
     {
-     "prix": 1.14072,
+     "prix": 1.14611,
      "mise": 14.3,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 1.128605,
+     "prix": 1.133938,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 1.09226,
+     "prix": 1.097421,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 1.031684,
+     "prix": 1.036559,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.946878,
+     "prix": 0.951352,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.837842,
+     "prix": 0.841801,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.704576,
+     "prix": 0.707906,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.54708,
+     "prix": 0.549665,
      "mise": 383.94,
      "rempli": false,
      "mort": false
@@ -250,58 +250,58 @@
    "cycles": 0,
    "engage": 0.0,
    "barreaux": 0,
-   "reference": 86.72,
-   "prix": 86.69,
+   "reference": 87.26,
+   "prix": 87.17,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 33,
-   "hold": 0.00484,
+   "bougies": 68,
+   "hold": 0.010404,
    "echelle": [
     {
-     "prix": 84.9856,
+     "prix": 85.5148,
      "mise": 14.3,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 84.083004,
+     "prix": 84.606584,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 81.375216,
+     "prix": 81.881935,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 76.862237,
+     "prix": 77.340853,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 70.544065,
+     "prix": 70.983339,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 62.420702,
+     "prix": 62.809392,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 52.492147,
+     "prix": 52.819012,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 40.7584,
+     "prix": 41.0122,
      "mise": 383.94,
      "rempli": false,
      "mort": false
@@ -319,58 +319,58 @@
    "cycles": 0,
    "engage": 0.0,
    "barreaux": 0,
-   "reference": 0.07222,
-   "prix": 0.07222,
+   "reference": 0.07301,
+   "prix": 0.07301,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 33,
-   "hold": 0.000634,
+   "bougies": 68,
+   "hold": 0.011579,
    "echelle": [
     {
-     "prix": 0.070776,
+     "prix": 0.07155,
      "mise": 14.3,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.070024,
+     "prix": 0.07079,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.067769,
+     "prix": 0.06851,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.064011,
+     "prix": 0.064711,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.058749,
+     "prix": 0.059391,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.051984,
+     "prix": 0.052552,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.043715,
+     "prix": 0.044193,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.033943,
+     "prix": 0.034315,
      "mise": 383.94,
      "rempli": false,
      "mort": false
@@ -388,58 +388,58 @@
    "cycles": 0,
    "engage": 0.0,
    "barreaux": 0,
-   "reference": 0.29441,
-   "prix": 0.2941,
+   "reference": 0.29464,
+   "prix": 0.29423,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 33,
-   "hold": -0.001388,
+   "bougies": 68,
+   "hold": -0.000946,
    "echelle": [
     {
-     "prix": 0.288522,
+     "prix": 0.288747,
      "mise": 14.3,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.285458,
+     "prix": 0.285681,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.276265,
+     "prix": 0.276481,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.260943,
+     "prix": 0.261147,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.239494,
+     "prix": 0.239681,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.211915,
+     "prix": 0.212081,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.178208,
+     "prix": 0.178347,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.138373,
+     "prix": 0.138481,
      "mise": 383.94,
      "rempli": false,
      "mort": false
@@ -452,72 +452,87 @@
   },
   {
    "paire": "UNI/EUR",
-   "equity": 1000.0,
-   "perf": 0.0,
-   "cycles": 0,
+   "equity": 1000.29,
+   "perf": 0.000286,
+   "cycles": 1,
    "engage": 0.0,
    "barreaux": 0,
-   "reference": 5.468,
-   "prix": 5.464,
+   "reference": 5.487,
+   "prix": 5.473,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 33,
-   "hold": 0.007963,
+   "bougies": 68,
+   "hold": 0.009623,
    "echelle": [
     {
-     "prix": 5.35864,
+     "prix": 5.37726,
      "mise": 14.3,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 5.301728,
+     "prix": 5.32015,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 5.130993,
+     "prix": 5.148822,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 4.846433,
+     "prix": 4.863274,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 4.448051,
+     "prix": 4.463507,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 3.935844,
+     "prix": 3.94952,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 3.309814,
+     "prix": 3.321315,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 2.56996,
+     "prix": 2.57889,
      "mise": 383.94,
      "rempli": false,
      "mort": false
     }
    ],
-   "part_engage": 0.0,
-   "duree_moyenne_h": 0.0,
-   "gain_realise": 0,
-   "journal": []
+   "part_engage": 0.00358,
+   "duree_moyenne_h": 1.4,
+   "gain_realise": 0.29,
+   "journal": [
+    {
+     "ts": 1789314900000,
+     "genre": "achat",
+     "prix": 5.37824,
+     "euros": 14.3,
+     "gain": null
+    },
+    {
+     "ts": 1789320000000,
+     "genre": "vente",
+     "prix": 5.496793,
+     "euros": 14.59,
+     "gain": 0.29
+    }
+   ]
   },
   {
    "paire": "LINK/EUR",
@@ -526,58 +541,58 @@
    "cycles": 0,
    "engage": 0.0,
    "barreaux": 0,
-   "reference": 9.787,
-   "prix": 9.77,
+   "reference": 9.859,
+   "prix": 9.849,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 33,
-   "hold": -0.000362,
+   "bougies": 68,
+   "hold": 0.007721,
    "echelle": [
     {
-     "prix": 9.59126,
+     "prix": 9.66182,
      "mise": 14.3,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 9.489395,
+     "prix": 9.559206,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 9.183801,
+     "prix": 9.251364,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 8.674478,
+     "prix": 8.738293,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 7.961425,
+     "prix": 8.019995,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 7.044643,
+     "prix": 7.096468,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 5.924131,
+     "prix": 5.967713,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 4.59989,
+     "prix": 4.63373,
      "mise": 383.94,
      "rempli": false,
      "mort": false
@@ -595,58 +610,58 @@
    "cycles": 0,
    "engage": 0.0,
    "barreaux": 0,
-   "reference": 0.1795,
-   "prix": 0.1795,
+   "reference": 0.1802,
+   "prix": 0.1802,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 33,
-   "hold": 0.013242,
+   "bougies": 68,
+   "hold": 0.017193,
    "echelle": [
     {
-     "prix": 0.17591,
+     "prix": 0.176596,
      "mise": 14.3,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.174042,
+     "prix": 0.17472,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.168437,
+     "prix": 0.169094,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.159096,
+     "prix": 0.159716,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.146018,
+     "prix": 0.146587,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.129203,
+     "prix": 0.129707,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.108652,
+     "prix": 0.109076,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.084365,
+     "prix": 0.084694,
      "mise": 383.94,
      "rempli": false,
      "mort": false
@@ -664,58 +679,58 @@
    "cycles": 0,
    "engage": 0.0,
    "barreaux": 0,
-   "reference": 46.88,
-   "prix": 46.88,
+   "reference": 47.37,
+   "prix": 47.35,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 33,
-   "hold": 0.007891,
+   "bougies": 68,
+   "hold": 0.017995,
    "echelle": [
     {
-     "prix": 45.9424,
+     "prix": 46.4226,
      "mise": 14.3,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 45.454465,
+     "prix": 45.929565,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 43.990661,
+     "prix": 44.450461,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 41.550988,
+     "prix": 41.985288,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 38.135445,
+     "prix": 38.534045,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 33.744033,
+     "prix": 34.096733,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 28.376751,
+     "prix": 28.673351,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 22.0336,
+     "prix": 22.2639,
      "mise": 383.94,
      "rempli": false,
      "mort": false

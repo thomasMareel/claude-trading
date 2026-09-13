@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Journal de bord</title>
+<meta name="description" content="Tout ce qui a change sur ce banc d'essai, date, y compris les erreurs trouvees dans ses propres resultats.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="nav.css">
+<style>
+:root{
+  --ground:#EEF1F0; --surface:#FFFFFF; --surface-2:#F5F8F7; --surface-3:#EAEFED;
+  --ink:#141D1C; --ink-2:#485552; --ink-3:#5F6D6A;
+  --rule:#D6DEDC; --rule-fort:#B2BFBB;
+  --achat:#0E7C86; --vente:#B0700A; --blocage:#A34A3A;
+  --hausse:#0A7A54; --baisse:#C0392E;
+  --dort:#C7D1CE; --sur-vif:#FFFFFF;
+  --ombre:0 1px 2px rgba(20,29,28,.06), 0 10px 28px -14px rgba(20,29,28,.22);
+  --focus:#0E7C86;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E1413; --surface:#161E1D; --surface-2:#1C2625; --surface-3:#243130;
+    --ink:#E6ECEA; --ink-2:#A6B4B0; --ink-3:#8A9995;
+    --rule:#2E3B37; --rule-fort:#3A4844;
+    --achat:#45C2CE; --vente:#DDA33F; --blocage:#DB7A63;
+    --hausse:#22C58B; --baisse:#EB6B5F;
+    --dort:#2C3937; --sur-vif:#0E1413;
+    --ombre:0 1px 2px rgba(0,0,0,.35), 0 10px 28px -14px rgba(0,0,0,.7);
+    --focus:#45C2CE;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E1413; --surface:#161E1D; --surface-2:#1C2625; --surface-3:#243130;
+  --ink:#E6ECEA; --ink-2:#A6B4B0; --ink-3:#8A9995;
+  --rule:#2E3B37; --rule-fort:#3A4844;
+  --achat:#45C2CE; --vente:#DDA33F; --blocage:#DB7A63;
+  --hausse:#22C58B; --baisse:#EB6B5F;
+  --dort:#2C3937; --sur-vif:#0E1413;
+  --ombre:0 1px 2px rgba(0,0,0,.35), 0 10px 28px -14px rgba(0,0,0,.7);
+  --focus:#45C2CE;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.6; -webkit-text-size-adjust:100%}
+.enveloppe{max-width:860px; margin:0 auto; padding:clamp(22px,5vw,44px) 18px 80px}
+h1,h2,h3{font-family:"Newsreader",Georgia,serif; font-weight:500; margin:0; text-wrap:balance}
+h1{font-size:clamp(1.9rem,5.6vw,2.9rem); line-height:1.1; letter-spacing:-.015em}
+h1 em{font-style:italic; color:var(--achat)}
+p{margin:.6em 0}
+a{color:var(--achat)}
+.num{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  font-variant-numeric:tabular-nums}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.17em;
+  text-transform:uppercase; color:var(--ink-3); margin:0 0 .5em}
+:focus-visible{outline:2px solid var(--focus); outline-offset:3px; border-radius:6px}
+
+header.tete{margin-bottom:26px}
+header.tete .chapo{max-width:62ch; color:var(--ink-2); margin-top:.8em}
+header.tete .chapo em{color:var(--ink); font-style:normal; font-weight:600}
+
+.resume{display:flex; flex-wrap:wrap; gap:10px; margin:22px 0 8px}
+.jeton{background:var(--surface); border:1px solid var(--rule); border-radius:9px;
+  padding:9px 13px; box-shadow:var(--ombre)}
+.jeton .v{font-family:"IBM Plex Mono",monospace; font-size:1.22rem; line-height:1.1}
+.jeton .k{font-size:.68rem; color:var(--ink-3); text-transform:uppercase;
+  letter-spacing:.08em; margin-top:2px}
+
+.filtres{display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  margin:18px 0 26px; padding-top:16px; border-top:1px solid var(--rule)}
+.filtres .lib{font-family:"IBM Plex Mono",monospace; font-size:.64rem; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--ink-3); margin-right:2px}
+.opt{appearance:none; background:var(--surface); color:var(--ink-2);
+  border:1px solid var(--rule); border-radius:7px; padding:6px 12px; cursor:pointer;
+  font:inherit; font-size:.84rem; white-space:nowrap}
+.opt:hover{color:var(--ink); border-color:var(--rule-fort)}
+.opt[aria-pressed="true"]{background:var(--achat); border-color:var(--achat);
+  color:var(--sur-vif); font-weight:600}
+
+/*  La frise : un filet vertical que les pastilles ponctuent. Les entrees qui
+    corrigent quelque chose de deja publie portent une pastille pleine et un
+    liseré ; les autres, une pastille creuse. On voit donc d'un coup d'oeil la
+    densite des corrections dans le temps, ce qui est tout l'objet de la page. */
+.frise{position:relative; padding-left:26px}
+.frise::before{content:""; position:absolute; left:6px; top:8px; bottom:8px;
+  width:1px; background:var(--rule)}
+.jour{font-family:"IBM Plex Mono",monospace; font-size:.7rem; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3); margin:22px 0 8px; position:relative}
+.jour::before{content:""; position:absolute; left:-23px; top:6px; width:9px; height:9px;
+  border-radius:50%; background:var(--rule-fort)}
+.entree{position:relative; background:var(--surface); border:1px solid var(--rule);
+  border-radius:10px; padding:14px 16px; margin-bottom:10px; box-shadow:var(--ombre)}
+.entree::before{content:""; position:absolute; left:-24px; top:20px; width:11px; height:11px;
+  border-radius:50%; background:var(--surface); border:2px solid var(--rule-fort)}
+.entree.correction{border-left:3px solid var(--blocage)}
+.entree.correction::before{background:var(--blocage); border-color:var(--blocage)}
+.entree h2{font-size:1.08rem; line-height:1.32; cursor:pointer; display:flex;
+  gap:10px; align-items:baseline}
+.entree h2 .chevron{flex:none; color:var(--ink-3); font-size:.8rem; transition:transform .15s}
+.entree[open-body] h2 .chevron{transform:rotate(90deg)}
+.etiquette{display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:.62rem;
+  letter-spacing:.1em; text-transform:uppercase; padding:2px 7px; border-radius:5px;
+  background:var(--blocage); color:var(--sur-vif); vertical-align:2px; margin-right:8px}
+.corps{margin-top:10px; color:var(--ink-2); font-size:.93rem; display:none}
+.entree[open-body] .corps{display:block}
+.corps p{margin:.7em 0; max-width:70ch}
+.corps pre{font-family:"IBM Plex Mono",monospace; font-size:.79rem; line-height:1.5;
+  background:var(--surface-2); border:1px solid var(--rule); border-radius:7px;
+  padding:9px 11px; overflow-x:auto; margin:.7em 0; color:var(--ink)}
+.pied{display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; margin-top:12px;
+  padding-top:10px; border-top:1px solid var(--rule); font-size:.75rem; color:var(--ink-3)}
+.pied a{color:var(--ink-3); text-decoration:none; border-bottom:1px solid var(--rule)}
+.pied a:hover,.pied a:focus-visible{color:var(--achat); border-bottom-color:currentColor}
+.fichiers{font-family:"IBM Plex Mono",monospace; font-size:.72rem}
+.vide{color:var(--ink-3); padding:30px 0; text-align:center}
+footer{margin-top:34px; padding-top:18px; border-top:1px solid var(--rule);
+  font-size:.82rem; color:var(--ink-3); max-width:72ch}
+@media(prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+<script src="nav.js" defer></script>
+<div class="enveloppe">
+
+<header class="tete">
+  <p class="eyebrow">journal de bord · genere depuis l'historique du depot</p>
+  <h1>Ce qui a change, et <em>ce qui etait faux</em></h1>
+  <p class="chapo">Des centaines de pages publient des courbes de backtest. Presque
+     aucune ne publie, datees, <em>les erreurs qu'elle a trouvees dans ses propres
+     resultats</em>. Cette page-ci est l'historique du depot, tel quel : chaque
+     modification avec sa date, son raisonnement, et ce que l'erreur coutait quand il
+     y en avait une. Rien n'est reecrit ni resume apres coup.</p>
+</header>
+
+<div class="resume" id="resume"></div>
+
+<div class="filtres">
+  <span class="lib">afficher</span>
+  <button class="opt" type="button" id="f-tout" aria-pressed="true">Tout</button>
+  <button class="opt" type="button" id="f-corr" aria-pressed="false">Corrections seulement</button>
+</div>
+
+<div class="frise" id="frise"><p class="vide">chargement du journal…</p></div>
+
+<footer>
+  <p>Cette page est fabriquee par <span class="num">scripts/exporter_journal.py</span>,
+     qui lit <span class="num">git log</span> et n'y touche pas : les textes sont ceux
+     ecrits au moment du changement. L'etiquette « correction » est posee par une
+     heuristique sur le titre de l'entree, completee par quelques formules d'aveu a la
+     premiere personne reperees dans le corps — elle peut donc manquer une entree, et
+     ce n'est pas un jugement, seulement un reperage.</p>
+  <p id="note"></p>
+</footer>
+
+</div>
+<script>
+const J = {entrees: [], filtre: "tout"};
+const esc = s => String(s).replace(/[&<>"]/g,
+  c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const MOIS = ["janvier","fevrier","mars","avril","mai","juin","juillet","aout",
+              "septembre","octobre","novembre","decembre"];
+function jourLong(iso){
+  const d = new Date(iso);
+  return d.getDate() + " " + MOIS[d.getMonth()] + " " + d.getFullYear();
+}
+function heure(iso){
+  const d = new Date(iso), p = n => String(n).padStart(2,"0");
+  return p(d.getHours()) + "h" + p(d.getMinutes());
+}
+
+/*  Le corps d'un message de commit est de la prose separee par des lignes vides,
+    avec parfois des blocs de chiffres indentes. On rend les paragraphes en
+    paragraphes et les blocs indentes tels quels : reflower un tableau de
+    resultats le rendrait illisible.  */
+function corpsEnHtml(corps){
+  if (!corps) return "";
+  return corps.split(/\n\s*\n/).map(bloc => {
+    const lignes = bloc.split("\n");
+    const indentees = lignes.filter(l => /^\s{2,}\S/.test(l)).length;
+    if (indentees >= Math.max(1, lignes.length - 1))
+      return `<pre>${esc(bloc.replace(/^\n+|\n+$/g, ""))}</pre>`;
+    return `<p>${esc(lignes.join(" ").trim())}</p>`;
+  }).join("");
+}
+
+function rendre(){
+  const frise = document.getElementById("frise");
+  const vues = J.entrees.filter(e => J.filtre === "tout" || e.etiquette === "correction");
+  if (!vues.length){ frise.innerHTML = `<p class="vide">Aucune entree.</p>`; return; }
+  let html = "", jourCourant = null;
+  for (const e of vues){
+    const j = e.date.slice(0,10);
+    if (j !== jourCourant){
+      jourCourant = j;
+      html += `<div class="jour">${jourLong(e.date)}</div>`;
+    }
+    const corr = e.etiquette === "correction";
+    html += `<article class="entree${corr ? " correction" : ""}" data-sha="${esc(e.court)}">
+      <h2 tabindex="0" role="button" aria-expanded="false">
+        <span class="chevron" aria-hidden="true">▸</span>
+        <span>${corr ? '<span class="etiquette">correction</span>' : ""}${esc(e.titre)}</span>
+      </h2>
+      <div class="corps">${corpsEnHtml(e.corps)}
+        ${e.fichiers && e.fichiers.length ? `<div class="pied">
+          <span class="fichiers">${e.fichiers.slice(0,8).map(esc).join(" · ")}${
+            e.fichiers.length > 8 ? ` · et ${e.fichiers.length - 8} autres` : ""}</span>
+        </div>` : ""}
+      </div>
+      <div class="pied">
+        <span class="num">${heure(e.date)}</span>
+        <a href="${J.depot}/commit/${esc(e.court)}" rel="noopener">${esc(e.court)}</a>
+      </div>
+    </article>`;
+  }
+  frise.innerHTML = html;
+  frise.querySelectorAll(".entree h2").forEach(h => {
+    const ouvrir = () => {
+      const a = h.closest(".entree");
+      const ouvert = a.hasAttribute("open-body");
+      a.toggleAttribute("open-body", !ouvert);
+      h.setAttribute("aria-expanded", String(!ouvert));
+    };
+    h.addEventListener("click", ouvrir);
+    h.addEventListener("keydown", ev => {
+      if (ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); ouvrir(); }
+    });
+  });
+}
+
+function poserFiltres(){
+  const t = document.getElementById("f-tout"), c = document.getElementById("f-corr");
+  const maj = () => {
+    t.setAttribute("aria-pressed", String(J.filtre === "tout"));
+    c.setAttribute("aria-pressed", String(J.filtre === "correction"));
+    rendre();
+  };
+  t.addEventListener("click", () => { J.filtre = "tout"; maj(); });
+  c.addEventListener("click", () => { J.filtre = "correction"; maj(); });
+}
+
+(async function(){
+  let d;
+  try {
+    const r = await fetch("data/journal.json?t=" + Date.now(), {cache:"no-store"});
+    d = r.ok ? await r.json() : null;
+  } catch(e){ d = null; }
+  if (!d || !d.entrees){
+    document.getElementById("frise").innerHTML =
+      `<p class="vide">Le journal n'a pas pu etre charge.</p>`;
+    return;
+  }
+  J.entrees = d.entrees;
+  J.depot = d.depot || "https://github.com/thomasMareel/claude-trading";
+  const corr = d.entrees.filter(e => e.etiquette === "correction").length;
+  const jours = new Set(d.entrees.map(e => e.date.slice(0,10))).size;
+  document.getElementById("resume").innerHTML = [
+    [d.entrees.length, "entrees"],
+    [corr, corr > 1 ? "corrections publiees" : "correction publiee"],
+    [jours, "jours de travail"],
+    [jourLong(d.entrees[d.entrees.length-1].date).split(" ").slice(0,2).join(" "),
+     "premiere entree"],
+  ].map(([v,k]) => `<div class="jeton"><div class="v">${esc(v)}</div>
+      <div class="k">${esc(k)}</div></div>`).join("");
+  document.getElementById("note").textContent =
+    (d.note || "") + " Genere le " + (d.genere_le || "").replace("T"," ").replace("+00:00"," UTC") + ".";
+  poserFiltres();
+  rendre();
+})();
+</script>
+</body>
+</html>
