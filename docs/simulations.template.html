@@ -1235,7 +1235,8 @@ function majPaires() {
     const c = chiffresPaire(sym);
     const b = h("button", { class: "paire-onglet", type: "button", role: "tab",
       "aria-selected": String(sym === M.paire),
-      onclick: () => { M.paire = sym; majPaires(); majStats(); M.toile.rendre(true); rendu(); } },
+      onclick: () => { M.paire = sym; majPaires(); majStats(); M.toile.rendre(true);
+        rendu(); ecrireUrl(); } },
       h("span", { class: "p" }, sym),
       h("span", { class: "v" }, nb(c.der, dec(c.der))),
       h("span", { class: "d " + (c.var24 >= 0 ? "haut" : "bas") }, sgn(c.var24, 2)));
@@ -1262,7 +1263,8 @@ function majOutils() {
   const bu = document.getElementById("unites");
   bu.replaceChildren(...UNITES.map(([nom, n]) =>
     h("button", { type: "button", "aria-pressed": String(M.unite === n),
-      onclick: () => { M.unite = n; M.uniteManuelle = true; bornerVue(); majOutils(); } }, nom)));
+      onclick: () => { M.unite = n; M.uniteManuelle = true; bornerVue(); majOutils();
+        ecrireUrl(); } }, nom)));
   const bp = document.getElementById("portees");
   const spanCourant = M.h1 - M.h0;
   bp.replaceChildren(...PORTEES.map(([nom, n]) =>
@@ -1323,13 +1325,62 @@ const selR = document.getElementById("sel-reglage");
 D.reglages.forEach((r, k) => selR.append(h("option", { value: String(k) },
   `${k + 1}. ${sgn(r.gain_moyen, 1)} · ${r.epreuves.reussies}/4 — ${r.nom}`)));
 selR.value = "0";
-selR.addEventListener("change", () => { iReg = +selR.value; cycleChoisi = null; rendu(); });
+selR.addEventListener("change", () => {
+  iReg = +selR.value; cycleChoisi = null; ecrireUrl(); rendu();
+});
+
+/*  L'ETAT DANS L'ADRESSE. replaceState et non pushState : le bouton Retour du
+ *  navigateur ne doit pas remonter un a un tous les reglages essayes. La paire
+ *  s'ecrit sans son suffixe, la fenetre en indices horaires depuis le debut.  */
+function ecrireUrl() {
+  const q = new URLSearchParams();
+  if (iReg) q.set("reglage", D.reglages[iReg].id || String(iReg));
+  if (M.paire !== D.meta.paires[0]) q.set("paire", M.paire.split("/")[0]);
+  if (M.h0 > 0 || M.h1 < NH - 1) q.set("vue", M.h0 + "-" + M.h1);
+  if (M.uniteManuelle) q.set("bougie", String(M.unite));
+  const eteints = Object.entries(M.calques).filter(([, v]) => !v).map(([k]) => k);
+  if (eteints.length) q.set("sans", eteints.join(","));
+  const f = q.toString();
+  history.replaceState(null, "", f ? "#" + f : location.pathname + location.search);
+}
+function lireUrl() {
+  const q = new URLSearchParams((location.hash || "").replace(/^#/, ""));
+  const r = q.get("reglage");
+  if (r) {
+    const k = D.reglages.findIndex(x => x.id === r);
+    const n = /^\d+$/.test(r) ? +r : -1;
+    if (k >= 0) iReg = k;
+    else if (n >= 0 && n < D.reglages.length) iReg = n;
+    selR.value = String(iReg);
+  }
+  const p = q.get("paire");
+  if (p) {
+    const s = D.meta.paires.find(x => x.split("/")[0] === p.toUpperCase());
+    if (s) M.paire = s;
+  }
+  const v = (q.get("vue") || "").split("-").map(Number);
+  if (v.length === 2 && v.every(Number.isFinite) && v[1] > v[0]) {
+    M.h0 = Math.max(0, v[0]); M.h1 = Math.min(NH - 1, v[1]);
+  }
+  const b = +q.get("bougie");
+  if (b > 0) { M.unite = b; M.uniteManuelle = true; }
+  const sans = (q.get("sans") || "").split(",").filter(Boolean);
+  for (const k of Object.keys(M.calques)) M.calques[k] = !sans.includes(k);
+}
 
 M.unite = uniteAuto(NH);
+lireUrl();
+if (!M.uniteManuelle) M.unite = uniteAuto(M.h1 - M.h0);
 majPaires(); majStats();
 M.toile = new Toile(document.getElementById("toile-marche"),
   W => Math.max(300, Math.min(520, W * .46)), dessinerMarche);
 brancherGestes(M.toile);
 majOutils();
 rendu();
+ecrireUrl();
+//  Un lien colle dans la barre d'adresse doit refaire l'affichage sans recharger.
+addEventListener("hashchange", () => {
+  lireUrl(); bornerVue(); majPaires(); majStats();
+  M.toile.rendre(true); majOutils(); rendu();
+});
 </script>

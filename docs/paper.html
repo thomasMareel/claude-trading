@@ -147,6 +147,10 @@ footer{margin-top:30px; padding-top:16px; border-top:1px solid var(--rule);
   <div class="barres">
     <div class="rangee" id="r-bot"><span class="lib">robot</span></div>
     <div class="rangee" id="r-paire"><span class="lib">crypto</span></div>
+    <div class="rangee" id="r-fenetre">
+      <span class="lib">periode</span>
+      <span id="opts-fenetre" style="display:contents"></span>
+    </div>
     <div class="rangee" id="r-vue">
       <span class="lib">bougies</span>
       <span id="opts-unite" style="display:contents"></span>
@@ -200,15 +204,26 @@ const SECOURS = {
   "8paliers_concentre": {titre:"Huit barreaux, dix paires"},
 };
 const UNITES = [
+  {min:0,   lib:"auto"},
   {min:5,   lib:"5 min"},  {min:15,  lib:"15 min"}, {min:60,  lib:"1 h"},
   {min:240, lib:"4 h"},    {min:1440,lib:"1 j"},
 ];
+//  La periode affichee. « tout » vaut zero et laisse la serie entiere : a
+//  quelques jours de mesure c'est le bon defaut, mais a trois mois huit mille
+//  bougies s'ecraseraient dans mille pixels — d'ou les fenetres courtes.
+const FENETRES = [
+  {h:0,   lib:"tout"}, {h:24, lib:"24 h"}, {h:168, lib:"7 j"}, {h:720, lib:"30 j"},
+];
+//  Nombre de chandeliers vise quand l'unite est en « auto ». En dessous de
+//  soixante on ne voit pas la forme du marche, au-dessus de deux cents les
+//  corps deviennent des traits.
+const VISE = 130;
 
 //  Les prix sont publies UN FICHIER PAR PAIRE : la page n'en affiche qu'une a la
 //  fois, et un fichier unique pour dix paires ferait telecharger neuf dixiemes
 //  de rien. `series` garde en cache celles deja lues.
 const E = {jeux:[null,null,null], index:null, series:{}, bot:0, paire:null,
-           unite:60, calques:{vol:true, echelle:true, bandes:true}, g:null};
+           unite:0, fenetre:0, calques:{vol:true, echelle:true, bandes:true}, g:null};
 
 const pct  = (v,d=2) => (v>=0?"+":"") + (v*100).toFixed(d) + " %";
 const eur  = (v,d=2) => v.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d}) + " €";
@@ -292,7 +307,7 @@ function poserSelecteurs(){
   rb.querySelectorAll("button").forEach(n=>n.remove());
   E.jeux.forEach((d,i) => {
     const t = (d && d.titre) || SECOURS[SOURCES[i].id].titre;
-    rb.appendChild(bouton(t, i===E.bot, () => { E.bot=i; apres(); },
+    rb.appendChild(bouton(t, i===E.bot, () => { E.bot=i; ecrireUrl(); apres(); },
       d ? pct(d.perf_total) : "—"));
   });
   const rp = document.getElementById("r-paire");
@@ -302,30 +317,76 @@ function poserSelecteurs(){
     rp.appendChild(bouton(p.paire.split("/")[0], p.paire===E.paire,
       () => { choisirPaire(p.paire); }, pct(p.perf,1)));
 
+  const rf = document.getElementById("opts-fenetre");
+  rf.replaceChildren();
+  //  Une fenetre plus longue que la mesure elle-meme n'a pas de sens : on ne
+  //  propose que celles que la duree ecoulee permet reellement.
+  const ecoule = d ? (Date.now() - d.depuis) / 3600000 : 0;
+  for (const f of FENETRES){
+    //  On masque les periodes plus longues que la mesure — sauf celle qui est
+    //  active : une periode choisie par l'adresse doit rester visible, sinon
+    //  l'etat de la page cesse de correspondre a ce qu'elle affiche.
+    if (f.h && f.h > ecoule * 1.5 && f.h !== E.fenetre) continue;
+    rf.appendChild(bouton(f.lib, f.h===E.fenetre,
+      () => { E.fenetre=f.h; ecrireUrl(); apres(); }));
+  }
+
   const ru = document.getElementById("opts-unite");
   ru.replaceChildren();
   const pasMin = (E.index ? E.index.pas : 300000)/60000;
   for (const u of UNITES){
-    if (u.min < pasMin) continue;
-    ru.appendChild(bouton(u.lib, u.min===E.unite, () => { E.unite=u.min; apres(); }));
+    if (u.min && u.min < pasMin) continue;
+    ru.appendChild(bouton(
+      u.min === 0 ? `auto · ${uniteAuto()} min` : u.lib,
+      u.min===E.unite, () => { E.unite=u.min; ecrireUrl(); apres(); }));
   }
   const rc = document.getElementById("opts-calques");
   rc.replaceChildren();
   const noms = {vol:"volume", echelle:"echelle", bandes:"capital engage"};
   for (const k of ["echelle","bandes","vol"])
     rc.appendChild(bouton(noms[k], E.calques[k],
-      () => { E.calques[k] = !E.calques[k]; apres(); }));
+      () => { E.calques[k] = !E.calques[k]; ecrireUrl(); apres(); }));
 }
 
-/* ------------------------------------------------- ce que le graphique reçoit */
-function donneesGraphique(){
+/*  Les bougies effectivement montrees : celles du robot affiche, coupees a la
+    periode choisie. Isole ici parce que l'unite « auto » en depend.  */
+function bougiesVues(){
   const d = jeu(), p = pair();
   const serie = p && E.series[p.paire];
   if (!d || !p || !serie) return null;
   //  Le fichier de prix commence au plus ancien des trois departs : on coupe au
   //  t0 DU robot affiche, sinon on montrerait des bougies qu'il n'a jamais vues.
-  const bougies = serie.bougies.filter(b => b[0] >= d.depuis);
-  const unite = Math.max(1, Math.round(E.unite*60000 / serie.pas));
+  let b = serie.bougies.filter(x => x[0] >= d.depuis);
+  if (E.fenetre){
+    const depuis = Date.now() - E.fenetre * 3600000;
+    const coupe = b.filter(x => x[0] >= depuis);
+    //  une fenetre qui ne laisserait presque rien serait pire que pas de fenetre
+    if (coupe.length >= 8) b = coupe;
+  }
+  return {bougies: b, pas: serie.pas};
+}
+
+/*  L'unite choisie toute seule : on vise environ cent trente chandeliers, quelle
+    que soit la periode. Sans cela, un robot lance depuis deux heures s'affichait
+    en bougies d'une heure — deux chandeliers — et un robot de trois mois aurait
+    ecrase huit mille bougies dans mille pixels.  */
+function uniteAuto(){
+  const v = bougiesVues();
+  if (!v || !v.bougies.length) return 5;
+  const parBougie = v.pas / 60000;
+  const brut = v.bougies.length / VISE * parBougie;
+  const paliers = [5, 15, 30, 60, 120, 240, 480, 1440];
+  return paliers.find(x => x >= brut) || 1440;
+}
+
+/* ------------------------------------------------- ce que le graphique reçoit */
+function donneesGraphique(){
+  const d = jeu(), p = pair();
+  const v = bougiesVues();
+  if (!d || !p || !v || !v.bougies.length) return null;
+  const bougies = v.bougies;
+  const minutes = E.unite || uniteAuto();
+  const unite = Math.max(1, Math.round(minutes*60000 / v.pas));
 
   const ordres = (p.journal||[]).map(e => ({
     ts:e.ts, genre:e.genre, prix:e.prix, euros:e.euros, gain:e.gain}));
@@ -505,6 +566,7 @@ function apres(){
   }
   const opts = Object.assign({pas:E.series[pair().paire].pas, hauteur:l => Math.round(
     Math.min(460, Math.max(260, l*0.42)))}, dg);
+  if (E.g && E.g.o && E.g.o.pas !== opts.pas) E.g = null;   // paire au pas different
   if (!E.g){ t.replaceChildren(); E.g = new Marche(t, opts); }
   else E.g.majDonnees(opts);
 }
@@ -533,8 +595,42 @@ async function serie(paire){
 }
 async function choisirPaire(p){
   E.paire = p;
+  ecrireUrl();
   await serie(p);
   apres();
+}
+
+/*  L'ETAT DANS L'ADRESSE. Ce que le lecteur vient de trouver — ce robot, cette
+    crypto, cette periode — doit pouvoir s'envoyer a quelqu'un ou se retrouver
+    demain. replaceState et non pushState : on ne veut pas que le bouton Retour
+    du navigateur remonte un a un tous les reglages essayes.  */
+function ecrireUrl(){
+  const q = new URLSearchParams();
+  const id = SOURCES[E.bot] && SOURCES[E.bot].id;
+  if (id && E.bot !== 0) q.set("bot", id);
+  if (E.paire) q.set("paire", E.paire.split("/")[0]);
+  if (E.fenetre) q.set("periode", E.fenetre + "h");
+  if (E.unite) q.set("bougie", E.unite + "min");
+  const eteints = Object.entries(E.calques).filter(([, v]) => !v).map(([k]) => k);
+  if (eteints.length) q.set("sans", eteints.join(","));
+  const f = q.toString();
+  history.replaceState(null, "", f ? "#" + f : location.pathname + location.search);
+}
+function lireUrl(){
+  const q = new URLSearchParams((location.hash || "").replace(/^#/, ""));
+  const bot = q.get("bot");
+  if (bot){
+    const i = SOURCES.findIndex(s => s.id === bot);
+    if (i >= 0) E.bot = i;
+  }
+  const paire = q.get("paire");
+  if (paire) E.paire = paire.includes("/") ? paire : paire.toUpperCase() + "/EUR";
+  const per = q.get("periode");
+  if (per && FENETRES.some(f => f.h === parseInt(per, 10))) E.fenetre = parseInt(per, 10);
+  const bg = q.get("bougie");
+  if (bg && UNITES.some(u => u.min === parseInt(bg, 10))) E.unite = parseInt(bg, 10);
+  const sans = (q.get("sans") || "").split(",").filter(Boolean);
+  for (const k of Object.keys(E.calques)) E.calques[k] = !sans.includes(k);
 }
 async function charger(){
   const veutIndex = !E.index || Date.now() > prochainPrix;
@@ -554,14 +650,23 @@ async function charger(){
   if (d && !d.paires.some(p => p.paire === E.paire)) E.paire = d.paires[0].paire;
   if (E.paire) await serie(E.paire);
   apres();
+  ecrireUrl();
   const maj = E.jeux.filter(Boolean).map(d => d.maj).sort().pop();
   document.getElementById("maj").textContent = maj
     ? "Dernier releve : " + maj.replace("T"," ").replace("+00:00"," UTC")
       + ". La page se rafraichit toute seule toutes les deux minutes."
     : "Aucun releve disponible.";
 }
+lireUrl();
 charger();
 setInterval(charger, 120000);
+//  Un lien colle dans la barre d'adresse, ou le bouton Retour, doivent refaire
+//  l'affichage sans recharger la page.
+addEventListener("hashchange", async () => {
+  lireUrl();
+  if (E.paire) await serie(E.paire);
+  apres();
+});
 let minuteur;
 addEventListener("resize", () => {
   clearTimeout(minuteur);
