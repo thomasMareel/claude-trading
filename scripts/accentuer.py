@@ -29,6 +29,7 @@ a bouge, il refuse le fichier.
 from __future__ import annotations
 
 import argparse
+import difflib
 import re
 import sys
 from pathlib import Path
@@ -195,8 +196,27 @@ MOTS = {
 #  accentuait « a » devant tout article et ecrivait « qui à le mieux rendu ». On
 #  ne garde donc que des cas OU LA CONFUSION EST IMPOSSIBLE : les locutions
 #  figees, et « a » suivi d'un nombre.
-#  Le supplement, releve mot par mot dans les pages. Il ecrase le noyau quand les
-#  deux se recouvrent : c'est lui qui a ete verifie le plus recemment.
+#  LE SUPPLEMENT AJOUTE, IL NE CORRIGE PAS.
+#
+#  Il ecrasait le noyau « parce qu'il avait ete verifie le plus recemment », et ca
+#  paraissait raisonnable. En pratique il a annule seize decisions, dont neuf
+#  gardes deliberes : quand le noyau ecrit "publie": "publie", il dit « ne pas y
+#  toucher, ce mot est ambigu ». Le supplement repondait "publie": "publié", en
+#  silence, et rien dans le depot ne pouvait le signaler.
+#
+#  On echoue donc bruyamment plutot que de choisir. Un desaccord entre les deux
+#  tables est une question de francais a trancher a la main, pas une priorite a
+#  regler par une regle de fusion.
+_conflits = {k: (MOTS[k], SUPPLEMENT[k])
+             for k in SUPPLEMENT if k in MOTS and MOTS[k] != SUPPLEMENT[k]}
+if _conflits:
+    lignes = "\n".join(f"    {k:<16} noyau={a!r:<16} supplement={b!r}"
+                       for k, (a, b) in sorted(_conflits.items()))
+    raise SystemExit(
+        f"accents : {len(_conflits)} mot(s) du supplement contredisent le noyau.\n"
+        f"{lignes}\n"
+        "    Le supplement AJOUTE, il ne corrige pas : retirer l'entree du\n"
+        "    supplement, ou corriger le noyau si c'est lui qui a tort.")
 MOTS.update(SUPPLEMENT)
 MOTS = {k: v for k, v in MOTS.items() if k != v}
 
@@ -375,6 +395,32 @@ def signature(s: str) -> tuple:
     )
 
 
+def propositions(avant: str, apres: str) -> list[tuple[str, str]]:
+    """Chaque mot que l'outil veut changer, avec ce qui l'entoure.
+
+    UN COMPTE N'EST PAS UNE VERIFICATION. « docs/paper.html +2 accents » invite a
+    appliquer sans regarder : c'est exactement ce qui aurait publie « Ce bot
+    engagé donc plus d'argent », « l'epreuve rejoué le meme reglage » et « ce que
+    cette etude ne corrigé pas ». Les trois etaient visibles a l'oeil nu, encore
+    fallait-il que l'outil les montre.
+
+    Le contexte compte plus que le mot : c'est lui, et lui seul, qui dit si
+    « engage » est un verbe ou un participe.
+    """
+    out = []
+    for a, b in zip(avant.split("\n"), apres.split("\n")):
+        if a == b:
+            continue
+        sm = difflib.SequenceMatcher(None, a, b)
+        for tag, i1, i2, j1, j2 in sm.get_opcodes():
+            if tag == "equal":
+                continue
+            g = 42   # de quoi lire la phrase autour du mot
+            out.append((a[max(0, i1 - g):i2 + g].strip(),
+                        b[max(0, j1 - g):j2 + g].strip()))
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--verifier", action="store_true")
@@ -404,6 +450,9 @@ def main() -> int:
         total += diff
         if args.verifier:
             print(f"  {cible:<34} +{diff} accents")
+            for av, ap in propositions(avant, apres):
+                print(f"      - {av}")
+                print(f"      + {ap}")
             continue
         c.write_text(apres, encoding="utf-8")
         print(f"  {cible:<34} +{diff} accents, ecrit")

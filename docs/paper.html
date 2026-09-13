@@ -218,11 +218,66 @@ const SOURCES = [
   {f:"data/paper_grille_8paliers.json",          id:"8paliers"},
   {f:"data/paper_grille_8paliers_concentre.json",id:"8paliers_concentre"},
 ];
-const SECOURS = {
-  "3paliers":           {titre:"Trois barreaux, panier de cinq"},
-  "8paliers":           {titre:"Huit barreaux, panier de cinq"},
-  "8paliers_concentre": {titre:"Huit barreaux, dix paires"},
+/*  LE TEXTE DES ROBOTS APPARTIENT A CETTE PAGE.
+ *
+ *  Il vivait dans paper_grille.py, et chaque cycle de mesure le republiait dans
+ *  le JSON. Consequence vue de pres : corriger une faute dans ce texte ne
+ *  servait a rien tant que les trois processus tournaient, puisqu'ils gardent
+ *  en memoire la version chargee a leur demarrage et la reecrivent toutes les
+ *  minutes. Les accents poses dans la source n'ont jamais atteint le site.
+ *
+ *  Et c'etait deja une verite en double : la page portait sa propre table de
+ *  titres « de secours », identique a celle du script, avec le risque habituel
+ *  qu'elles divergent sans que rien ne le signale.
+ *
+ *  Un processus qui mesure n'a pas a porter de la prose. La page la porte, elle
+ *  s'edite en une seconde, et aucun redemarrage n'est necessaire. Les champs
+ *  `titre` et `explication` du JSON sont desormais ignores — le script a cesse
+ *  de les ecrire, les processus deja lances les emettent encore jusqu'a leur
+ *  prochain demarrage, et ca n'a plus d'importance.  */
+const ROBOTS = {
+  "3paliers": {
+    titre: "Trois barreaux, panier de cinq",
+    explication:
+      "Trois ordres d'achat sous le prix, à -2 %, -27 % et -52 %, avec des mises " +
+      "de 13, 43 et 143 EUR : l'essentiel de l'argent est tout en bas. Chaque " +
+      "palier touché fait baisser le prix de revient moyen beaucoup plus vite que " +
+      "le marché. Tout le lot est revendu d'un coup dès que le prix repasse 4 % " +
+      "nets au-dessus de ce prix de revient — le cours n'a donc pas besoin de " +
+      "revenir à son point de départ. Tant que rien n'est acheté, l'échelle " +
+      "remonte avec le marché. C'est le réglage issu du balayage : sur 900 jours " +
+      "il est positif sur les neuf blocs de cent jours, pire bloc +0,2 %.",
+  },
+  "8paliers": {
+    titre: "Huit barreaux, panier de cinq",
+    explication:
+      "La même idée avec huit ordres étalés de -2 % à -52 %, un objectif ramené à " +
+      "2 % nets, donc des ventes plus fréquentes. Le plancher de 12 EUR par ordre " +
+      "impose ici une progression de 1,20 seulement : les mises vont de 12 à " +
+      "43 EUR, presque plates. Ce bot engage donc plus d'argent haut dans la " +
+      "descente que le précédent — il gagne plus souvent en marché calme et prend " +
+      "un trou plus profond dans une baisse durable.",
+  },
+  "8paliers_concentre": {
+    titre: "Huit barreaux, dix paires",
+    explication:
+      "Dix expériences indépendantes menées en parallèle sous la MÊME échelle, " +
+      "mille euros chacune, pour isoler ce que la paire change. Ce n'est pas un " +
+      "portefeuille de dix mille euros : c'est un dispositif de mesure. L'échelle " +
+      "à huit barreaux avec une vraie progression des mises — 14 à 384 EUR, les " +
+      "grosses tout en bas — que le plancher de 12 EUR par ordre interdit dès " +
+      "qu'on répartit un budget plus petit. Les barreaux ne sont pas " +
+      "équidistants : resserrés en haut (-2, -3, -6, -11 %) et étirés en bas " +
+      "(-19, -28, -40, -53 %), parce qu'une échelle régulière descendant à -53 % " +
+      "place la moitié de ses barreaux là où le prix ne va jamais. Sur 900 jours " +
+      "de passé, la même échelle va de +5,3 % par bloc de cent jours sur UNI à " +
+      "-1,1 % sur ADA : six points d'écart pour une échelle identique, et c'est " +
+      "précisément ce que le direct doit confirmer ou non.",
+  },
 };
+//  Un profil inconnu ne doit pas faire tomber la page : il s'affichera sans
+//  titre plutot qu'avec une erreur.
+const robot = id => ROBOTS[id] || {titre: id || "", explication: ""};
 const UNITES = [
   {min:0,   lib:"auto"},
   {min:5,   lib:"5 min"},  {min:15,  lib:"15 min"}, {min:60,  lib:"1 h"},
@@ -271,7 +326,7 @@ const pair = () => { const d=jeu(); if(!d) return null;
 
 /* ---------------------------------------------------- bandeau de comparaison */
 function carte(d, id, i){
-  const t = (d && d.titre) || SECOURS[id].titre;
+  const t = robot(id).titre;
   if (!d) return `<article class="carte"><div class="nom">${esc(t)}</div>
     <div class="gros num sourdine">—</div><div class="sous">pas encore de relevé</div></article>`;
   const frais = (Date.now() - Date.parse(d.maj)) < 8*60000;
@@ -377,7 +432,7 @@ function poserSelecteurs(){
 
   reconcilier(document.getElementById("r-bot"), E.jeux.map((x,i) => ({
     cle: SOURCES[i].id,
-    txt: (x && x.titre) || SECOURS[SOURCES[i].id].titre,
+    txt: robot(SOURCES[i].id).titre,
     sous: x ? pct(x.perf_total) : "—",
     actif: i === E.bot,
     onclick: () => { E.bot = i; ecrireUrl(); apres(); },
@@ -394,7 +449,7 @@ function poserSelecteurs(){
   //  Une fenetre plus longue que la mesure elle-meme n'a pas de sens : on ne
   //  propose que celles que la duree ecoulee permet reellement. Sauf celle qui
   //  est active : une periode choisie par l'adresse doit rester visible, sinon
-  //  l'etat de la page cesse de correspondre a ce qu'elle affiche.
+  //  l'état de la page cesse de correspondre a ce qu'elle affiche.
   const ecoule = d ? (Date.now() - d.depuis) / 3600000 : 0;
   reconcilier(document.getElementById("opts-fenetre"),
     FENETRES.filter(f => !(f.h && f.h > ecoule * 1.5 && f.h !== E.fenetre)).map(f => ({
@@ -689,6 +744,9 @@ function poserStats(){
 /* --------------------------------------------- le detail du robot affiché */
 function poserDetail(){
   const d = jeu(), n = document.getElementById("detail");
+  //  L'identite du robot vient de SOURCES et non du fichier : elle est connue
+  //  avant meme qu'un releve existe, et un JSON incomplet ne peut pas la perdre.
+  const rb = robot(SOURCES[E.bot] && SOURCES[E.bot].id);
   if (!d){ n.innerHTML = `<p class="vide">Ce robot n'a pas encore publié de relevé.</p>`; return; }
   const r = d.reglage, P = d.paires;
   const forme = r.espacement === "puissance"
@@ -718,8 +776,8 @@ function poserDetail(){
   n.innerHTML = `
     <p class="eyebrow">${esc(d.profil||"")} · ${P.length} paire${P.length>1?"s":""} ·
        ${eur(r.budget,0)} par paire</p>
-    <h2>${esc(d.titre||"")}</h2>
-    <p class="intro">${esc(d.explication||"")}</p>
+    <h2>${esc(rb.titre)}</h2>
+    <p class="intro">${esc(rb.explication)}</p>
     <p class="reglage-ligne num">profondeur ${(r.profondeur*100).toFixed(0)} % ·
       ${r.paliers} barreaux · progression x${String(r.ratio).replace(".",",")} ·
       objectif ${(r.objectif_net*100).toFixed(0)} % nets · premier barreau a

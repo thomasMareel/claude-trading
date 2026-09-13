@@ -154,45 +154,28 @@ PROFILS = {
 }
 REGLAGE = PROFILS["3paliers"]["reglage"]   # le defaut, inchange depuis le 8 septembre
 
-#  Ce que la page d'observation affiche pour expliquer chaque bot. Ecrit ici et
-#  publie dans le JSON : la page n'a pas a redire ce que le programme sait deja,
-#  et une explication qui vit a cote du reglage ne peut pas le contredire.
-TITRES = {
-    "3paliers": "Trois barreaux, panier de cinq",
-    "8paliers": "Huit barreaux, panier de cinq",
-    "8paliers_concentre": "Huit barreaux, dix paires",
-}
-EXPLICATIONS = {
-    "3paliers":
-        "Trois ordres d'achat sous le prix, à -2 %, -27 % et -52 %, avec des mises "
-        "de 13, 43 et 143 EUR : l'essentiel de l'argent est tout en bas. Chaque "
-        "palier touché fait baisser le prix de revient moyen beaucoup plus vite que "
-        "le marché. Tout le lot est revendu d'un coup dès que le prix repasse 4 % "
-        "nets au-dessus de ce prix de revient — le cours n'a donc pas besoin de "
-        "revenir à son point de départ. Tant que rien n'est acheté, l'échelle "
-        "remonte avec le marché. C'est le réglage issu du balayage : sur 900 jours "
-        "il est positif sur les neuf blocs de cent jours, pire bloc +0,2 %.",
-    "8paliers":
-        "La même idée avec huit ordres étalés de -2 % à -52 %, un objectif ramené à "
-        "2 % nets, donc des ventes plus fréquentes. Le plancher de 12 EUR par ordre "
-        "impose ici une progression de 1,20 seulement : les mises vont de 12 à 43 "
-        "EUR, presque plates. Ce bot engage donc plus d'argent haut dans la "
-        "descente que le précédent — il gagne plus souvent en marché calme et prend "
-        "un trou plus profond dans une baisse durable.",
-    "8paliers_concentre":
-        "Dix expériences indépendantes menées en parallèle sous la MÊME échelle, "
-        "mille euros chacune, pour isoler ce que la paire change. Ce n'est pas un "
-        "portefeuille de dix mille euros : c'est un dispositif de mesure. L'échelle "
-        "à huit barreaux avec une vraie progression des mises — 14 à 384 EUR, les "
-        "grosses tout en bas — que le plancher de 12 EUR par ordre interdit dès "
-        "qu'on répartit un budget plus petit. Les barreaux ne sont pas équidistants "
-        ": resserrés en haut (-2, -3, -6, -11 %) et étirés en bas (-19, -28, -40, "
-        "-53 %), parce qu'une échelle régulière descendant à -53 % place la moitié "
-        "de ses barreaux là où le prix ne va jamais. Sur 900 jours de passé, la "
-        "même échelle va de +5,3 % par bloc de cent jours sur UNI à -1,1 % sur ADA "
-        ": six points d'écart pour une échelle identique, et c'est précisément ce "
-        "que le direct doit confirmer ou non.",
-}
+#  LE TITRE ET L'EXPLICATION DE CHAQUE ROBOT SONT PARTIS DANS docs/paper.html.
+#
+#  Ils vivaient ici et ce module les republiait a chaque cycle. Corriger une
+#  faute dans ce texte ne servait donc a rien tant qu'un processus tournait : il
+#  garde en memoire la version chargee a son demarrage et la reecrit toutes les
+#  minutes. Les accents poses dans ce fichier n'ont jamais atteint le site.
+#
+#  Un processus qui mesure n'a pas a porter de la prose. La page la porte
+#  desormais, elle s'edite sans redemarrer quoi que ce soit, et la table de
+#  titres « de secours » qu'elle portait en double a cesse d'exister.
+#
+#  Les deux champs ne sont plus ecrits ; la page ne les lit plus. Les processus
+#  deja lances continuent de les emettre jusqu'a leur prochain demarrage, et
+#  c'est sans consequence.
+#
+#  CE QU'ON PERD, ET CE QUI LE COMPENSE. L'argument d'origine tenait : une
+#  explication posee a cote du reglage ne peut pas le contredire, alors qu'une
+#  explication rangee dans la page le peut. La garantie n'est plus structurelle,
+#  elle devient visible : la page imprime, directement sous le texte, les
+#  reglages REELS relus dans le JSON — profondeur, nombre de barreaux,
+#  progression, objectif, premier barreau, forme de l'echelle. Une prose qui
+#  cesserait de decrire le robot se verrait donc a l'ecran, sur la meme ligne.
 
 
 def etat_json(chemin: Path, sortie: Path, profil: str,
@@ -490,8 +473,7 @@ def un_cycle(cfg, st: Storage, x: Exchange, etat: dict, sortie: Path, verbeux: b
     etat["dernier"] = maintenant
     resume_ = {
         "maj": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "profil": etat.get("profil"), "titre": TITRES.get(etat.get("profil"), ""),
-        "explication": EXPLICATIONS.get(etat.get("profil"), ""),
+        "profil": etat.get("profil"),
         "depuis": etat["depuis"], "jours": round(jours, 2),
         "budget_total": total_bud, "equity_total": round(total_eq, 2),
         "perf_total": round(total_eq / total_bud - 1, 6) if total_bud else 0.0,

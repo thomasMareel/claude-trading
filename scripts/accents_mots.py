@@ -12,9 +12,35 @@ ont guide les choix, et elles expliquent les absences :
   JAMAIS DE REGLE QUI DEVINE. Les formes flechies sont listees a la main. Une
   regle qui ajoute un accent « quand ca ressemble a » finit toujours par ecrire
   « qui à le mieux rendu ».
+
+  LE SUPPLEMENT AJOUTE, IL NE CORRIGE PAS. Il ecrasait seize entrees du noyau, et
+  neuf d'entre elles etaient des gardes deliberes — le noyau y ecrivait le mot
+  IDENTIQUE a lui-meme, ce qui veut dire « ne pas y toucher, c'est ambigu ». Le
+  supplement les remplacait par le participe, en silence, et personne ne pouvait
+  le voir : espace -> espacé, publie -> publié, utilise -> utilisé, signale ->
+  signalé, supprime -> supprimé, explique -> expliqué, immobilise -> immobilisé,
+  invalide -> invalidé, resserre -> resserré. Plus sept renversements de sens :
+  repères (les points de comparaison) devenait repérés, résume devenait résumé,
+  vérifie devenait vérifié. accentuer.py refuse desormais de demarrer si un seul
+  mot du supplement contredit le noyau.
+
+  TROIS ENTREES EN PLUS ONT ETE RETIREES — engage, rejoue, corrige — parce
+  qu'elles produisaient, mesure a l'appui, trois fautes dans les pages :
+  « Ce bot engage donc plus d'argent » -> « engagé », « l'epreuve rejoue le meme
+  reglage » -> « rejoué », « ce que cette etude ne corrige pas » -> « corrigé ».
+  Aucune n'etait un participe. Elles etaient la depuis assez longtemps pour que
+  la prochaine execution de l'outil publie les trois d'un coup.
 """
 
 SUPPLEMENT = {
+    #  --- releves dans le journal apres le nettoyage du dictionnaire ---
+    #  Tous sans ambiguite possible : ni verbe conjugue, ni double lecture.
+    "ecrit": "écrit", "ecrits": "écrits", "ecrite": "écrite", "ecrites": "écrites",
+    "echec": "échec", "echecs": "échecs", "etant": "étant",
+    "entierement": "entièrement", "ecran": "écran", "ecrans": "écrans",
+    "etroit": "étroit", "etroite": "étroite", "etroites": "étroites",
+    "etape": "étape", "etapes": "étapes",
+    "etendue": "étendue", "etendues": "étendues",
     # --- le marche, les prix ---
     "marche": "marché", "marches": "marchés",
     "cloture": "clôture", "clotures": "clôtures", "cloturee": "clôturée",
@@ -67,8 +93,7 @@ SUPPLEMENT = {
     "trouvee": "trouvée", "trouvees": "trouvées", "trouves": "trouvés",
     "datee": "datée", "datees": "datées",
     "fabriquee": "fabriquée", "fabriquees": "fabriquées",
-    "reperee": "repérée", "reperees": "repérées", "reperes": "repérés",
-    "supposee": "supposée", "supposees": "supposées", "supposes": "supposés",
+    "reperee": "repérée", "reperees": "repérées",     "supposee": "supposée", "supposees": "supposées", "supposes": "supposés",
     "chargee": "chargée", "chargees": "chargées", "charges": "chargés",
     "menee": "menée", "menees": "menées", "menes": "menés",
     "passee": "passée", "passees": "passées", "passes": "passés",
@@ -148,8 +173,7 @@ SUPPLEMENT = {
     "entree": "entrée", "entrees": "entrées",
     "sortie": "sortie", "sorties": "sorties",
     "releve": "relevé", "releves": "relevés",
-    "resume": "résumé",
-    "schema": "schéma", "schemas": "schémas",
+        "schema": "schéma", "schemas": "schémas",
     "serieux": "sérieux", "serieuse": "sérieuse",
     "somme": "somme",
     "theoriquement": "théoriquement",
@@ -267,29 +291,12 @@ SUPPLEMENT = {
     "tire": "tiré", "tiree": "tirée", "tirees": "tirées", "tires": "tirés",
     "affiches": "affichés", "affichees": "affichées", "affichee": "affichée",
     "achete": "acheté",
-    "engage": "engagé",
-    "fige": "figé",
-    "corrige": "corrigé",
-    "designe": "désigné", "designait": "désignait", "designer": "désigner",
-    "invalide": "invalidé",
-    "vise": "visé",
+        "fige": "figé",
+        "designe": "désigné", "designait": "désignait", "designer": "désigner",
+        "vise": "visé",
     "trouve": "trouvé",
     "releve": "relevé",
-    "publie": "publié",
-    "rejoue": "rejoué",
-    "immobilise": "immobilisé",
-    "resserre": "resserré",
-    "utilise": "utilisé",
-    "realise": "réalisé",
-    "signale": "signalé",
-    "supprime": "supprimé",
-    "etale": "étalé",
-    "espace": "espacé",
-    "verifie": "vérifié",
-    "penalise": "pénalisé",
-    "explique": "expliqué",
-    "selectionne": "sélectionné",
-    "reperage": "repérage",
+                                                            "reperage": "repérage",
     "artefact": "artefact",
     "queues": "queues",
 }

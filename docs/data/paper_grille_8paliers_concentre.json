@@ -1,14 +1,14 @@
 {
- "maj": "2026-09-13T20:32:01+00:00",
+ "maj": "2026-09-13T21:23:20+00:00",
  "profil": "8paliers_concentre",
  "titre": "Huit barreaux, dix paires",
  "explication": "Dix experiences independantes menees en parallele sous la MEME echelle, mille euros chacune, pour isoler ce que la paire change. Ce n'est pas un portefeuille de dix mille euros : c'est un dispositif de mesure. L'echelle a huit barreaux avec une vraie progression des mises \u2014 14 a 384 EUR, les grosses tout en bas \u2014 que le plancher de 12 EUR par ordre interdit des qu'on repartit un budget plus petit. Les barreaux ne sont pas equidistants : resserres en haut (-2, -3, -6, -11 %) et etires en bas (-19, -28, -40, -53 %), parce qu'une echelle reguliere descendant a -53 % place la moitie de ses barreaux la ou le prix ne va jamais. Sur 900 jours de passe, la meme echelle va de +5,3 % par bloc de cent jours sur UNI a -1,1 % sur ADA : six points d'ecart pour une echelle identique, et c'est precisement ce que le direct doit confirmer ou non.",
  "depuis": 1789300200000,
- "jours": 0.36,
+ "jours": 0.4,
  "budget_total": 10000.0,
  "equity_total": 10000.29,
  "perf_total": 2.9e-05,
- "hold_moyen": 0.008477,
+ "hold_moyen": 0.009412,
  "reglage": {
   "profondeur": 0.51,
   "paliers": 8,
@@ -44,12 +44,12 @@
    "engage": 0.0,
    "barreaux": 0,
    "reference": 66749.1,
-   "prix": 66667.5,
+   "prix": 66717.2,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 104,
-   "hold": 0.004453,
+   "bougies": 114,
+   "hold": 0.005201,
    "echelle": [
     {
      "prix": 65414.118,
@@ -113,12 +113,12 @@
    "engage": 0.0,
    "barreaux": 0,
    "reference": 2168.69,
-   "prix": 2164.36,
+   "prix": 2168.35,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 104,
-   "hold": 0.008824,
+   "bougies": 114,
+   "hold": 0.010684,
    "echelle": [
     {
      "prix": 2125.3162,
@@ -181,58 +181,58 @@
    "cycles": 0,
    "engage": 0.0,
    "barreaux": 0,
-   "reference": 1.1733,
-   "prix": 1.1715,
+   "reference": 1.1746,
+   "prix": 1.1741,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 104,
-   "hold": 0.008156,
+   "bougies": 114,
+   "hold": 0.010393,
    "echelle": [
     {
-     "prix": 1.149834,
+     "prix": 1.151108,
      "mise": 14.3,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 1.137622,
+     "prix": 1.138883,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 1.100986,
+     "prix": 1.102206,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 1.039927,
+     "prix": 1.041079,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.954444,
+     "prix": 0.955501,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.844537,
+     "prix": 0.845472,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.710206,
+     "prix": 0.710993,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.551451,
+     "prix": 0.552062,
      "mise": 383.94,
      "rempli": false,
      "mort": false
@@ -250,58 +250,58 @@
    "cycles": 0,
    "engage": 0.0,
    "barreaux": 0,
-   "reference": 87.41,
-   "prix": 87.41,
+   "reference": 87.51,
+   "prix": 87.48,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 104,
-   "hold": 0.013185,
+   "bougies": 114,
+   "hold": 0.013997,
    "echelle": [
     {
-     "prix": 85.6618,
+     "prix": 85.7598,
      "mise": 14.3,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 84.752022,
+     "prix": 84.848982,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 82.02269,
+     "prix": 82.116527,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 77.473802,
+     "prix": 77.562435,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 71.105359,
+     "prix": 71.186706,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 62.917361,
+     "prix": 62.989341,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 52.909808,
+     "prix": 52.970339,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 41.0827,
+     "prix": 41.1297,
      "mise": 383.94,
      "rempli": false,
      "mort": false
@@ -320,12 +320,12 @@
    "engage": 0.0,
    "barreaux": 0,
    "reference": 0.07303,
-   "prix": 0.0727,
+   "prix": 0.07268,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 104,
-   "hold": 0.007284,
+   "bougies": 114,
+   "hold": 0.007007,
    "echelle": [
     {
      "prix": 0.071569,
@@ -389,12 +389,12 @@
    "engage": 0.0,
    "barreaux": 0,
    "reference": 0.29474,
-   "prix": 0.29424,
+   "prix": 0.29452,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 104,
-   "hold": -0.000912,
+   "bougies": 114,
+   "hold": 3.8e-05,
    "echelle": [
     {
      "prix": 0.288845,
@@ -458,12 +458,12 @@
    "engage": 0.0,
    "barreaux": 0,
    "reference": 5.487,
-   "prix": 5.413,
+   "prix": 5.43,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 104,
-   "hold": -0.001446,
+   "bougies": 114,
+   "hold": 0.00169,
    "echelle": [
     {
      "prix": 5.37726,
@@ -514,7 +514,7 @@
      "mort": false
     }
    ],
-   "part_engage": 0.00234,
+   "part_engage": 0.00213,
    "duree_moyenne_h": 1.4,
    "gain_realise": 0.29,
    "journal": [
@@ -542,12 +542,12 @@
    "engage": 0.0,
    "barreaux": 0,
    "reference": 9.89,
-   "prix": 9.879,
+   "prix": 9.881,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 104,
-   "hold": 0.010791,
+   "bougies": 114,
+   "hold": 0.010995,
    "echelle": [
     {
      "prix": 9.6922,
@@ -611,12 +611,12 @@
    "engage": 0.0,
    "barreaux": 0,
    "reference": 0.1808,
-   "prix": 0.1798,
+   "prix": 0.1802,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 104,
-   "hold": 0.014935,
+   "bougies": 114,
+   "hold": 0.017193,
    "echelle": [
     {
      "prix": 0.177184,
@@ -680,12 +680,12 @@
    "engage": 0.0,
    "barreaux": 0,
    "reference": 47.66,
-   "prix": 47.42,
+   "prix": 47.3,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 104,
-   "hold": 0.0195,
+   "bougies": 114,
+   "hold": 0.01692,
    "echelle": [
     {
      "prix": 46.7068,
