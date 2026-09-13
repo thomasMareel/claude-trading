@@ -67,7 +67,7 @@
         bougies: [], pas: 300000, ordres: [], niveaux: [], bandes: [], courbes: [],
         unite: 1, hauteur: 340, volume: true, titreAxe: "",
       }, opts || {});
-      this.svg = el("svg", { role: "img", "aria-label": this.o.aria || "graphique de marche" });
+      this.svg = el("svg", { role: "img", "aria-label": this.o.aria || "graphique de marché" });
       this.svg.style.display = "block";
       //  pan-y et non none : ce graphique n'a ni zoom ni deplacement au doigt, donc
       //  confisquer le geste vertical prenait un demi-ecran de defilement en echange
@@ -203,7 +203,7 @@
           stroke: "var(--rule-fort)", "stroke-width": 1 }, this.svg);
       }
 
-      //  --- niveaux : l'echelle d'achat, le prix de revient, la cible ---
+      //  --- niveaux : l'échelle d'achat, le prix de revient, la cible ---
       for (const n of this.o.niveaux) {
         if (!isFinite(n.prix) || n.prix < lo || n.prix > hi) continue;
         const y = Y(n.prix);
@@ -248,7 +248,7 @@
         el("path", { d, fill: "none", stroke: c.couleur || "var(--ink-3)",
           "stroke-width": c.epais || 1.6, "stroke-dasharray": c.pointille || "none",
           "stroke-linejoin": "round", opacity: c.opacite || 0.95 }, this.svg);
-        //  l'etiquette se pose au bout de la courbe, la ou l'oeil la quitte
+        //  l'étiquette se pose au bout de la courbe, la ou l'oeil la quitte
         const dernier = c.points[c.points.length - 1];
         const kd = kDe(dernier[0]);
         if (c.texte && kd >= 0 && kd < vis.length)

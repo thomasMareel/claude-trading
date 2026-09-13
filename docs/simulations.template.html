@@ -183,19 +183,19 @@ footer b{color:var(--ink-2)}
     <h1>Anatomie d'une <em>descente</em></h1>
     <p class="chapo">Une stratégie de grille rejouée sur BTC, ETH et SOL, du 2 août 2025 au 6 septembre 2026.
       Chaque ordre réellement exécutable est posé sur le chandelier. Les réglages sont rangés
-      <strong>ranges par gain sur cette fenetre</strong>, avec à côté le nombre d'épreuves de robustesse
+      <strong>rangés par gain sur cette fenêtre</strong>, avec à côté le nombre d'épreuves de robustesse
       qu'ils passent — car le plus rentable n'est pas toujours le plus fiable. Sur cette fenêtre,
       ne rien faire faisait perdre 30 %.</p>
   </div>
 </header>
 <div class="avertissement-fenetre">
-  <b>A lire avant le classement.</b> Ces huit reglages sont ranges par ce qu'ils ont
-  rendu SUR CETTE FENETRE de quatre cents jours — la meme qui a servi a les choisir.
-  Une validation en avant menee depuis, sur neuf cents jours decoupes en blocs de cent,
-  a chiffre ce biais : un reglage choisi sur le passe recent rend <b>4,82 points de
-  moins par bloc</b> que le meme reglage designe apres coup. Lisez donc cette page
-  comme l'anatomie d'une strategie, jamais comme un palmares a suivre.
-  <a href="index.html">Les cinq resultats etablis</a>
+  <b>A lire avant le classement.</b> Ces huit réglages sont rangés par ce qu'ils ont
+  rendu SUR CETTE Fenêtre de quatre cents jours — la même qui a servi a les choisir.
+  Une validation en avant menée depuis, sur neuf cents jours découpés en blocs de cent,
+  a chiffre ce biais : un réglage choisi sur le passe récent rend <b>4,82 points de
+  moins par bloc</b> que le même réglage désigné après coup. Lisez donc cette page
+  comme l'anatomie d'une stratégie, jamais comme un palmarès a suivre.
+  <a href="index.html">Les cinq résultats établis</a>
 </div>
 
 
@@ -276,7 +276,7 @@ const h = (t, a = {}, ...kids) => {
 };
 const dateDe = i => new Date(T0 + i * HEURE);
 //  timeZone UTC obligatoire : sans elle la date suit le fuseau du lecteur
-//  pendant que l'heure reste en UTC, et les deux moities de l'etiquette
+//  pendant que l'heure reste en UTC, et les deux moitiés de l'etiquette
 //  designent des instants differents. A Tokyo, 3600 heures sur 9600 etaient
 //  datees d'un jour de trop, y compris la ligne "Fenetre" du recapitulatif.
 const UTC = { timeZone: "UTC" };
@@ -297,7 +297,7 @@ const duree = hh => hh < 1 ? `${Math.max(1, Math.round(hh * 60))} min`
 const compact = v => v >= 1e9 ? (v / 1e9).toFixed(1) + " Md" : v >= 1e6 ? (v / 1e6).toFixed(1) + " M"
   : v >= 1e3 ? (v / 1e3).toFixed(1) + " k" : nb(v, 1);
 
-/** Valeur d'une serie en escalier a l'indice i, par dichotomie. */
+/** Valeur d'une série en escalier a l'indice i, par dichotomie. */
 function marche(serie, i) {
   let a = 0, b = serie.length - 1, r = null;
   while (a <= b) { const m = (a + b) >> 1; if (serie[m][0] <= i) { r = serie[m][1]; a = m + 1; } else b = m - 1; }
@@ -329,7 +329,7 @@ function survol(node, html) {
   node.addEventListener("pointermove", e => { if (!epingle) montre(e, html); });
   node.addEventListener("pointerleave", () => { if (!epingle) cache(); });
   //  Au doigt il n'y a pas de survol : sans ce clic, aucune valeur de la page
-  //  n'etait accessible sur telephone. L'infobulle reste alors epinglee jusqu'au
+  //  n'était accessible sur téléphone. L'infobulle reste alors epinglee jusqu'au
   //  prochain appui ailleurs.
   node.addEventListener("click", e => {
     e.stopPropagation(); epingle = node; montre(e, html);
@@ -346,7 +346,7 @@ addEventListener("scroll", cache, { passive: true });
    Une Toile mesure son conteneur et dessine a sa taille REELLE : une unite du
    dessin vaut un pixel a l'ecran, donc une etiquette de 11 px fait 11 px a
    toute largeur. Le redessin est declenche par ResizeObserver, ce qui couvre
-   aussi bien la rotation d'un telephone que l'ouverture d'un panneau. */
+   aussi bien la rotation d'un téléphone que l'ouverture d'un panneau. */
 class Toile {
   constructor(parent, hauteur, dessiner) {
     this.hauteur = hauteur;               // (largeur) -> hauteur en pixels
@@ -357,7 +357,7 @@ class Toile {
     this.svg = el("svg", {}, this.el);
     this.l = 0;
     //  Trois declencheurs plutot qu'un. ResizeObserver couvre le cas general,
-    //  y compris un panneau qui s'ouvre a cote ; mais il n'existe pas partout et
+    //  y compris un panneau qui s'ouvre a côté ; mais il n'existe pas partout et
     //  ne fire pas dans tous les moteurs. L'evenement de fenetre rattrape la
     //  rotation d'un telephone, et les deux passes differees rattrapent une
     //  premiere mesure prise avant que la mise en page ou les polices ne soient
@@ -564,7 +564,7 @@ function dessinerMarche(svg, W, H) {
       const t = 4 + 3.5 * Math.sqrt(euros / (mMax * D.meta.budget));
       //  PAS de survol ici : le reticule reecrit l'infobulle a chaque mouvement
       //  de souris, et le dernier ecrivain gagne. Les sept lignes d'infobulle
-      //  d'un ordre etaient donc du code injoignable. L'ordre est desormais lu
+      //  d'un ordre étaient donc du code injoignable. L'ordre est desormais lu
       //  par le reticule lui-meme, dans la meme boite que l'OHLC.
       if (genre === 0)
         el("path", { d: `M${x} ${y + t}L${x + t} ${y - t * .6}L${x - t} ${y - t * .6}Z`,
@@ -658,7 +658,7 @@ function brancherGestes(toile) {
     } else croixSur(e);
   });
   const relacher = e => {
-    //  un appui bref n'est pas un deplacement : c'est une demande de lecture.
+    //  un appui bref n'est pas un déplacement : c'est une demande de lecture.
     //  Sans cela, le reticule et l'encadre OHLC — la fonction la plus utile du
     //  graphique — n'existaient tout simplement pas au doigt.
     if (depart && Math.hypot(e.clientX - depart.x, e.clientY - depart.y) < 7) croixSur(e);
@@ -726,7 +726,7 @@ function planche(n, titre, question, corps, alire, legende) {
     //  une legende n'a de sens que dans un cadre : posee sur une grille elle y
     //  occuperait une cellule et laisserait un grand bloc gris sans contenu
     const hote = corps.classList.contains("cadre") ? corps : corps.querySelector(".cadre");
-    if (hote) hote.append(L); else corps.after(h("div", { class: "legende cadre" }, ...L.childNodes));
+    if (hote) hote.append(L); else corps.after(h("div", { class: "légende cadre" }, ...L.childNodes));
   }
   if (alire) c.append(h("p", { class: "alire", html: alire }));
   return c;
@@ -802,7 +802,7 @@ function plancheCycle() {
       let dd = "", ouvert = false;
       for (let i = i0; i <= i1; i++) {
         const v = marche(serie, i);
-        //  zero veut dire "aucun lot", pas "aucune donnee" : la dichotomie garde
+        //  zero veut dire "aucun lot", pas "aucune donnée" : la dichotomie garde
         //  la derniere marche de l'heure, donc le zero pose apres la vente
         if (v == null || v <= 0) { ouvert = false; continue; }
         dd += (ouvert ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1) + " ";
@@ -838,7 +838,7 @@ function plancheCycle() {
   return planche(1, "La mécanique d'un cycle",
     "Ce n'est pas le prix qui remonte vous chercher : c'est votre prix de sortie qui descend à sa rencontre.",
     wrap,
-    `Chaque achat plus bas tire le trait orange plein — le prix de revient — vers le bas, et avec lui
+    `Chaque achat plus bas tiré le trait orange plein — le prix de revient — vers le bas, et avec lui
      le pointillé, la sortie visée. ${vente ? `Sur ce cycle la vente s'est faite
      <b>${sgn(vente[2] / bas - 1, 1)} au-dessus du plus bas acheté</b>, et non au prix de départ.` : ""}
      Les barreaux en trait plein ont été touchés, ceux en pointillé sont restés au carnet.`,
@@ -952,7 +952,7 @@ function plancheEchelle() {
   grille.append(g1, g2);
   const vivants = np - reg.morts.length;
   const budgetMort = reg.morts.reduce((a, k) => a + reg.mises_pct[k], 0);
-  return planche(3, "L'échelle, et ce que le plancher en supprime",
+  return planche(3, "L'échelle, et ce que le plancher en supprimé",
     "Les mises suivent une progression géométrique : le premier barreau est une poussière, le dernier porte la moitié du budget. Ce qui tombe sous le minimum de la plateforme n'est jamais placé.",
     grille,
     `Le barreau du haut demande ${eur(reg.mises_pct[0] * D.meta.budget, 2)}, celui du bas
@@ -1169,9 +1169,9 @@ function plancheChutes() {
         .textContent = pct(f * C.cumul[0].part, 0);
     }
     el("text", { x: MG + iw / 2, y: H - 8, "text-anchor": "middle", class: "etiq" }, svg)
-      .textContent = "profondeur du creux, en % sous la moyenne des 24 h precedentes";
+      .textContent = "profondeur du creux, en % sous la moyenne des 24 h précédentes";
     el("text", { x: MG, y: 13, class: "etiq" }, svg)
-      .textContent = `${C.total} chutes · barres : combien · courbe : part cumulee`;
+      .textContent = `${C.total} chutes · barres : combien · courbe : part cumulée`;
   });
   const c5 = C.cumul.find(x => x.seuil === 0.95), c10 = C.cumul.find(x => x.seuil === 0.90);
   return planche(7, "Où les chutes s'arrêtent",
@@ -1329,7 +1329,7 @@ selR.addEventListener("change", () => {
   iReg = +selR.value; cycleChoisi = null; ecrireUrl(); rendu();
 });
 
-/*  L'ETAT DANS L'ADRESSE. replaceState et non pushState : le bouton Retour du
+/*  L'État DANS L'ADRESSE. replaceState et non pushState : le bouton Retour du
  *  navigateur ne doit pas remonter un a un tous les reglages essayes. La paire
  *  s'ecrit sans son suffixe, la fenetre en indices horaires depuis le debut.  */
 function ecrireUrl() {

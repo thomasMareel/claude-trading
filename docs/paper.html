@@ -129,26 +129,26 @@ footer{margin-top:30px; padding-top:16px; border-top:1px solid var(--rule);
 <div class="enveloppe">
 
 <header class="tete">
-  <p class="eyebrow">paper trading · donnees publiques · aucun ordre transmis</p>
+  <p class="eyebrow">paper trading · données publiques · aucun ordre transmis</p>
   <h1>Trois grilles en direct</h1>
-  <p>Trois robots posent la meme strategie de descente sur le vrai marche, en temps
-     reel, sans engager un centime. Ils ne different que par la <em>forme</em> de leur
-     echelle d'achat. Chacun a demarre a l'instant ou son reglage a ete fige : rien de
-     ce qui s'affiche ici n'a servi a le choisir.</p>
+  <p>Trois robots posent la même stratégie de descente sur le vrai marché, en temps
+     réel, sans engager un centime. Ils ne différent que par la <em>forme</em> de leur
+     échelle d'achat. Chacun a démarré à l'instant où son réglage a été figé : rien de
+     ce qui s'affiche ici n'a servi à le choisir.</p>
 </header>
 
 <section class="compare" id="compare" aria-label="Comparaison des trois robots"></section>
 <p class="avertissement">Ces trois chiffres ne se comparent pas entre eux : les robots
-   n'ont ni le meme budget, ni le meme panier, ni le meme instant de depart. Chacun se
-   lit contre son propre repere « ne rien faire », qui est le meme marche sur la meme
-   duree — c'est l'ecart qui a un sens, pas le rang.</p>
+   n'ont ni le même budget, ni le même panier, ni le même instant de départ. Chacun se
+   lit contre son propre repère « ne rien faire », qui est le même marché sur la même
+   durée — c'est l'écart qui a un sens, pas le rang.</p>
 
-<section class="simu" aria-label="Le marche, robot par robot et crypto par crypto">
+<section class="simu" aria-label="Le marché, robot par robot et crypto par crypto">
   <div class="barres">
     <div class="rangee" id="r-bot"><span class="lib">robot</span></div>
     <div class="rangee" id="r-paire"><span class="lib">crypto</span></div>
     <div class="rangee" id="r-fenetre">
-      <span class="lib">periode</span>
+      <span class="lib">période</span>
       <span id="opts-fenetre" style="display:contents"></span>
     </div>
     <div class="rangee" id="r-vue">
@@ -162,11 +162,11 @@ footer{margin-top:30px; padding-top:16px; border-top:1px solid var(--rule);
   <div class="legende">
     <span><i class="tri" style="border-bottom:8px solid var(--achat)"></i>achat</span>
     <span><i class="tri" style="border-top:8px solid var(--vente)"></i>vente</span>
-    <span><i class="puce" style="background:var(--achat);opacity:.25"></i>capital engage</span>
+    <span><i class="puce" style="background:var(--achat);opacity:.25"></i>capital engagé</span>
     <span><i class="puce" style="background:var(--rule-fort)"></i>barreau en attente</span>
-    <span><i class="puce" style="background:var(--achat)"></i>barreau achete</span>
+    <span><i class="puce" style="background:var(--achat)"></i>barreau acheté</span>
     <span><i class="puce" style="background:var(--blocage)"></i>prix de revient</span>
-    <span><i class="puce" style="background:var(--vente)"></i>prix de vente vise</span>
+    <span><i class="puce" style="background:var(--vente)"></i>prix de vente visé</span>
   </div>
   <div class="stats" id="stats"></div>
 </section>
@@ -174,19 +174,19 @@ footer{margin-top:30px; padding-top:16px; border-top:1px solid var(--rule);
 <section class="bloc" id="detail"></section>
 
 <footer>
-  <p>Donnees de marche publiques d'OKX Europe, paires en euros, bougies de cinq minutes
-     lues CLOSES — jamais celle en cours. Les ordres sont supposes limites, donc au tarif
+  <p>Données de marché publiques d'OKX Europe, paires en euros, bougies de cinq minutes
+     lues CLOSES — jamais celle en cours. Les ordres sont supposés limites, donc au tarif
      maker de 0,10 % et sans glissement ; un ordre sous 12 EUR est refuse, comme sur la
-     plateforme. Le repere « ne rien faire » achete au premier prix, garde, et paie les
-     memes frais aller-retour. Les heures sont en UTC.</p>
-  <p><b>Une limite connue et non corrigee :</b> un barreau est compte touche des que le
-     plus bas d'une bougie l'atteint, sans regarder le volume echange. Sur TRX/EUR, 93,7 %
-     des bougies de cinq minutes echangent moins que le barreau de 384 EUR, et 26 % moins
-     que le premier barreau. Sur les paires les plus fines, les resultats affiches sont
-     donc optimistes d'une quantite qui n'a pas encore ete bornee.</p>
-  <p>Ce site decrit une experience de mesure. Ce n'est pas un conseil d'investissement,
-     aucune recommandation n'y est faite, et aucun ordre n'est transmis a une plateforme :
-     tout ce qui s'affiche est simule sur des prix reels.</p>
+     plateforme. Le repère « ne rien faire » acheté au premier prix, garde, et paie les
+     mêmes frais aller-retour. Les heures sont en UTC.</p>
+  <p><b>Une limite connue et non corrigée :</b> un barreau est compte touche dès que le
+     plus bas d'une bougie l'atteint, sans regarder le volume échange. Sur TRX/EUR, 93,7 %
+     des bougies de cinq minutes échangent moins que le barreau de 384 EUR, et 26 % moins
+     que le premier barreau. Sur les paires les plus fines, les résultats affichés sont
+     donc optimistes d'une quantité qui n'a pas encore été bornée.</p>
+  <p>Ce site décrit une expérience de mesure. Ce n'est pas un conseil d'investissement,
+     aucune recommandation n'y est faite, et aucun ordre n'est transmis à une plateforme :
+     tout ce qui s'affiche est simulé sur des prix réels.</p>
   <p id="maj"></p>
 </footer>
 
@@ -210,7 +210,7 @@ const UNITES = [
 ];
 //  La periode affichee. « tout » vaut zero et laisse la serie entiere : a
 //  quelques jours de mesure c'est le bon defaut, mais a trois mois huit mille
-//  bougies s'ecraseraient dans mille pixels — d'ou les fenetres courtes.
+//  bougies s'écraseraient dans mille pixels — d'ou les fenetres courtes.
 const FENETRES = [
   {h:0,   lib:"tout"}, {h:24, lib:"24 h"}, {h:168, lib:"7 j"}, {h:720, lib:"30 j"},
 ];
@@ -246,13 +246,13 @@ const pair = () => { const d=jeu(); if(!d) return null;
 function carte(d, id, i){
   const t = (d && d.titre) || SECOURS[id].titre;
   if (!d) return `<article class="carte"><div class="nom">${esc(t)}</div>
-    <div class="gros num sourdine">—</div><div class="sous">pas encore de releve</div></article>`;
+    <div class="gros num sourdine">—</div><div class="sous">pas encore de relevé</div></article>`;
   const frais = (Date.now() - Date.parse(d.maj)) < 8*60000;
   const ecart = d.perf_total - d.hold_moyen;
   const depart = new Date(d.depuis).toISOString().slice(0,16).replace("T"," ");
   const barreaux = d.paires.reduce((a,p)=>a+p.barreaux,0);
   const cycles = d.paires.reduce((a,p)=>a+p.cycles,0);
-  //  UN ROBOT QUI N'A RIEN ACHETE N'A PAS DE PERFORMANCE. Afficher +0,00 % et un
+  //  UN ROBOT QUI N'A RIEN Acheté N'A PAS DE PERFORMANCE. Afficher +0,00 % et un
   //  ecart vert le placait en tete des trois cartes alors qu'il n'avait pose
   //  aucun ordre : le lecteur y lisait un vainqueur. Tant qu'aucun barreau n'est
   //  touche, la carte dit ce qui se passe vraiment, c'est-a-dire rien encore.
@@ -282,9 +282,9 @@ function carte(d, id, i){
     <div class="gros num ${sgn(d.perf_total)}">${pct(d.perf_total)}</div>
     <div class="sous num">${eur(d.equity_total)} sur ${eur(d.budget_total,0)}</div>
     <div class="sous">ne rien faire <span class="num ${sgn(d.hold_moyen)}">${pct(d.hold_moyen)}</span>
-      · ecart <span class="num ${sgn(ecart)}"><b>${pct(ecart)}</b></span></div>
+      · écart <span class="num ${sgn(ecart)}"><b>${pct(ecart)}</b></span></div>
     <div class="sous">${cycles} cycle${cycles>1?"s":""} clos ·
-      ${barreaux} barreau${barreaux>1?"x":""} detenu${barreaux>1?"s":""}</div>
+      ${barreaux} barreau${barreaux>1?"x":""} détenu${barreaux>1?"s":""}</div>
     <div class="sous" style="margin-top:5px">
       <span class="pastille ${frais?"vif":"froid"}"></span>${frais?"en marche":"silencieux"}
       · depuis le <span class="num">${depart}</span> UTC
@@ -325,7 +325,7 @@ function poserSelecteurs(){
   for (const f of FENETRES){
     //  On masque les periodes plus longues que la mesure — sauf celle qui est
     //  active : une periode choisie par l'adresse doit rester visible, sinon
-    //  l'etat de la page cesse de correspondre a ce qu'elle affiche.
+    //  l'état de la page cesse de correspondre a ce qu'elle affiche.
     if (f.h && f.h > ecoule * 1.5 && f.h !== E.fenetre) continue;
     rf.appendChild(bouton(f.lib, f.h===E.fenetre,
       () => { E.fenetre=f.h; ecrireUrl(); apres(); }));
@@ -342,7 +342,7 @@ function poserSelecteurs(){
   }
   const rc = document.getElementById("opts-calques");
   rc.replaceChildren();
-  const noms = {vol:"volume", echelle:"echelle", bandes:"capital engage"};
+  const noms = {vol:"volume", echelle:"echelle", bandes:"capital engagé"};
   for (const k of ["echelle","bandes","vol"])
     rc.appendChild(bouton(noms[k], E.calques[k],
       () => { E.calques[k] = !E.calques[k]; ecrireUrl(); apres(); }));
@@ -435,7 +435,7 @@ function poserRail(){
   svg.setAttribute("viewBox", `0 0 ${L} ${H}`);
   svg.setAttribute("role", "img");
   svg.setAttribute("aria-label",
-    `Echelle de ${p.paire} : ${p.barreaux} barreau(x) achete(s) sur ${p.echelle.length}`);
+    `Échelle de ${p.paire} : ${p.barreaux} barreau(x) acheté(s) sur ${p.echelle.length}`);
   const E1 = (t,a,tx) => { const e = document.createElementNS(ns,t);
     for (const k in a) e.setAttribute(k,a[k]); if (tx!=null) e.textContent = tx;
     svg.appendChild(e); return e; };
@@ -471,7 +471,7 @@ function poserRail(){
   const libre = p.echelle.filter(b => !b.rempli && !b.mort);
   const div = document.createElement("div");
   div.className = "ecart";
-  if (!libre.length) div.textContent = "Tous les barreaux poses sont achetes.";
+  if (!libre.length) div.textContent = "Tous les barreaux posés sont achetés.";
   else {
     const suiv = libre[0];
     const dist = p.prix / suiv.prix - 1;
@@ -504,11 +504,11 @@ function poserStats(){
 /* --------------------------------------------- le detail du robot affiché */
 function poserDetail(){
   const d = jeu(), n = document.getElementById("detail");
-  if (!d){ n.innerHTML = `<p class="vide">Ce robot n'a pas encore publie de releve.</p>`; return; }
+  if (!d){ n.innerHTML = `<p class="vide">Ce robot n'a pas encore publié de relevé.</p>`; return; }
   const r = d.reglage, P = d.paires;
   const forme = r.espacement === "puissance"
-    ? `barreaux resserres en haut (courbure ${String(r.courbure).replace(".",",")})`
-    : "barreaux equidistants";
+    ? `barreaux resserrés en haut (courbure ${String(r.courbure).replace(".",",")})`
+    : "barreaux équidistants";
   const lignes = P.map(p => `<tr class="${p.paire===E.paire?"actif":""}">
       <td>${esc(p.paire)}</td><td class="num">${px(p.prix)}</td>
       <td class="num">${px(p.reference)}</td>
@@ -541,8 +541,8 @@ function poserDetail(){
       -${(r.depart_sous*100).toFixed(0)} % · ${forme} ·
       depuis le ${new Date(d.depuis).toISOString().slice(0,16).replace("T"," ")} UTC</p>
     <div class="tableau"><table>
-      <thead><tr><th>paire</th><th>prix</th><th>reference</th><th>barreaux</th>
-        <th>engage</th><th>revient</th><th>vend a</th><th>cycles</th><th>encaisse</th>
+      <thead><tr><th>paire</th><th>prix</th><th>référence</th><th>barreaux</th>
+        <th>engagé</th><th>revient</th><th>vend a</th><th>cycles</th><th>encaisse</th>
         <th>performance</th><th>ne rien faire</th></tr></thead>
       <tbody>${lignes}</tbody></table></div>
     <div class="journal"><h3 style="margin-top:16px">Derniers ordres</h3>${journal}</div>`;
@@ -561,7 +561,7 @@ function apres(){
   if (!dg){
     if (E.g){ E.g = null; t.replaceChildren(); }
     t.innerHTML = `<p class="vide" style="padding:40px 14px;text-align:center">
-      Pas encore de prix publies pour cette paire.</p>`;
+      Pas encore de prix publiés pour cette paire.</p>`;
     return;
   }
   const opts = Object.assign({pas:E.series[pair().paire].pas, hauteur:l => Math.round(
@@ -600,7 +600,7 @@ async function choisirPaire(p){
   apres();
 }
 
-/*  L'ETAT DANS L'ADRESSE. Ce que le lecteur vient de trouver — ce robot, cette
+/*  L'État DANS L'ADRESSE. Ce que le lecteur vient de trouver — ce robot, cette
     crypto, cette periode — doit pouvoir s'envoyer a quelqu'un ou se retrouver
     demain. replaceState et non pushState : on ne veut pas que le bouton Retour
     du navigateur remonte un a un tous les reglages essayes.  */
@@ -653,9 +653,9 @@ async function charger(){
   ecrireUrl();
   const maj = E.jeux.filter(Boolean).map(d => d.maj).sort().pop();
   document.getElementById("maj").textContent = maj
-    ? "Dernier releve : " + maj.replace("T"," ").replace("+00:00"," UTC")
-      + ". La page se rafraichit toute seule toutes les deux minutes."
-    : "Aucun releve disponible.";
+    ? "Dernier relevé : " + maj.replace("T"," ").replace("+00:00"," UTC")
+      + ". La page se rafraîchit toute seule toutes les deux minutes."
+    : "Aucun relevé disponible.";
 }
 lireUrl();
 charger();
