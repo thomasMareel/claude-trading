@@ -10,7 +10,8 @@
  *        bougies : [[ts,o,h,l,c,v], ...],   // au pas le plus fin disponible
  *        pas     : 300000,                   // millisecondes par bougie
  *        ordres  : [{ts, genre:"achat"|"vente", prix, euros, gain}],
- *        niveaux : [{prix, texte, classe, pointille}],   // echelle, revient, cible
+ *        niveaux : [{prix, texte, classe, pointille}],   // horizontales : echelle
+ *        courbes : [{points:[[ts,prix]], couleur, texte}], // revient, cible de vente
  *        bandes  : [[tsDebut, tsFin]],       // periodes ou du capital dort
  *        unite   : 12,                       // bougies agregees par chandelier
  *      });
@@ -63,7 +64,7 @@
     constructor(conteneur, opts) {
       this.el = conteneur;
       this.o = Object.assign({
-        bougies: [], pas: 300000, ordres: [], niveaux: [], bandes: [],
+        bougies: [], pas: 300000, ordres: [], niveaux: [], bandes: [], courbes: [],
         unite: 1, hauteur: 340, volume: true, titreAxe: "",
       }, opts || {});
       this.svg = el("svg", { role: "img", "aria-label": this.o.aria || "graphique de marche" });
@@ -228,6 +229,33 @@
           el("rect", { x: X(k) - pas * 0.35, y, width: pas * 0.7,
             height: Math.max(1, Math.abs(Y(b.o) - Y(b.c))), fill: col }, gc);
         }
+      }
+
+      //  --- les courbes posees sur les prix : prix de revient, cible de vente ---
+      //      Elles bougent dans le temps, contrairement aux niveaux qui sont des
+      //      horizontales. C'est par elles que se voit le mecanisme central de la
+      //      strategie : le prix de revient qui descend plus vite que le marche.
+      for (const c of this.o.courbes) {
+        if (!c.points || c.points.length < 2) continue;
+        let d = "", ouvert = false;
+        for (const [ts, v] of c.points) {
+          const k = kDe(ts);
+          if (k < 0 || k >= vis.length || !isFinite(v)) { ouvert = false; continue; }
+          d += (ouvert ? "L" : "M") + X(k).toFixed(1) + " " + Y(v).toFixed(1) + " ";
+          ouvert = true;
+        }
+        if (!d) continue;
+        el("path", { d, fill: "none", stroke: c.couleur || "var(--ink-3)",
+          "stroke-width": c.epais || 1.6, "stroke-dasharray": c.pointille || "none",
+          "stroke-linejoin": "round", opacity: c.opacite || 0.95 }, this.svg);
+        //  l'etiquette se pose au bout de la courbe, la ou l'oeil la quitte
+        const dernier = c.points[c.points.length - 1];
+        const kd = kDe(dernier[0]);
+        if (c.texte && kd >= 0 && kd < vis.length)
+          el("text", { x: Math.min(iw - 2, X(kd) + 5), y: Y(dernier[1]) - 5,
+            "text-anchor": X(kd) + 60 > iw ? "end" : "start", "font-size": 10,
+            fill: c.couleur || "var(--ink-3)", "font-weight": 600,
+            "font-family": '"IBM Plex Mono",monospace' }, this.svg).textContent = c.texte;
       }
 
       //  --- les ordres, poses sur le chandelier ou ils ont eu lieu ---

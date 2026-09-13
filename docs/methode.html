@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La methode</title>
+<meta name="description" content="Ce que fait exactement un robot de grille : l'echelle, le prix de revient qui descend plus vite que le marche, la revente du lot entier. Explique sur un cycle reel.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="nav.css">
+<style>
+:root{
+  --ground:#EEF1F0; --surface:#FFFFFF; --surface-2:#F5F8F7; --surface-3:#EAEFED;
+  --ink:#141D1C; --ink-2:#485552; --ink-3:#5F6D6A;
+  --rule:#D6DEDC; --rule-fort:#B2BFBB;
+  --achat:#0E7C86; --vente:#B0700A; --blocage:#A34A3A;
+  --hausse:#0A7A54; --baisse:#C0392E;
+  --dort:#C7D1CE; --prix:#3F4B47; --sur-vif:#FFFFFF;
+  --ombre:0 1px 2px rgba(20,29,28,.06), 0 10px 28px -14px rgba(20,29,28,.22);
+  --focus:#0E7C86;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E1413; --surface:#161E1D; --surface-2:#1C2625; --surface-3:#243130;
+    --ink:#E6ECEA; --ink-2:#A6B4B0; --ink-3:#8A9995;
+    --rule:#2E3B37; --rule-fort:#3A4844;
+    --achat:#45C2CE; --vente:#DDA33F; --blocage:#DB7A63;
+    --hausse:#22C58B; --baisse:#EB6B5F;
+    --dort:#2C3937; --prix:#93A19D; --sur-vif:#0E1413;
+    --ombre:0 1px 2px rgba(0,0,0,.35), 0 10px 28px -14px rgba(0,0,0,.7);
+    --focus:#45C2CE;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E1413; --surface:#161E1D; --surface-2:#1C2625; --surface-3:#243130;
+  --ink:#E6ECEA; --ink-2:#A6B4B0; --ink-3:#8A9995;
+  --rule:#2E3B37; --rule-fort:#3A4844;
+  --achat:#45C2CE; --vente:#DDA33F; --blocage:#DB7A63;
+  --hausse:#22C58B; --baisse:#EB6B5F;
+  --dort:#2C3937; --prix:#93A19D; --sur-vif:#0E1413;
+  --ombre:0 1px 2px rgba(0,0,0,.35), 0 10px 28px -14px rgba(0,0,0,.7);
+  --focus:#45C2CE;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.65; -webkit-text-size-adjust:100%}
+.enveloppe{max-width:800px; margin:0 auto; padding:clamp(22px,5vw,44px) 18px 90px}
+h1,h2,h3{font-family:"Newsreader",Georgia,serif; font-weight:500; margin:0; text-wrap:balance}
+h1{font-size:clamp(1.9rem,5.6vw,2.9rem); line-height:1.1; letter-spacing:-.015em}
+h1 em,h2 em{font-style:italic; color:var(--achat)}
+h2{font-size:clamp(1.3rem,3.4vw,1.7rem); line-height:1.2; margin:44px 0 2px}
+h3{font-size:1.05rem; font-weight:600; font-family:inherit; margin:26px 0 2px}
+p{margin:.75em 0; max-width:68ch}
+a{color:var(--achat)}
+.num{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  font-variant-numeric:tabular-nums}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.17em;
+  text-transform:uppercase; color:var(--ink-3); margin:0 0 .5em}
+.temps{font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--achat); margin:40px 0 0}
+:focus-visible{outline:2px solid var(--focus); outline-offset:3px; border-radius:6px}
+
+header.tete .chapo{max-width:64ch; color:var(--ink-2); font-size:1.05rem; margin-top:.8em}
+.cle{font-family:"Newsreader",Georgia,serif; font-size:clamp(1.15rem,3.2vw,1.5rem);
+  line-height:1.35; font-style:italic; color:var(--ink); margin:30px 0;
+  padding:18px 22px; border-left:3px solid var(--achat); background:var(--surface);
+  border-radius:0 11px 11px 0; box-shadow:var(--ombre); max-width:none}
+
+.planche{background:var(--surface); border:1px solid var(--rule); border-radius:12px;
+  box-shadow:var(--ombre); padding:16px; margin:18px 0}
+.planche .toile{position:relative; width:100%}
+.planche svg{display:block; width:100%}
+.planche .titre{font-size:.78rem; color:var(--ink-3); margin:0 0 10px;
+  font-family:"IBM Plex Mono",monospace; letter-spacing:.05em}
+.marche-info{position:absolute; pointer-events:none; z-index:5;
+  background:var(--surface); border:1px solid var(--rule-fort); border-radius:7px;
+  box-shadow:var(--ombre); padding:7px 9px; font-size:.73rem; line-height:1.5;
+  display:flex; flex-direction:column; min-width:132px}
+.marche-info b{font-family:"IBM Plex Mono",monospace; font-size:.72rem; font-weight:600;
+  color:var(--ink-3); margin-bottom:2px}
+.marche-info span{display:flex; justify-content:space-between; gap:10px; color:var(--ink-2)}
+.marche-info i{font-style:normal; font-family:"IBM Plex Mono",monospace; color:var(--ink)}
+.marche-info .ordre{margin-top:3px; padding-top:3px; border-top:1px solid var(--rule);
+  font-family:"IBM Plex Mono",monospace; font-size:.7rem; display:block}
+.marche-info .ordre.achat{color:var(--achat)} .marche-info .ordre.vente{color:var(--vente)}
+.legende{display:flex; flex-wrap:wrap; gap:10px 16px; font-size:.73rem; color:var(--ink-3);
+  margin-top:12px; padding-top:10px; border-top:1px solid var(--rule)}
+.legende span{display:inline-flex; align-items:center; gap:6px}
+.puce{width:10px; height:3px; border-radius:2px; display:inline-block; flex:none}
+.tri{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent}
+
+table{border-collapse:collapse; width:100%; font-size:.86rem; margin:14px 0}
+th,td{padding:8px 10px; text-align:right; border-bottom:1px solid var(--rule)}
+th:first-child,td:first-child{text-align:left}
+thead th{font-size:.66rem; text-transform:uppercase; letter-spacing:.07em;
+  color:var(--ink-3); font-weight:500; border-bottom:1px solid var(--rule-fort)}
+tbody tr:last-child td{border-bottom:none; font-weight:600}
+.tableau{overflow-x:auto}
+
+.chiffres{display:grid; gap:10px; grid-template-columns:repeat(2,1fr); margin:18px 0}
+@media(min-width:640px){.chiffres{grid-template-columns:repeat(4,1fr)}}
+.chiffre{background:var(--surface); border:1px solid var(--rule); border-radius:10px;
+  padding:12px 13px; box-shadow:var(--ombre)}
+.chiffre .v{font-family:"IBM Plex Mono",monospace; font-size:1.2rem; line-height:1.15}
+.chiffre .k{font-size:.68rem; color:var(--ink-3); text-transform:uppercase;
+  letter-spacing:.07em; margin-top:3px}
+.chiffre.fort{border-color:var(--achat)} .chiffre.fort .v{color:var(--achat)}
+
+.mots{display:grid; gap:12px; grid-template-columns:1fr; margin-top:16px}
+@media(min-width:680px){.mots{grid-template-columns:repeat(2,1fr)}}
+.mot{background:var(--surface); border:1px solid var(--rule); border-radius:10px;
+  padding:13px 15px; box-shadow:var(--ombre)}
+.mot dt{font-weight:600; font-size:.95rem; margin:0 0 3px}
+.mot dd{margin:0; color:var(--ink-2); font-size:.88rem; line-height:1.55}
+.mot .ex{display:block; margin-top:6px; font-family:"IBM Plex Mono",monospace;
+  font-size:.76rem; color:var(--ink-3)}
+
+.garde{background:var(--surface-2); border:1px solid var(--rule);
+  border-left:3px solid var(--blocage); border-radius:0 11px 11px 0;
+  padding:16px 18px; margin:22px 0}
+.garde h3{margin-top:0}
+.garde p{color:var(--ink-2); font-size:.92rem}
+.garde ul{margin:.6em 0; padding-left:1.1em; color:var(--ink-2); font-size:.92rem}
+.garde li{margin:.35em 0}
+footer{margin-top:44px; padding-top:18px; border-top:1px solid var(--rule);
+  font-size:.82rem; color:var(--ink-3); max-width:72ch}
+.suite{display:flex; flex-wrap:wrap; gap:10px; margin-top:20px}
+.suite a{display:inline-block; padding:9px 14px; border-radius:9px; font-size:.88rem;
+  border:1px solid var(--rule); background:var(--surface); text-decoration:none;
+  color:var(--ink-2); box-shadow:var(--ombre)}
+.suite a:hover,.suite a:focus-visible{color:var(--ink); border-color:var(--achat)}
+@media(prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+<script src="nav.js" defer></script>
+<div class="enveloppe">
+
+<header class="tete">
+  <p class="eyebrow">la methode · le mecanisme, les mots, le protocole</p>
+  <h1>Ce que fait exactement un <em>robot de grille</em></h1>
+  <p class="chapo">Tout le reste du site donne des chiffres. Cette page donne le
+     mecanisme qui les produit. Elle l'explique sur un cycle <b>reel</b>, pris dans les
+     neuf cents jours rejoues : les prix, les ordres et les dates sont ceux qui ont eu
+     lieu, jamais un exemple arrange.</p>
+</header>
+
+<p class="cle">Ce n'est pas le prix qui remonte vous chercher. C'est votre prix de
+   sortie qui descend a sa rencontre.</p>
+
+<p>Cette phrase est tout le mecanisme. Le reste de la page la demontre, en cinq temps.</p>
+
+<!-- ------------------------------------------------------------------ I -->
+<p class="temps">Premier temps</p>
+<h2>On pose une echelle <em>sous</em> le prix</h2>
+<p>Un robot de grille n'essaie pas de deviner le sens du marche. Il pose a l'avance
+   plusieurs ordres d'achat sous le prix du moment, a des distances croissantes, et il
+   attend. Si le prix monte, rien ne se passe. S'il descend, les ordres se declenchent
+   un par un, du plus haut au plus bas.</p>
+<p><b>Les mises augmentent vers le bas</b>, et c'est la que tout se joue. Un barreau a
+   -53 % recoit vingt-sept fois plus d'argent qu'un barreau a -2 %. Acheter beaucoup en
+   bas et peu en haut fait descendre le prix moyen du lot bien plus vite que le marche
+   lui-meme.</p>
+
+<div class="planche">
+  <p class="titre" id="t-echelle">l'echelle, mises dessinees a l'echelle</p>
+  <div class="toile" id="planche-echelle"></div>
+</div>
+
+<!-- ----------------------------------------------------------------- II -->
+<p class="temps">Deuxieme temps</p>
+<h2>Le prix descend, <em>le prix de revient descend plus vite</em></h2>
+<p id="intro-cycle">…</p>
+
+<div class="planche">
+  <p class="titre" id="t-cycle">…</p>
+  <div class="toile" id="planche-cycle"></div>
+  <div class="legende">
+    <span><i class="tri" style="border-bottom:8px solid var(--achat)"></i>achat</span>
+    <span><i class="tri" style="border-top:8px solid var(--vente)"></i>vente</span>
+    <span><i class="puce" style="background:var(--blocage)"></i>prix de revient moyen</span>
+    <span><i class="puce" style="background:var(--vente)"></i>prix de vente vise</span>
+    <span><i class="puce" style="background:var(--rule-fort);height:1px"></i>barreaux de l'echelle</span>
+  </div>
+</div>
+
+<div class="tableau"><table id="tab-achats">
+  <thead><tr><th>achat</th><th>prix</th><th>mise</th><th>lot detenu</th>
+    <th>prix de revient</th><th>il faut remonter de</th>
+    <th>sans etaler, il faudrait</th></tr></thead>
+  <tbody></tbody></table></div>
+<p>Les deux dernieres colonnes sont la demonstration. « Il faut remonter de » est la
+   hausse qu'il reste a faire pour que la vente se declenche. « Sans etaler » est ce
+   qu'il aurait fallu si la meme somme avait ete posee d'un seul coup sur le premier
+   barreau. <b id="ecart-final">…</b></p>
+<p>Le mecanisme est arithmetique : on ajoute au lot une part achetee moins cher que la
+   moyenne, donc la moyenne baisse — et comme les mises grossissent vers le bas, chaque
+   nouvel achat pese plus lourd que le precedent dans cette moyenne.</p>
+
+<!-- ---------------------------------------------------------------- III -->
+<p class="temps">Troisieme temps</p>
+<h2>On revend <em>tout le lot d'un coup</em></h2>
+<p>Il n'y a pas de sortie barreau par barreau. Des que le prix repasse au-dessus du prix
+   de revient moyen plus l'objectif — frais compris — la position entiere part en une
+   fois, et une echelle neuve est posee au prix du moment.</p>
+<p id="paye">…</p>
+
+<div class="chiffres" id="chiffres-cycle"></div>
+
+<p id="conclusion-cycle">…</p>
+
+<!-- ----------------------------------------------------------------- IV -->
+<p class="temps">Quatrieme temps</p>
+<h2>Quand rien n'est achete, <em>l'echelle remonte</em></h2>
+<p>Tant qu'aucun barreau n'est touche, l'echelle n'est pas figee : sa reference suit le
+   prix vers le haut. Un marche qui monte pendant des jours ne laisse donc pas le robot
+   avec des ordres loin sous le cours — il les remonte avec lui, et reste a -2 % du plus
+   haut atteint.</p>
+<p>Le revers est le mode de defaillance le plus courant de la strategie : <b>en hausse
+   continue, un robot de grille ne fait rien et regarde passer</b>. Il ne perd pas
+   d'argent, il n'en gagne pas non plus, pendant que detenir simplement aurait rapporte.</p>
+
+<div class="planche">
+  <p class="titre">la reference suit le prix tant que rien n'est achete</p>
+  <div class="toile" id="planche-suivi"></div>
+</div>
+
+<!-- ------------------------------------------------------------------ V -->
+<p class="temps">Cinquieme temps</p>
+<h2>Ce qui peut <em>mal tourner</em></h2>
+
+<div class="garde">
+  <h3>La baisse durable</h3>
+  <p>C'est le defaut structurel, et aucun reglage ne le corrige. Si le prix descend et
+     ne remonte pas, les barreaux se remplissent tous, le lot reste dehors, et le
+     capital est immobilise aussi longtemps qu'il faut. Le moteur ne vend jamais a
+     perte : un cycle qui part a la baisse n'est pas mauvais, il est <b>eternel</b>.
+     Mesure sur neuf cents jours : un lot passe 58 % de son temps sous son prix de
+     revient, et 79 % pour les cycles de plus de deux jours.</p>
+  <h3>Le seuil d'abandon</h3>
+  <p>Sous le dernier barreau, une regle ecrite d'avance arrete les frais : on n'ajoute
+     plus rien. Le lot detenu reste, mais l'echelle cesse de creuser. C'est une borne,
+     pas une protection — elle limite ce qu'on peut perdre de plus, pas ce qu'on a
+     deja engage.</p>
+  <h3>Le plancher par ordre</h3>
+  <p>Une plateforme refuse un ordre trop petit : elle ne l'agrandit pas. Avec un
+     plancher de 12 EUR, une echelle a huit barreaux sur 200 EUR ne peut pas avoir de
+     vraies « grosses mises en bas » — les premiers barreaux tomberaient sous le
+     plancher et ne seraient jamais poses. C'est une contrainte mesuree, pas un choix :
+     elle commande la geometrie de l'echelle bien plus que n'importe quel reglage.</p>
+</div>
+
+<!-- ------------------------------------------------------------- les mots -->
+<h2>Les mots</h2>
+<p>Le site en emploie une vingtaine sans les definir ailleurs. Les voici, avec un
+   exemple pris dans le cycle ci-dessus ou dans le direct.</p>
+<dl class="mots" id="glossaire"></dl>
+
+<!-- -------------------------------------------------------- le protocole -->
+<h2>Comment on mesure</h2>
+<p>Un chiffre sans son protocole ne vaut rien. Voici celui de tout ce que le site
+   publie.</p>
+
+<h3>Une bougie ne dit que quatre nombres</h3>
+<p>Le rejeu ne connait d'une bougie que son ouverture, son plus haut, son plus bas et
+   sa cloture. Il doit donc <b>deviner l'ordre dans lequel le prix les a parcourus</b>,
+   et cette convention decide seule si un achat a eu lieu avant une vente. Convention
+   retenue : une bougie haussiere passe par son bas puis par son haut, une baissiere
+   l'inverse. Sur une bougie horaire c'est un pari lourd ; au pas de cinq minutes il ne
+   reste presque rien a deviner. Toutes les mesures du site sont faites a cinq minutes,
+   et l'epreuve de stabilite rejoue le meme reglage a l'heure, a cinq minutes et a la
+   minute pour verifier que le resultat n'est pas un artefact de finesse.</p>
+
+<h3>Les frais, le plancher, et ce qu'on suppose</h3>
+<ul>
+  <li>Les ordres sont supposes <b>limites</b>, donc au tarif maker de 0,10 % et sans
+      glissement de prix.</li>
+  <li>Un ordre sous <b>12 EUR</b> est refuse, comme sur la plateforme. Les barreaux
+      qui tomberaient en dessous ne sont jamais poses, et leur budget reste en caisse
+      plutot que d'etre redistribue.</li>
+  <li>Le repere « ne rien faire » achete au premier prix, garde, et paie les
+      <b>memes frais aller-retour</b>. C'est le seul juge qui compte : une strategie
+      qui gagne moins que ne rien faire n'a pas gagne.</li>
+  <li>Les donnees sont les bougies publiques d'OKX Europe, en euros. Aucun ordre n'est
+      transmis, aucun argent n'est engage.</li>
+</ul>
+
+<h3>La limite connue, et non corrigee</h3>
+<p>Un barreau est compte touche des que le plus bas d'une bougie l'atteint, <b>sans
+   regarder le volume echange</b>. Sur TRX/EUR, 93,7 % des bougies de cinq minutes
+   echangent moins que le barreau de 384 EUR, et 26 % moins que le premier barreau. Sur
+   les paires les plus fines, les resultats rejoues sont donc optimistes d'une quantite
+   qui n'a pas encore ete bornee. C'est ecrit ici parce que ca ne l'etait nulle part.</p>
+
+<h3>Pourquoi une validation en avant</h3>
+<p>Choisir un reglage sur une periode puis le mesurer sur cette meme periode ne mesure
+   rien : on retrouve ce qu'on a choisi. La validation en avant decoupe neuf cents jours
+   en blocs de cent, choisit le reglage sur les trois blocs precedents, et ne releve que
+   ce qu'il rend sur le bloc suivant, jamais vu. L'ecart entre les deux lectures est le
+   surajustement, et il vaut <b>4,82 points par bloc</b> sur ce dispositif.</p>
+
+<div class="garde">
+  <h3>Ce qu'on s'interdit de conclure</h3>
+  <ul>
+    <li>Qu'un reglage « marche », a partir d'un rejeu sur une periode passee.</li>
+    <li>Qu'une paire est meilleure qu'une autre, a partir de ses resultats passes :
+        choisir ainsi a ete mesure a vingt ou trente points d'illusion.</li>
+    <li>Qu'un ecart de quelques points sur quelques semaines de paper trading signifie
+        quoi que ce soit : le bruit y est plusieurs fois plus grand que l'avantage
+        cherche.</li>
+    <li>Que ce qui a tenu sur ce marche et cette decennie tiendra ailleurs. Aucun
+        decoupage ne fabrique un regime qui n'a pas eu lieu.</li>
+  </ul>
+</div>
+
+<div class="suite">
+  <a href="paper.html">Voir les robots en direct →</a>
+  <a href="simulations.html">Voir 400 jours rejoues →</a>
+  <a href="journal.html">Voir ce qui a change →</a>
+</div>
+
+<footer>
+  <p>Le cycle qui illustre cette page est choisi par
+     <span class="num">scripts/exporter_methode.py</span> selon un critere ecrit
+     d'avance et qui ne regarde pas le gain : trois ou quatre barreaux, et une vente
+     ayant eu lieu <b>sous</b> le premier achat. C'est le seul cas qui montre ce que la
+     strategie a de contre-intuitif.</p>
+  <p id="pied-source"></p>
+</footer>
+
+</div>
+<script src="marche.js"></script>
+<script>
+const esc = s => String(s).replace(/[&<>"]/g,
+  c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const px  = v => Marche.prixCourt(v);
+const eur = (v,d=2) => v.toLocaleString("fr-FR",
+  {minimumFractionDigits:d, maximumFractionDigits:d}) + " €";
+const pct = (v,d=2) => (v>=0?"+":"") + (v*100).toFixed(d) + " %";
+const NS = "http://www.w3.org/2000/svg";
+function svgEl(n, a, parent, texte){
+  const e = document.createElementNS(NS, n);
+  for (const k in a) e.setAttribute(k, a[k]);
+  if (texte != null) e.textContent = texte;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+/*  Une toile en pixels reels, comme partout ailleurs sur le site : un viewBox
+    fige etire le texte a des tailles illisibles des que la largeur change.  */
+function toile(hote, hauteur, dessiner){
+  const svg = svgEl("svg", {role:"img"}, hote);
+  let l = 0, h = 0;
+  const rendre = (force) => {
+    const L = Math.max(240, Math.round(hote.clientWidth || 0));
+    if (!L) return;
+    const H = Math.round(typeof hauteur === "function" ? hauteur(L) : hauteur);
+    if (!force && L === l && H === h) return;
+    l = L; h = H;
+    svg.setAttribute("width", L); svg.setAttribute("height", H);
+    svg.setAttribute("viewBox", `0 0 ${L} ${H}`);
+    svg.replaceChildren();
+    dessiner(svg, L, H);
+  };
+  if (window.ResizeObserver) new ResizeObserver(() => rendre()).observe(hote);
+  window.addEventListener("resize", () => rendre());
+  rendre(true);
+  requestAnimationFrame(() => rendre(true));
+  return svg;
+}
+
+/* -------------------------------------------------- I. l'echelle dessinee */
+function dessinerEchelle(svg, L, H, d){
+  const ech = d.echelle, ref = d.cycle.reference;
+  const G = 62, D = 14, T = 16, B = 14;
+  const bas = ech[ech.length-1].prix;
+  const Y = v => T + (ref - v) / (ref - bas) * (H - T - B);
+  const mMax = Math.max(...ech.map(b => b.mise));
+  const larg = L - G - D;
+  svg.setAttribute("aria-label",
+    `Echelle a ${ech.length} barreaux, de ${((ech[0].prix/ref-1)*100).toFixed(0)} % a `
+    + `${((bas/ref-1)*100).toFixed(0)} % sous la reference, mises de `
+    + `${Math.round(ech[0].mise)} a ${Math.round(mMax)} euros`);
+
+  //  la reference, tout en haut : c'est d'elle que l'echelle descend
+  svgEl("line", {x1:G, x2:L-D, y1:T, y2:T, stroke:"var(--prix)", "stroke-width":1.5}, svg);
+  svgEl("text", {x:G-8, y:T+4, "text-anchor":"end", "font-size":10, fill:"var(--prix)",
+    "font-family":'"IBM Plex Mono",monospace', "font-weight":600}, svg, "prix");
+
+  for (const b of ech){
+    const y = Y(b.prix);
+    const w = Math.max(3, b.mise / mMax * larg * 0.82);
+    //  la barre EST la mise : sa longueur dit combien d'argent part sur ce barreau,
+    //  ce qu'un simple point ne dirait pas
+    svgEl("rect", {x:G, y:y-5, width:w, height:10, rx:2,
+      fill:"var(--achat)", opacity:b.rempli ? 0.95 : 0.28}, svg);
+    svgEl("text", {x:G-8, y:y+4, "text-anchor":"end", "font-size":10,
+      fill:"var(--ink-3)", "font-family":'"IBM Plex Mono",monospace'}, svg,
+      ((b.prix/ref-1)*100).toFixed(0) + " %");
+    svgEl("text", {x:G+w+7, y:y+4, "font-size":10, fill:"var(--ink-2)",
+      "font-family":'"IBM Plex Mono",monospace'}, svg, Math.round(b.mise) + " €");
+  }
+}
+
+/* ------------------------------------- IV. la reference qui suit la hausse */
+function dessinerSuivi(svg, L, H){
+  const G = 10, D = 92, T = 18, B = 16;
+  //  un chemin de prix qui monte par paliers, invente ici : il n'illustre pas un
+  //  resultat mais une REGLE, et une regle se dessine
+  const pts = [0,.06,.03,.12,.09,.2,.17,.28,.25,.34,.3,.42,.4,.5];
+  const iw = L - G - D, ih = H - T - B;
+  const X = i => G + i/(pts.length-1) * iw;
+  const Y = v => T + (0.58 - v)/0.62 * ih;
+  let dPrix = "", dRef = "";
+  let haut = pts[0];
+  for (let i=0; i<pts.length; i++){
+    haut = Math.max(haut, pts[i]);
+    dPrix += (i?"L":"M") + X(i).toFixed(1) + " " + Y(pts[i]).toFixed(1) + " ";
+    dRef  += (i?"L":"M") + X(i).toFixed(1) + " " + Y(haut-0.02).toFixed(1) + " ";
+  }
+  svgEl("path", {d:dRef, fill:"none", stroke:"var(--achat)", "stroke-width":1.6,
+    "stroke-dasharray":"5 4"}, svg);
+  svgEl("path", {d:dPrix, fill:"none", stroke:"var(--prix)", "stroke-width":2,
+    "stroke-linejoin":"round"}, svg);
+  svgEl("text", {x:L-D+8, y:Y(pts[pts.length-1])+4, "font-size":10.5,
+    fill:"var(--prix)", "font-weight":600,
+    "font-family":'"IBM Plex Mono",monospace'}, svg, "le prix");
+  svgEl("text", {x:L-D+8, y:Y(haut-0.02)+4, "font-size":10.5, fill:"var(--achat)",
+    "font-weight":600, "font-family":'"IBM Plex Mono",monospace'}, svg, "1er barreau");
+  svgEl("text", {x:G, y:H-3, "font-size":9.5, fill:"var(--ink-3)",
+    "font-family":'"IBM Plex Mono",monospace'}, svg,
+    "aucun achat : le barreau reste a -2 % du plus haut atteint");
+  svg.setAttribute("aria-label",
+    "Schema : tant qu'aucun barreau n'est achete, le premier barreau suit le prix vers "
+    + "le haut et reste a deux pour cent sous le plus haut atteint");
+}
+
+/* ------------------------------------------------------------ le glossaire */
+function glossaire(d){
+  const c = d.cycle, ech = d.echelle;
+  return [
+    ["Barreau", "Un des ordres d'achat de l'echelle, avec son prix et sa mise. Le "
+      + "moteur les appelle « paliers » dans ses reglages ; c'est le meme objet.",
+      `${ech.length} barreaux, de ${Math.round(ech[0].mise)} € a ${Math.round(ech[ech.length-1].mise)} €`],
+    ["Echelle", "L'ensemble des barreaux poses sous le prix de reference. Sa forme "
+      + "est decrite par sa profondeur, son nombre de barreaux et la progression de "
+      + "ses mises.", `de ${((ech[0].prix/c.reference-1)*100).toFixed(0)} % a ${((ech[ech.length-1].prix/c.reference-1)*100).toFixed(0)} % sous la reference`],
+    ["Reference", "Le prix a partir duquel l'echelle est posee. Tant que rien n'est "
+      + "achete, elle remonte avec le marche ; des le premier achat, elle est figee "
+      + "jusqu'a la vente.", `${px(c.reference)} pour le cycle ci-dessus`],
+    ["Prix de revient", "Ce que coute en moyenne une unite du lot detenu, frais "
+      + "compris. Il descend a chaque barreau touche, plus vite que le marche.",
+      `${px(c.prix_revient)} apres ${c.barreaux} achats`],
+    ["Prix de sortie", "Le prix auquel revendre tout le lot pour empocher l'objectif "
+      + "net. Il descend en meme temps que le prix de revient.", `${px(c.prix_sortie)}`],
+    ["Objectif net", "Le gain vise, deja debarrasse des frais d'aller et de retour. "
+      + "Viser 2 % nets veut dire 2 % dans la poche.",
+      `${(d.reglage.objectif_net*100).toFixed(0)} % pour ce reglage`],
+    ["Cycle", "Un aller-retour complet : du premier achat jusqu'a la vente du lot "
+      + "entier. Sa duree est le temps pendant lequel la paire est immobilisee.",
+      `${c.heures.toFixed(0)} heures pour celui-ci`],
+    ["Profondeur", "De combien l'echelle descend sous la reference. Une echelle "
+      + "profonde encaisse de grosses baisses mais engage peu d'argent en temps "
+      + "normal.", `${(d.reglage.profondeur*100).toFixed(0)} % ici`],
+    ["Progression des mises", "Le rapport entre un barreau et le suivant. Une "
+      + "progression de 1,6 met vingt-sept fois plus d'argent au huitieme barreau "
+      + "qu'au premier.", `x${String(d.reglage.ratio).replace(".",",")}`],
+    ["Espacement", "La facon dont les barreaux se repartissent entre le haut et le "
+      + "bas. « En puissance » les resserre en haut, la ou le prix vit vraiment, et "
+      + "etire ceux du bas.", `${d.reglage.espacement}, courbure ${String(d.reglage.courbure).replace(".",",")}`],
+    ["Seuil d'abandon", "Sous le dernier barreau, la regle qui arrete d'ajouter de "
+      + "l'argent. Elle borne la perte possible en plus, pas celle deja engagee.",
+      `${(d.reglage.abandon_sous*100).toFixed(0)} % sous le dernier barreau`],
+    ["Plancher", "Le montant minimal d'un ordre accepte par la plateforme. En "
+      + "dessous, le barreau n'est jamais pose et son budget reste en caisse.",
+      `${d.reglage.mise_min.toFixed(0)} € par ordre`],
+    ["Repere « ne rien faire »", "Ce qu'aurait donne l'achat du panier au premier "
+      + "prix, garde jusqu'au bout, frais compris. Le seul juge qui compte.", ""],
+    ["Bloc", "Une tranche de cent jours. Toutes les mesures longues du site sont "
+      + "decoupees ainsi, l'echelle remise a neuf au debut de chaque bloc.",
+      "neuf blocs couvrent les 900 jours"],
+    ["Validation en avant", "Choisir un reglage sur les blocs passes, puis ne le "
+      + "juger que sur le bloc suivant, jamais vu. La seule lecture qui ne se "
+      + "raconte pas d'histoires.", "ecart mesure : 4,82 points par bloc"],
+    ["Surajustement", "L'ecart entre ce qu'un reglage rend quand on le choisit apres "
+      + "coup et ce qu'il rend quand on doit le choisir a l'avance.", ""],
+    ["Creux", "La pire baisse subie par le book entre un sommet et le point bas qui "
+      + "suit. Ce qu'il faut avoir le coeur de traverser.", ""],
+    ["Capital au travail", "La part du budget reellement engagee en moyenne. Une "
+      + "echelle profonde en laisse dormir l'essentiel.", ""],
+  ].map(([m, def, ex]) => `<div class="mot"><dt>${esc(m)}</dt><dd>${esc(def)}`
+    + (ex ? `<span class="ex">${esc(ex)}</span>` : "") + `</dd></div>`).join("");
+}
+
+/* --------------------------------------------------------------- le rendu */
+(async function(){
+  let d;
+  try {
+    const r = await fetch("data/methode.json?t=" + Date.now(), {cache:"no-store"});
+    d = r.ok ? await r.json() : null;
+  } catch(e){ d = null; }
+  if (!d){
+    document.getElementById("intro-cycle").textContent =
+      "Les donnees du cycle n'ont pas pu etre chargees.";
+    return;
+  }
+  const c = d.cycle, a = d.achats;
+  const jour = t => new Date(t).toISOString().slice(0,10);
+
+  toile(document.getElementById("planche-echelle"),
+        () => 26 + d.echelle.length * 26, (s,L,H) => dessinerEchelle(s,L,H,d));
+  toile(document.getElementById("planche-suivi"),
+        L => Math.round(Math.min(220, Math.max(150, L*0.3))), dessinerSuivi);
+
+  document.getElementById("intro-cycle").innerHTML =
+    `Voici ce qui s'est passe sur <b>${esc(d.paire)}</b> entre le `
+    + `<span class="num">${jour(c.ouvert_le)}</span> et le `
+    + `<span class="num">${jour(c.ferme_le)}</span>. Le prix est tombe de `
+    + `<span class="num">${px(c.premier_achat)}</span> a `
+    + `<span class="num">${px(c.dernier_achat)}</span>, et quatre barreaux ont ete `
+    + `touches. Suivez la ligne rouge : c'est le prix de revient moyen du lot. `
+    + `A chaque achat elle fait un pas vers le bas, et elle descend <b>plus vite que `
+    + `le prix</b>.`;
+  document.getElementById("t-cycle").textContent =
+    `${d.paire} · ${c.barreaux} barreaux touches · ${c.heures.toFixed(0)} heures · `
+    + `${jour(c.ouvert_le)} au ${jour(c.ferme_le)}`;
+
+  const niveaux = d.echelle.filter(b => b.prix <= c.reference * 1.01)
+    .map(b => ({prix:b.prix, couleur:"var(--rule-fort)", epais:1,
+      pointille:b.rempli ? "none" : "3 4", opacite:b.rempli ? .8 : .45,
+      texte:`${((b.prix/c.reference-1)*100).toFixed(0)} %`}));
+  new Marche(document.getElementById("planche-cycle"), {
+    bougies: d.bougies, pas: (d.bougies[1][0] - d.bougies[0][0]) || 300000, unite: 1,
+    volume: false,
+    hauteur: L => Math.round(Math.min(420, Math.max(280, L*0.52))),
+    aria: `Prix de ${d.paire} pendant le cycle, avec les quatre achats, la vente, et `
+      + `la courbe du prix de revient moyen qui descend plus vite que le prix`,
+    niveaux,
+    courbes: [
+      {points: d.revient, couleur: "var(--blocage)", epais: 1.8, texte: "revient"},
+      {points: d.sortie,  couleur: "var(--vente)",  epais: 1.5,
+       pointille: "5 3", texte: "vente visee"},
+    ],
+    ordres: [
+      ...a.map(x => ({ts:x.ts, genre:"achat", prix:x.prix, euros:x.euros})),
+      {ts:d.vente.ts, genre:"vente", prix:d.vente.prix, euros:d.vente.euros,
+       gain:d.vente.gain},
+    ],
+  });
+
+  //  Le tableau des achats : c'est la que le mecanisme se lit en chiffres.
+  //  La colonne decisive compare la hausse qu'il reste a faire pour vendre, selon
+  //  qu'on a etale les achats sur l'echelle ou tout pose sur le premier barreau.
+  const OBJ = d.reglage.objectif_net, FRAIS = 0.001;
+  const cible = revient => revient * (1 + OBJ) / (1 - FRAIS);
+  let euros = 0, unites = 0, dernier = null;
+  document.querySelector("#tab-achats tbody").innerHTML = a.map((x,i) => {
+    euros += x.euros; unites += x.euros / x.prix * (1 - FRAIS);
+    const pr = euros / unites;
+    //  « sans etaler » : la meme somme, posee d'un coup au premier barreau, donc
+    //  un prix de revient egal au premier prix d'achat
+    const seul = cible(a[0].prix / (1 - FRAIS)) / x.prix - 1;
+    const etale = cible(pr) / x.prix - 1;
+    dernier = {etale, seul};
+    return `<tr><td>${i ? (i+1) + "ᵉ" : "1ᵉʳ"} barreau</td>
+      <td class="num">${px(x.prix)}</td><td class="num">${eur(x.euros)}</td>
+      <td class="num">${eur(euros)}</td><td class="num">${px(pr)}</td>
+      <td class="num">${pct(etale)}</td>
+      <td class="num" style="color:var(--ink-3)">${pct(seul)}</td></tr>`;
+  }).join("") + `<tr><td>vente du lot</td><td class="num">${px(d.vente.prix)}</td>
+      <td class="num">—</td><td class="num">${eur(d.vente.euros)}</td>
+      <td class="num">${px(c.prix_revient)}</td>
+      <td class="num">atteinte</td>
+      <td class="num" style="color:var(--ink-3)">jamais atteinte</td></tr>`;
+  document.getElementById("ecart-final").textContent =
+    `Au quatrieme barreau, il restait ${(dernier.etale*100).toFixed(1)} % a remonter `
+    + `au lieu de ${(dernier.seul*100).toFixed(1)} % : `
+    + `${(dernier.seul/dernier.etale).toFixed(1)} fois moins.`;
+
+  document.getElementById("paye").innerHTML =
+    `Ici, la vente s'est faite a <span class="num">${px(c.prix_sortie)}</span>. `
+    + `Or le premier achat avait eu lieu a <span class="num">${px(c.premier_achat)}</span> : `
+    + `<b>le prix n'est jamais remonte jusque-la</b>. Il lui manquait encore `
+    + `<span class="num">${pct(-c.sous_premier_achat).replace("+","")}</span> pour y `
+    + `revenir, et le lot est pourtant parti avec un gain net.`;
+
+  document.getElementById("chiffres-cycle").innerHTML = [
+    [px(c.premier_achat), "premier achat", ""],
+    [px(c.prix_revient), "prix de revient", ""],
+    [px(c.prix_sortie), "vendu a", ""],
+    [pct(c.sous_premier_achat), "sous le premier achat", "fort"],
+  ].map(([v,k,cl]) => `<div class="chiffre ${cl}"><div class="v">${esc(v)}</div>
+      <div class="k">${esc(k)}</div></div>`).join("");
+
+  document.getElementById("conclusion-cycle").innerHTML =
+    `Au total : <span class="num">${eur(c.investi)}</span> engages sur les `
+    + `<span class="num">${eur(d.budget,0)}</span> du budget, rendus `
+    + `<span class="num">${eur(c.recu)}</span>, soit un gain de `
+    + `<b class="num">${eur(c.gain)}</b> — <span class="num">${pct(c.gain_pct)}</span> `
+    + `du lot, net de frais. Le reste du budget n'a jamais bouge : il attendait les `
+    + `barreaux du bas, qui n'ont pas ete touches.`;
+
+  document.getElementById("glossaire").innerHTML = glossaire(d);
+  document.getElementById("pied-source").innerHTML =
+    `Cycle illustre : ${esc(d.paire)}, du ${jour(c.ouvert_le)} au ${jour(c.ferme_le)}, `
+    + `rejoue au pas de cinq minutes avec l'echelle du robot « huit barreaux, dix `
+    + `paires ». Donnees publiques d'OKX Europe. Heures en UTC.`;
+})();
+</script>
+</body>
+</html>

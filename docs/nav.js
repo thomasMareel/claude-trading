@@ -14,6 +14,7 @@
 
   const PAGES = [
     { f: "index.html",       nom: "Accueil",           court: "Accueil" },
+    { f: "methode.html",     nom: "La methode",        court: "La methode" },
     { f: "paper.html",       nom: "Grilles en direct", court: "En direct" },
     { f: "simulations.html", nom: "Simulations",       court: "Simulations" },
     { f: "journal.html",     nom: "Journal de bord",   court: "Journal" },
