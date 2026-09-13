@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La validation en avant</title>
+<meta name="description" content="Ce qu'un reglage rend quand on doit le choisir a l'avance, et non apres coup : le surajustement mesure sur 900 jours.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="jetons.css">
+<style>
+*{box-sizing:border-box}
+body{margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.65; -webkit-text-size-adjust:100%}
+.enveloppe{max-width:840px; margin:0 auto; padding:clamp(22px,5vw,44px) 18px 90px}
+h1,h2,h3{font-family:"Newsreader",Georgia,serif; font-weight:500; margin:0; text-wrap:balance}
+h1{font-size:clamp(1.9rem,5.6vw,2.9rem); line-height:1.1; letter-spacing:-.015em}
+h1 em,h2 em{font-style:italic; color:var(--achat)}
+h2{font-size:clamp(1.3rem,3.4vw,1.7rem); margin:46px 0 4px}
+h3{font-size:1.02rem; font-weight:600; font-family:inherit; margin:24px 0 2px}
+p{margin:.75em 0; max-width:68ch}
+a{color:var(--achat)}
+.num{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  font-variant-numeric:tabular-nums}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.17em;
+  text-transform:uppercase; color:var(--ink-3); margin:0 0 .5em}
+.h{color:var(--hausse)} .b{color:var(--baisse)}
+:focus-visible{outline:2px solid var(--focus); outline-offset:3px; border-radius:6px}
+header.tete .chapo{max-width:64ch; color:var(--ink-2); font-size:1.05rem; margin-top:.8em}
+
+.carte{background:var(--surface); border:1px solid var(--rule); border-radius:12px;
+  box-shadow:var(--ombre); padding:18px 20px; margin:20px 0}
+.carte .titre{font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-3); margin:0 0 14px}
+
+/*  Le verdict : quatre barres qui partent d'un zero commun. Les longueurs sont
+    comparables parce qu'elles partagent la meme echelle, ce qu'un tableau de
+    quatre nombres ne montre pas.  */
+.barres{display:flex; flex-direction:column; gap:12px}
+.bar{display:grid; grid-template-columns:1fr; gap:3px}
+.bar .lab{display:flex; justify-content:space-between; gap:12px; align-items:baseline;
+  font-size:.88rem}
+.bar .lab b{font-family:"IBM Plex Mono",monospace; font-size:1.02rem}
+.bar .piste{position:relative; height:13px; background:var(--surface-2);
+  border:1px solid var(--rule); border-radius:4px; overflow:hidden}
+.bar .zero{position:absolute; top:0; bottom:0; width:1px; background:var(--rule-fort)}
+.bar .val{position:absolute; top:0; bottom:0; border-radius:2px}
+.bar .quoi{font-size:.8rem; color:var(--ink-3); max-width:64ch}
+.bar.vedette .lab b{font-size:1.25rem}
+
+/*  La carte de chaleur : une ligne par reglage, une case par bloc. C'est la
+    seule figure qui rend la DISPERSION — la ligne entierement verte du reglage a
+    trois barreaux face a celle qui alterne du vert vif et du rouge sombre.  */
+.chaleur{overflow-x:auto}
+.chaleur table{border-collapse:separate; border-spacing:2px; font-size:.76rem;
+  min-width:620px}
+.chaleur th{font-family:"IBM Plex Mono",monospace; font-size:.64rem; font-weight:500;
+  color:var(--ink-3); padding:2px 4px; text-align:center}
+.chaleur th.g{text-align:left; min-width:190px}
+.chaleur td{text-align:center; padding:7px 4px; border-radius:4px;
+  font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;
+  color:var(--sur-vif); font-weight:500; white-space:nowrap}
+.chaleur td.nom{background:none; color:var(--ink); text-align:left; font-family:inherit;
+  font-weight:400; padding-left:0}
+.chaleur td.res{background:none; color:var(--ink-2); font-family:"IBM Plex Mono",monospace}
+.chaleur td.vide{background:var(--surface-2); color:var(--ink-3)}
+
+table.simple{border-collapse:collapse; width:100%; font-size:.85rem}
+table.simple th,table.simple td{padding:8px 10px; text-align:right;
+  border-bottom:1px solid var(--rule)}
+table.simple th:first-child,table.simple td:first-child{text-align:left}
+table.simple thead th{font-size:.65rem; text-transform:uppercase; letter-spacing:.07em;
+  color:var(--ink-3); font-weight:500; border-bottom:1px solid var(--rule-fort)}
+table.simple tbody tr:last-child td{border-bottom:none}
+.tableau{overflow-x:auto}
+
+.boutons{display:grid; gap:16px; grid-template-columns:1fr}
+@media(min-width:660px){.boutons{grid-template-columns:repeat(2,1fr)}}
+.bouton h4{margin:0 0 6px; font-size:.82rem; font-family:"IBM Plex Mono",monospace;
+  letter-spacing:.06em; color:var(--ink-3); font-weight:500; text-transform:uppercase}
+.bouton .ligne{display:grid; grid-template-columns:3.6rem 1fr 2.6rem; gap:8px;
+  align-items:center; font-size:.8rem; margin:3px 0}
+.bouton .piste{height:9px; background:var(--surface-2); border:1px solid var(--rule);
+  border-radius:3px; overflow:hidden}
+.bouton .piste i{display:block; height:100%; background:var(--achat); opacity:.75}
+.bouton .v,.bouton .r{font-family:"IBM Plex Mono",monospace; color:var(--ink-2)}
+.bouton .r{text-align:right; color:var(--ink-3)}
+
+.garde{background:var(--surface-2); border:1px solid var(--rule);
+  border-left:3px solid var(--blocage); border-radius:0 11px 11px 0;
+  padding:16px 18px; margin:24px 0}
+.garde h3{margin-top:0}
+.garde p,.garde li{color:var(--ink-2); font-size:.92rem}
+.garde ul{margin:.6em 0; padding-left:1.1em}
+.suite{display:flex; flex-wrap:wrap; gap:10px; margin-top:22px}
+.suite a{display:inline-block; padding:9px 14px; border-radius:9px; font-size:.88rem;
+  border:1px solid var(--rule); background:var(--surface); text-decoration:none;
+  color:var(--ink-2); box-shadow:var(--ombre)}
+.suite a:hover,.suite a:focus-visible{color:var(--ink); border-color:var(--achat)}
+footer{margin-top:40px; padding-top:18px; border-top:1px solid var(--rule);
+  font-size:.82rem; color:var(--ink-3); max-width:72ch}
+</style>
+</head>
+<body>
+<script src="nav.js" defer></script>
+<div class="enveloppe">
+
+<header class="tete">
+  <p class="eyebrow">la validation en avant · le resultat le plus important du banc</p>
+  <h1>Ce qu'on croit avoir trouve, et <em>ce qu'on obtient</em></h1>
+  <p class="chapo">Choisir un reglage sur une periode puis le mesurer sur cette meme
+     periode ne mesure rien : on retrouve ce qu'on a choisi. Cette page mesure l'ecart
+     entre les deux lectures. Il vaut <b id="cle-suraj">…</b> par bloc de cent jours, et
+     c'est le chiffre qui a invalide tout ce que ce banc publiait avant lui.</p>
+</header>
+
+<h2>Le protocole</h2>
+<p id="protocole">…</p>
+<p>A chaque bloc de test, on retient le reglage qui a le mieux rendu sur les
+   <b>trois blocs precedents</b> — rien dans ce choix ne regarde le bloc a venir — puis
+   on releve ce qu'il donne sur ce bloc jamais vu. On recommence en avancant d'un bloc.
+   Ce que la moyenne de ces releves donne est la seule estimation honnete.</p>
+
+<h2>Le verdict</h2>
+<div class="carte">
+  <p class="titre" id="titre-verdict">…</p>
+  <div class="barres" id="verdict"></div>
+</div>
+
+<h2>Bloc par bloc, <em>ce que le passe designait</em></h2>
+<p>Voici les six choix successifs. La colonne « appris » est ce que le reglage retenu
+   rendait sur les trois blocs qui ont servi a le choisir ; « teste », ce qu'il a rendu
+   sur le bloc suivant.</p>
+<div class="tableau"><table class="simple" id="tab-choix">
+  <thead><tr><th>bloc</th><th>reglage retenu</th><th>appris</th><th>teste</th>
+    <th>ne rien faire</th></tr></thead><tbody></tbody></table></div>
+<p id="stabilite">…</p>
+
+<h2>La carte de chaleur</h2>
+<p>Une ligne par reglage, une case par bloc de cent jours. C'est la figure qui rend la
+   <b>dispersion</b>, et qu'aucun tableau de moyennes ne montre : une ligne uniformement
+   verte n'a pas la meme valeur qu'une ligne qui alterne le vert vif et le rouge sombre,
+   meme a moyenne egale.</p>
+<div class="carte">
+  <div class="chaleur"><table id="chaleur"><thead></thead><tbody></tbody></table></div>
+</div>
+<p id="lecture-chaleur">…</p>
+
+<h2>Ce qui compte, <em>et ce qui est du bruit</em></h2>
+<p>Rang moyen de chaque valeur de chaque parametre, sur tous les blocs. Une barre longue
+   veut dire « se classe souvent bien ». Quand toutes les barres d'un parametre font la
+   meme longueur, ce parametre ne decide de rien.</p>
+<div class="carte"><div class="boutons" id="boutons"></div></div>
+<p>Deux reglages seulement se detachent : <b>ne pas faire l'echelle courte</b> et
+   <b>ne pas viser un objectif minuscule</b>. Le nombre de barreaux, la progression des
+   mises et le point de depart n'ont aucun effet mesurable — alors que des semaines de
+   balayage avaient ete passees a les regler.</p>
+
+<h2>Le champ de vision</h2>
+<p>Question posee en cours de route : le robot devrait-il regarder les N derniers jours
+   pour en deduire la profondeur de son echelle ? Trois correlations y repondent.</p>
+<div class="carte"><div class="barres" id="vision"></div></div>
+<p>Le reglage ideal suit bien la profondeur des chutes — mais celles du bloc
+   <b>qu'on est en train de vivre</b>, et rien dans le bloc precedent ne les annonce.
+   Une fenetre glissante se reglerait donc sur une information qui ne se prolonge pas :
+   du bruit avec un retard. Le champ de vision nul du moteur — reference au prix du
+   moment, profondeur fixe — n'est pas un defaut a corriger.</p>
+
+<div class="garde">
+  <h3>Ce que cette etude ne corrige pas</h3>
+  <p>Les neuf blocs viennent du <b>meme marche et de la meme decennie</b>. Aucun
+     decoupage ne fabrique un regime qui n'a pas eu lieu. Une validation en avant
+     elimine le surajustement a une periode ; elle ne promet rien sur un futur qui ne
+     ressemblerait a aucun bloc passe.</p>
+  <p>Neuf points, c'est peu. Les correlations ci-dessus se lisent comme des ordres de
+     grandeur, pas comme des mesures fines. Et le paper trading en direct reste le seul
+     juge dont les donnees n'existaient pas au moment du choix.</p>
+</div>
+
+<div class="suite">
+  <a href="methode.html">Comprendre le mecanisme →</a>
+  <a href="paper.html">Voir les robots en direct →</a>
+  <a href="simulations.html">Voir 400 jours rejoues →</a>
+</div>
+
+<footer>
+  <p id="pied">…</p>
+  <p>Reproductible : <span class="num">scripts/valider_en_avant.py</span> produit la
+     matrice complete, <span class="num">scripts/exporter_validation.py</span> en tire
+     ce que cette page affiche. Le rapport d'origine, ecrit le jour de la mesure, est
+     conserve tel quel dans
+     <a href="https://github.com/thomasMareel/claude-trading/blob/master/docs/archives/validation-en-avant-2026-09-08.md">docs/archives</a>.</p>
+</footer>
+
+</div>
+<script>
+const esc = s => String(s).replace(/[&<>"]/g,
+  c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pct = (v,d=2) => (v>=0?"+":"") + (v*100).toFixed(d) + " %";
+const sgn = v => v > 0 ? "h" : (v < 0 ? "b" : "");
+
+/*  Une barre signee : le zero est place selon la part de valeurs negatives, et
+    chaque barre part de ce zero commun. Sans zero commun, deux barres de meme
+    longueur ne voudraient pas dire la meme chose.  */
+function barre({lab, val, quoi, couleur, vedette}, min, max){
+  const etendue = max - min || 1;
+  const zero = (0 - min) / etendue * 100;
+  const g = Math.min(zero, (val - min) / etendue * 100);
+  const w = Math.abs((val - min) / etendue * 100 - zero);
+  return `<div class="bar${vedette ? " vedette" : ""}">
+    <div class="lab"><span>${esc(lab)}</span>
+      <b class="${sgn(val)}">${pct(val)}</b></div>
+    <div class="piste">
+      <i class="zero" style="left:${zero.toFixed(2)}%"></i>
+      <i class="val" style="left:${g.toFixed(2)}%;width:${Math.max(0.6,w).toFixed(2)}%;
+         background:${couleur || (val >= 0 ? "var(--hausse)" : "var(--baisse)")}"></i>
+    </div>
+    ${quoi ? `<div class="quoi">${esc(quoi)}</div>` : ""}
+  </div>`;
+}
+
+/*  La couleur d'une case : un vert d'autant plus vif que le bloc a bien rendu,
+    un rouge sinon. L'echelle est bornee a plus ou moins vingt points, au-dela
+    de quoi toutes les cases seraient saturees et ne diraient plus rien.  */
+function teinte(v){
+  if (v === null || v === undefined) return "var(--surface-2)";
+  const t = Math.min(1, Math.abs(v) / 0.20);
+  const a = (0.12 + 0.78 * t).toFixed(2);
+  return v >= 0 ? `color-mix(in srgb, var(--hausse) ${(a*100).toFixed(0)}%, var(--surface-2))`
+                : `color-mix(in srgb, var(--baisse) ${(a*100).toFixed(0)}%, var(--surface-2))`;
+}
+function encre(v){
+  if (v === null || v === undefined) return "var(--ink-3)";
+  return Math.abs(v) / 0.20 > 0.5 ? "var(--sur-vif)" : "var(--ink)";
+}
+
+(async function(){
+  let d;
+  try {
+    const r = await fetch("data/validation.json?t=" + Date.now(), {cache:"no-store"});
+    d = r.ok ? await r.json() : null;
+  } catch(e){ d = null; }
+  if (!d){
+    document.getElementById("protocole").textContent =
+      "Les donnees de la validation n'ont pas pu etre chargees.";
+    return;
+  }
+  const v = d.verdict, n = d.n_blocs;
+
+  document.getElementById("cle-suraj").textContent = pct(v.surajustement);
+  document.getElementById("protocole").innerHTML =
+    `<b>${d.n_blocs * d.bloc_jours} jours</b> d'historique au pas de cinq minutes, `
+    + `communs a ${d.paires.length} paires — ${d.paires.map(p=>p.split("/")[0]).join(", ")} —, `
+    + `decoupes en <b>${n} blocs de ${d.bloc_jours} jours</b>, l'echelle remise a neuf `
+    + `au debut de chaque bloc. <b>${d.n_reglages} reglages</b> recevables sont mesures `
+    + `sur chaque bloc et chaque paire, soit ${(d.n_reglages*n*d.paires.length).toLocaleString("fr-FR")} `
+    + `rejeux, avec ${d.budget.toLocaleString("fr-FR")} € par paire.`;
+
+  //  --- le verdict ---
+  const lignes = [
+    {lab:"Choisi dans le passe", val:v.choisi_dans_le_passe, vedette:true,
+     quoi:"Le reglage retenu sur les trois blocs precedents, releve sur le bloc suivant. "
+        + "La seule estimation honnete."},
+    {lab:"Ne rien faire", val:v.ne_rien_faire, couleur:"var(--prix)",
+     quoi:"Acheter le panier au premier prix et le garder, memes frais aller-retour."},
+    {lab:"Choisi apres coup", val:v.choisi_apres_coup, couleur:"var(--vente)",
+     quoi:"Le meilleur reglage sur l'ensemble des blocs, note sur ces memes blocs. "
+        + "C'est le chiffre qu'on publie quand on ne fait pas attention."},
+    {lab:"Surajustement mesure", val:v.surajustement, vedette:true,
+     couleur:"var(--blocage)",
+     quoi:"L'ecart entre les deux lectures precedentes. Ce que coute le fait de devoir "
+        + "choisir a l'avance."},
+  ];
+  const vals = lignes.map(x => x.val);
+  const min = Math.min(0, ...vals) * 1.15, max = Math.max(0, ...vals) * 1.15;
+  document.getElementById("verdict").innerHTML =
+    lignes.map(x => barre(x, min, max)).join("");
+  document.getElementById("titre-verdict").textContent =
+    `moyenne sur ${v.blocs_testes} blocs de test · ${v.positifs}/${v.blocs_testes} positifs · `
+    + `${v.battent_repere}/${v.blocs_testes} battent le repere`;
+
+  //  --- le tableau des choix ---
+  document.querySelector("#tab-choix tbody").innerHTML = d.choix.map(c =>
+    `<tr><td class="num">bloc ${c.bloc}</td><td>${esc(c.reglage)}</td>
+      <td class="num ${sgn(c.appris)}">${pct(c.appris)}</td>
+      <td class="num ${sgn(c.teste)}"><b>${pct(c.teste)}</b></td>
+      <td class="num ${sgn(c.hold)}">${pct(c.hold)}</td></tr>`).join("");
+  document.getElementById("stabilite").innerHTML =
+    `<b>${v.reglages_differents} reglages differents</b> ont ete retenus pour `
+    + `${v.blocs_testes} blocs. Un reglage qui change a chaque fois dit que la recherche `
+    + `suit le bruit ; un reglage stable serait l'indice d'un mecanisme. Et remarquez la `
+    + `colonne « appris » : elle est positive partout, y compris devant des « testes » `
+    + `franchement negatifs. <b>C'est exactement cela, le surajustement.</b>`;
+
+  //  --- la carte de chaleur ---
+  const tete = `<tr><th class="g">reglage</th>`
+    + d.blocs.map(b => `<th title="${esc(b.debut)} → ${esc(b.fin)}">b${b.k}</th>`).join("")
+    + `<th>moyenne</th><th>pire</th></tr>`;
+  document.querySelector("#chaleur thead").innerHTML = tete;
+  const ligneChaleur = (nom, blocs, moyenne, pire, sourdine) =>
+    `<tr><td class="nom">${esc(nom)}</td>`
+    + blocs.map(x => x === null || x === undefined
+        ? `<td class="vide">—</td>`
+        : `<td style="background:${teinte(x)};color:${encre(x)}">${(x*100).toFixed(1)}</td>`).join("")
+    + `<td class="res"><b>${pct(moyenne,2)}</b></td>`
+    + `<td class="res">${pire === null ? "—" : pct(pire,1)}</td></tr>`;
+  const holds = d.blocs.map(b => b.hold);
+  document.querySelector("#chaleur tbody").innerHTML =
+    d.nommes.map(x => ligneChaleur(x.nom, x.blocs, x.moyenne, x.pire)).join("")
+    + ligneChaleur("Ne rien faire", holds,
+        holds.reduce((a,b)=>a+b,0)/holds.length, Math.min(...holds))
+    + ligneChaleur("Le meilleur du bloc, apres coup", d.blocs.map(b=>b.meilleure),
+        d.blocs.reduce((a,b)=>a+b.meilleure,0)/n, Math.min(...d.blocs.map(b=>b.meilleure)));
+  const trois = d.nommes[0], courte = d.nommes[d.nommes.length-1];
+  document.getElementById("lecture-chaleur").innerHTML =
+    `La premiere ligne est celle du reglage qui tourne en paper trading : `
+    + `<b>${trois.positifs} blocs positifs sur ${trois.total}</b>, pire bloc `
+    + `<b>${pct(trois.pire)}</b>. La derniere des trois alterne les extremes et finit a `
+    + `<b>${pct(courte.moyenne)}</b> de moyenne pour un pire bloc a `
+    + `<b>${pct(courte.pire)}</b>. Les deux lignes du bas rappellent le contexte : ce `
+    + `que le marche a fait, et ce que le meilleur reglage aurait rendu si on avait pu `
+    + `le connaitre d'avance — ce qui n'arrive jamais.`;
+
+  //  --- les boutons ---
+  const noms = {profondeur:"profondeur", paliers:"nombre de barreaux",
+                ratio:"progression des mises", objectif_net:"objectif net",
+                depart_sous:"premier barreau sous le prix"};
+  const fmt = {profondeur:x=>(x*100).toFixed(0)+" %", paliers:x=>x,
+               ratio:x=>"x"+String(x).replace(".",","),
+               objectif_net:x=>(x*100).toFixed(1)+" %",
+               depart_sous:x=>"-"+(x*100).toFixed(0)+" %"};
+  document.getElementById("boutons").innerHTML = Object.entries(d.boutons)
+    .map(([cle, vals]) => {
+      const rangs = vals.map(x => x.rang);
+      const etale = Math.max(...rangs) - Math.min(...rangs);
+      return `<div class="bouton"><h4>${esc(noms[cle] || cle)}${
+        etale < 0.03 ? " · aucun effet" : ""}</h4>`
+        + vals.map(x => `<div class="ligne">
+            <span class="v">${esc(String(fmt[cle] ? fmt[cle](x.valeur) : x.valeur))}</span>
+            <span class="piste"><i style="width:${((1-x.rang)*100).toFixed(1)}%"></i></span>
+            <span class="r">${(x.rang*100).toFixed(0)} %</span></div>`).join("")
+        + `</div>`;
+    }).join("");
+
+  //  --- le champ de vision ---
+  const cv = d.champ_de_vision;
+  document.getElementById("vision").innerHTML = [
+    {lab:"profondeur gagnante ↔ volatilite du bloc", val:cv.volatilite,
+     couleur:"var(--prix)", quoi:"Aucun lien exploitable."},
+    {lab:"profondeur gagnante ↔ chute maximale du bloc", val:cv.chute_du_bloc,
+     couleur:"var(--achat)", vedette:true,
+     quoi:"Lien net — mais avec le bloc qu'on est en train de vivre, pas avec le passe."},
+    {lab:"chute d'un bloc → chute du bloc suivant", val:cv.chute_suivante,
+     couleur:"var(--blocage)", vedette:true,
+     quoi:"Rien. Ce qu'il faudrait connaitre n'est annonce par rien."},
+  ].map(x => barre(x, -1, 1)).join("")
+    .replace(/\+(\d)/g, "+$1");   // les correlations ne sont pas des pourcentages
+  document.querySelectorAll("#vision .lab b").forEach((b, i) => {
+    const val = [cv.volatilite, cv.chute_du_bloc, cv.chute_suivante][i];
+    b.textContent = (val >= 0 ? "+" : "") + val.toFixed(2);
+  });
+
+  document.getElementById("pied").textContent =
+    `Mesure du ${(d.genere_le || "").slice(0,10)}. ${d.paires.length} paires, `
+    + `${n} blocs de ${d.bloc_jours} jours, ${d.n_reglages} reglages, `
+    + `${d.budget.toLocaleString("fr-FR")} € par paire, bougies de cinq minutes d'OKX `
+    + `Europe. Heures en UTC.`;
+})();
+</script>
+</body>
+</html>

@@ -9,39 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="jetons.css">
 <style>
-:root{
-  --ground:#EEF1F0; --surface:#FFFFFF; --surface-2:#F5F8F7; --surface-3:#EAEFED;
-  --ink:#141D1C; --ink-2:#485552; --ink-3:#5F6D6A;
-  --rule:#D6DEDC; --rule-fort:#B2BFBB;
-  --achat:#0E7C86; --vente:#B0700A; --blocage:#A34A3A;
-  --hausse:#0A7A54; --baisse:#C0392E;
-  --dort:#C7D1CE; --sur-vif:#FFFFFF;
-  --ombre:0 1px 2px rgba(20,29,28,.06), 0 10px 28px -14px rgba(20,29,28,.22);
-  --focus:#0E7C86;
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --ground:#0E1413; --surface:#161E1D; --surface-2:#1C2625; --surface-3:#243130;
-    --ink:#E6ECEA; --ink-2:#A6B4B0; --ink-3:#8A9995;
-    --rule:#27332F; --rule-fort:#3A4844;
-    --achat:#45C2CE; --vente:#DDA33F; --blocage:#DB7A63;
-    --hausse:#22C58B; --baisse:#EB6B5F;
-    --dort:#2C3937; --sur-vif:#0E1413;
-    --ombre:0 1px 2px rgba(0,0,0,.35), 0 10px 28px -14px rgba(0,0,0,.7);
-    --focus:#45C2CE;
-  }
-}
-:root[data-theme="dark"]{
-  --ground:#0E1413; --surface:#161E1D; --surface-2:#1C2625; --surface-3:#243130;
-  --ink:#E6ECEA; --ink-2:#A6B4B0; --ink-3:#8A9995;
-  --rule:#27332F; --rule-fort:#3A4844;
-  --achat:#45C2CE; --vente:#DDA33F; --blocage:#DB7A63;
-  --hausse:#22C58B; --baisse:#EB6B5F;
-  --dort:#2C3937; --sur-vif:#0E1413;
-  --ombre:0 1px 2px rgba(0,0,0,.35), 0 10px 28px -14px rgba(0,0,0,.7);
-  --focus:#45C2CE;
-}
 *{box-sizing:border-box}
 body{margin:0; background:var(--ground); color:var(--ink);
   font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -146,6 +115,14 @@ footer{margin-top:34px; padding-top:18px; border-top:1px solid var(--rule);
     <div class="etat"><span>BTC · ETH · SOL</span><span>400 jours</span><span>pas de 5 min</span></div>
   </a>
 
+  <a class="porte" href="validation.html">
+    <div class="haut"><h3>La validation en avant</h3><span class="fleche">→</span></div>
+    <p>Le resultat le plus important du banc : ce qu'un reglage rend quand on doit le
+       choisir a l'avance, et non apres coup. L'ecart vaut 4,82 points par bloc de cent
+       jours, et il a invalide tout ce qui etait publie avant lui.</p>
+    <div class="etat" id="etat-validation"><span>chargement…</span></div>
+  </a>
+
   <a class="porte" href="journal.html">
     <div class="haut"><h3>Journal de bord</h3><span class="fleche">→</span></div>
     <p>Tout ce qui a change, date, y compris les erreurs trouvees dans nos propres
@@ -211,9 +188,10 @@ async function lire(f){
   catch(e){ return null; }
 }
 (async function(){
-  const [a,b,c,jrn] = await Promise.all([
+  const [a,b,c,jrn,val] = await Promise.all([
     lire("data/paper_grille.json"), lire("data/paper_grille_8paliers.json"),
     lire("data/paper_grille_8paliers_concentre.json"), lire("data/journal.json"),
+    lire("data/validation.json"),
   ]);
   const jeux = [a,b,c].filter(d => d && d.paires && d.paires.length);
   const n = document.getElementById("etat-paper");
@@ -237,6 +215,14 @@ async function lire(f){
       + `<span><b>${corr}</b> corrections publiees</span>`
       + `<span>depuis le ${jrn.entrees[jrn.entrees.length-1].date.slice(0,10)}</span>`;
   } else nj.innerHTML = "<span>indisponible</span>";
+
+  const nv = document.getElementById("etat-validation");
+  if (val && val.verdict){
+    const w = val.verdict;
+    nv.innerHTML = `<span>surajustement <b class="b">${(w.surajustement*100).toFixed(2)} pt</b></span>`
+      + `<span>${val.n_blocs} blocs de ${val.bloc_jours} jours</span>`
+      + `<span>${val.n_reglages} reglages</span>`;
+  } else nv.innerHTML = "<span>indisponible</span>";
 
   const majs = jeux.map(d => d.maj).sort();
   document.getElementById("maj").textContent = majs.length

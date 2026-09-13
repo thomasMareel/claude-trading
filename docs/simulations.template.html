@@ -3,53 +3,8 @@
 <title>Anatomie d'une descente</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="jetons.css">
 <style>
-/* ------------------------------------------------------------------ jetons
-   Toute couleur est definie ici, sur :root nu, pour le theme clair. Les deux
-   blocs suivants ne REDEFINISSENT que ces memes jetons : aucune couleur n'existe
-   uniquement derriere une media-query, sans quoi elle ne s'applique pas dans
-   l'etat par defaut du navigateur, ou aucun attribut data-theme n'est pose. */
-:root{
-  --ground:#EEF1F0; --surface:#FFFFFF; --surface-2:#F5F8F7; --surface-3:#EAEFED;
-  --ink:#141D1C; --ink-2:#485552; --ink-3:#5F6D6A;
-  --rule:#D6DEDC; --rule-fort:#B2BFBB;
-  --achat:#0E7C86; --vente:#B0700A; --blocage:#A34A3A;
-  --hausse:#0B8F63; --baisse:#C0392E;
-  /*  Un trait et un aplat n'ont pas les memes contraintes. Les jetons -plein
-      sont assombris pour porter du texte clair ; --sur-vif est ce texte. */
-  --achat-plein:#0C6E70; --hausse-plein:#0A7A54; --baisse-plein:#B23A2E;
-  --hausse-txt:#0A7A54; --sur-vif:#FFFFFF;
-  --dort:#C7D1CE; --prix:#3F4B47;
-  --ombre:0 1px 2px rgba(20,29,28,.06), 0 10px 28px -14px rgba(20,29,28,.22);
-  --focus:#0E7C86;
-}
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --ground:#0E1413; --surface:#161E1D; --surface-2:#1C2625; --surface-3:#243130;
-    --ink:#E6ECEA; --ink-2:#A6B4B0; --ink-3:#8A9995;
-    --rule:#27332F; --rule-fort:#3A4844;
-    --achat:#45C2CE; --vente:#DDA33F; --blocage:#DB7A63;
-    --hausse:#22C58B; --baisse:#EB6B5F;
-    --achat-plein:#45C2CE; --hausse-plein:#22C58B; --baisse-plein:#EB6B5F;
-    --hausse-txt:#22C58B; --sur-vif:#0E1413;
-    --dort:#2C3937; --prix:#93A19D;
-    --ombre:0 1px 2px rgba(0,0,0,.35), 0 10px 28px -14px rgba(0,0,0,.7);
-    --focus:#45C2CE;
-  }
-}
-:root[data-theme="dark"]{
-  --ground:#0E1413; --surface:#161E1D; --surface-2:#1C2625; --surface-3:#243130;
-  --ink:#E6ECEA; --ink-2:#A6B4B0; --ink-3:#8A9995;
-  --rule:#27332F; --rule-fort:#3A4844;
-  --achat:#45C2CE; --vente:#DDA33F; --blocage:#DB7A63;
-  --hausse:#22C58B; --baisse:#EB6B5F;
-  --achat-plein:#45C2CE; --hausse-plein:#22C58B; --baisse-plein:#EB6B5F;
-  --hausse-txt:#22C58B; --sur-vif:#0E1413;
-  --dort:#2C3937; --prix:#93A19D;
-  --ombre:0 1px 2px rgba(0,0,0,.35), 0 10px 28px -14px rgba(0,0,0,.7);
-  --focus:#45C2CE;
-}
-
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0; background:var(--ground); color:var(--ink);

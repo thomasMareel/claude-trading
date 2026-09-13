@@ -1,0 +1,71 @@
+/*  Les couleurs du site, en un seul endroit.
+ *
+ *  Elles etaient recopiees dans cinq pages, environ cent vingt lignes chacune,
+ *  et elles avaient DEJA DIVERGE sans que personne le voie : --hausse valait
+ *  #0A7A54 sur quatre pages et #0B8F63 sur celle des simulations, qui portait
+ *  en plus deux verts differents pour « positif » dans son propre fichier —
+ *  --hausse-txt pour le texte, --hausse pour les valeurs. On retient #0A7A54,
+ *  et --hausse-txt devient un alias de --hausse plutot qu'une seconde verite.
+ *
+ *  TROIS ETATS, PAS DEUX. Le visiteur peut avoir choisi clair, choisi sombre,
+ *  ou n'avoir rien choisi — et c'est le cas le plus frequent, ou seul
+ *  prefers-color-scheme decide. Le bloc :root nu porte donc la palette claire
+ *  complete ; la media-query ne REDEFINIT que les memes jetons, protegee par
+ *  :not([data-theme="light"]) pour qu'un choix explicite de clair l'emporte sur
+ *  un systeme sombre ; et [data-theme="dark"] les redefinit encore pour que le
+ *  choix explicite de sombre l'emporte dans l'autre sens. Aucune couleur
+ *  n'existe uniquement derriere une media-query : elle ne s'appliquerait pas
+ *  dans l'etat par defaut du navigateur.
+ */
+:root{
+  /* surfaces et fonds */
+  --ground:#EEF1F0; --surface:#FFFFFF; --surface-2:#F5F8F7; --surface-3:#EAEFED;
+  /* encres */
+  --ink:#141D1C; --ink-2:#485552; --ink-3:#5F6D6A;
+  /* filets */
+  --rule:#D6DEDC; --rule-fort:#B2BFBB;
+  /* le vocabulaire du banc : un achat, une vente, un blocage */
+  --achat:#0E7C86; --vente:#B0700A; --blocage:#A34A3A;
+  /* la direction d'un prix */
+  --hausse:#0A7A54; --baisse:#C0392E;
+  /* les memes, en aplat, quand du texte clair se pose dessus */
+  --achat-plein:#0C6E70; --hausse-plein:#0A7A54; --baisse-plein:#B23A2E;
+  --hausse-txt:#0A7A54;          /* alias historique : meme valeur que --hausse */
+  --sur-vif:#FFFFFF;             /* texte pose sur un aplat vif */
+  /* ce qui dort, et le prix lui-meme */
+  --dort:#C7D1CE; --prix:#3F4B47;
+  --ombre:0 1px 2px rgba(20,29,28,.06), 0 10px 28px -14px rgba(20,29,28,.22);
+  --focus:#0E7C86;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E1413; --surface:#161E1D; --surface-2:#1C2625; --surface-3:#243130;
+    --ink:#E6ECEA; --ink-2:#A6B4B0; --ink-3:#8A9995;
+    /*  --rule remonte de #27332F a #2E3B37 : sur un fond presque noir, l'ancien
+     *  filet etait invisible et les cartes n'avaient plus de bord.  */
+    --rule:#2E3B37; --rule-fort:#3A4844;
+    --achat:#45C2CE; --vente:#DDA33F; --blocage:#DB7A63;
+    --hausse:#22C58B; --baisse:#EB6B5F;
+    --achat-plein:#45C2CE; --hausse-plein:#22C58B; --baisse-plein:#EB6B5F;
+    --hausse-txt:#22C58B;
+    --sur-vif:#0E1413;
+    --dort:#2C3937; --prix:#93A19D;
+    /*  Une ombre noire sur un fond presque noir ne souleve rien. On garde une
+     *  ombre resserree pour la profondeur, et le relief vient du filet.  */
+    --ombre:0 1px 2px rgba(0,0,0,.4), 0 6px 18px -10px rgba(0,0,0,.75);
+    --focus:#45C2CE;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E1413; --surface:#161E1D; --surface-2:#1C2625; --surface-3:#243130;
+  --ink:#E6ECEA; --ink-2:#A6B4B0; --ink-3:#8A9995;
+  --rule:#2E3B37; --rule-fort:#3A4844;
+  --achat:#45C2CE; --vente:#DDA33F; --blocage:#DB7A63;
+  --hausse:#22C58B; --baisse:#EB6B5F;
+  --achat-plein:#45C2CE; --hausse-plein:#22C58B; --baisse-plein:#EB6B5F;
+  --hausse-txt:#22C58B;
+  --sur-vif:#0E1413;
+  --dort:#2C3937; --prix:#93A19D;
+  --ombre:0 1px 2px rgba(0,0,0,.4), 0 6px 18px -10px rgba(0,0,0,.75);
+  --focus:#45C2CE;
+}

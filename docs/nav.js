@@ -17,6 +17,7 @@
     { f: "methode.html",     nom: "La methode",        court: "La methode" },
     { f: "paper.html",       nom: "Grilles en direct", court: "En direct" },
     { f: "simulations.html", nom: "Simulations",       court: "Simulations" },
+    { f: "validation.html",  nom: "La validation",     court: "Validation" },
     { f: "journal.html",     nom: "Journal de bord",   court: "Journal" },
   ];
 
