@@ -1,12 +1,11 @@
 @echo off
-REM  La methode a huit barreaux dans sa FORME FORTE : les mille euros sur une
-REM  seule paire, ce qui laisse enfin la place a une raison de 1,6 — mises de
-REM  14 a 384 EUR, les grosses tout en bas. A 200 EUR par paire, le plancher de
-REM  12 EUR par ordre interdisait cette progression ; c'est la contrainte, pas
-REM  un choix, et concentrer est la seule facon de la lever.
-REM  Ce que cela coute : la repartition, seule protection gratuite du dispositif.
-REM  La paire est BTC/EUR, choisie sur la liquidite connue d'avance et jamais
-REM  sur ses resultats passes.
+REM  La methode a huit barreaux, mille euros PAR PAIRE, sur les dix paires EUR
+REM  les plus liquides d'OKX. Dix experiences independantes menees en parallele
+REM  sous la meme echelle, pour isoler ce que la paire change : ce n'est pas un
+REM  portefeuille de dix mille euros, c'est un dispositif de mesure.
+REM  Le classement de liquidite qui choisit les paires est produit par
+REM  scripts/classer_liquidite.py et archive dans docs/archives/liquidite.json,
+REM  avec sa fenetre datee : un critere sans sa mesure n'est qu'une opinion.
 REM  Lance de facon DETACHEE : sinon le processus meurt avec la session.
 cd /d C:\Claude\Crypto
 set PYTHONIOENCODING=utf-8

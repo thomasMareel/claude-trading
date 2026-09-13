@@ -54,10 +54,21 @@ def main() -> int:
     ap.add_argument("--source", default="docs/validation-en-avant.json")
     ap.add_argument("--budget", type=float, default=1000.0)
     ap.add_argument("--frais", type=float, default=0.001)
-    ap.add_argument("--paires", default=("BTC/EUR,ETH/EUR,XRP/EUR,SOL/EUR,DOGE/EUR,"
-                                         "TRX/EUR,UNI/EUR,LINK/EUR,ADA/EUR,LTC/EUR"))
+    ap.add_argument("--paires", default=None,
+                    help="par defaut, les paires retenues dans docs/archives/liquidite.json")
     ap.add_argument("--sortie", default="docs/etude-dix-paires.json")
     args = ap.parse_args()
+
+    #  La liste des paires vient du classement de liquidite archive, pas d'une
+    #  copie a la main : recopiee ici, elle aurait fini par differer de celle du
+    #  robot sans que rien ne le signale.
+    if args.paires:
+        paires = args.paires.split(",")
+    else:
+        liq = Path("docs/archives/liquidite.json")
+        if not liq.exists():
+            raise SystemExit("lance d'abord scripts/classer_liquidite.py")
+        paires = json.loads(liq.read_text(encoding="utf-8"))["retenues"]
 
     d = json.loads(Path(args.source).read_text(encoding="utf-8"))
     n, t0, bloc_ms = d["n_blocs"], d["t0"], d["bloc_jours"] * MS_JOUR
@@ -71,7 +82,7 @@ def main() -> int:
 
     cx = sqlite3.connect(f"file:{args.db}?mode=ro", uri=True)
     res, absentes = {}, []
-    for s in args.paires.split(","):
+    for s in paires:
         blocs = []
         for k in range(n):
             a, b = t0 + k * bloc_ms, t0 + (k + 1) * bloc_ms
@@ -112,12 +123,18 @@ def main() -> int:
         p = [x["perf"] for x in v if x]
         cells = "".join(("      —" if x is None else f"{x['perf']:>+7.1%}") for x in v)
         lignes.append((s, stt.mean(p), min(p)))
-        print(f"{s:<9}{cells}{stt.mean(p):>+10.2%}{min(p):>+8.1%}"
+        #  Une paire mesuree sur moins de blocs que les autres n'est pas
+        #  comparable a elles : on la marque plutot que de laisser croire le
+        #  contraire. XRP n'a que quatre cents jours d'historique chez OKX.
+        etoile = " *" if len(p) < len(vus) else "  "
+        print(f"{s:<9}{cells}{stt.mean(p):>+8.2%}{etoile}{min(p):>+8.1%}"
               f"{sum(1 for x in p if x > 0):>3}/{len(p):<2}"
               f"{min(x['creux'] for x in v if x):>+8.1%}"
               f"{sum(x['cycles'] for x in v if x):>8}"
               f"{stt.mean(x['duree'] for x in v if x and x['cycles']):>7.0f}h"
               f"{stt.mean(x['engage'] for x in v if x):>9.1%}")
+    if any(len([x for x in (res[s][k] for k in vus) if x]) < len(vus) for s in res):
+        print("  * mesuree sur moins de blocs que les autres : moyenne non comparable.")
     hold = {s: [res[s][k]["hold"] for k in vus if res[s][k]] for s in res}
     print()
     print(f"{'ne rien faire':<9}" + "".join(
@@ -166,13 +183,19 @@ def main() -> int:
           f"{len(ra)}.")
     hasard = (len(ra) ** 2 - 1) / (3 * len(ra))
     print(f"  Ce qu'un tirage au hasard donnerait : {hasard:.1f} places.")
+    #  Le seuil est arbitraire et il faut le dire : avec neuf paires et un seul
+    #  decoupage, un deplacement moyen deux fois plus petit que le hasard n'est
+    #  pas une preuve, c'est un indice. Seul le direct tranchera.
     if stt.mean(dep) >= 0.8 * hasard:
         print("  Autant dire que l'ordre entre paires ne tient pas : le classement de la")
         print("  premiere moitie n'annonce pas celui de la seconde. Choisir ses paires sur")
         print("  leurs resultats passes n'a donc aucune valeur predictive ici.")
     else:
-        print("  L'ordre tient en partie : un classement passe garde une valeur, mais il")
-        print("  faut le mesurer EN AVANT avant d'en faire une regle.")
+        print("  L'ordre tient en partie sur CE decoupage : c'est un indice, pas une")
+        print("  preuve — un seul partage en deux moities, neuf paires, et aucune")
+        print("  explication mecanique (la volatilite n'en rend compte qu'a +0,46).")
+        print("  Il faut le mesurer EN AVANT avant d'en faire une regle, et c'est")
+        print("  exactement ce que le paper trading a dix paires est en train de faire.")
 
     Path(args.sortie).write_text(json.dumps(
         {"reglage": REGLAGE, "budget": args.budget, "n_blocs": n, "t0": t0,

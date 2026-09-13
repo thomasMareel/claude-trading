@@ -117,12 +117,25 @@ PAS = "5m"              # le pas auquel toute l'etude a ete menee
 #              jamais vu : c'est une assurance, pas un moteur.
 _COMMUN = dict(suivre_hausse=True, vente_meme_bougie=False, mise_min=12.0)
 CINQ = ["BTC/EUR", "ETH/EUR", "XRP/EUR", "SOL/EUR", "DOGE/EUR"]
-#  Les dix paires EUR les plus LIQUIDES d'OKX, mesurees sur une fenetre commune
-#  de trente jours en volume quote (prix x volume), classement reproductible par
-#  la requete qui figure dans docs/archives. AVAX et DOT sont ecartees : vingt
-#  fois moins liquides que la dixieme. Le critere est connu d'avance et n'est
-#  jamais un rendement — trier sur la performance passee a deja ete mesure a
-#  vingt ou trente points d'illusion.
+#  Les dix paires EUR les plus liquides d'OKX. Le classement est PRODUIT PAR UN
+#  SCRIPT, scripts/classer_liquidite.py, et archive dans docs/archives/liquidite.json
+#  avec sa fenetre datee : un critere qui ne s'accompagne pas de sa mesure n'est
+#  qu'une opinion. Mesure du 2026-09-13 sur la fenetre commune 2026-03-10 ->
+#  2026-09-06, mediane du volume quote journalier.
+#
+#  LA MEDIANE, ET NON LA MOYENNE. Une premiere version moyennait trente jours et
+#  faisait entrer TRX/EUR en sixieme position : sa fenetre chevauchait un mois a
+#  26 M EUR entre deux mois a 2,3 M, ce qui multipliait sa liquidite par dix. Le
+#  rapport max/mediane vaut 509 pour TRX et 474 pour DOGE — ces marches vivent
+#  par a-coups, et toute moyenne courte s'y trompe.
+#
+#  LA FRONTIERE EST ETROITE, il faut le dire : UNI, dixieme, tient 17 k EUR par
+#  jour contre 16 k EUR a AVAX, onzieme. Un rapport de 1,1, pas de vingt. La
+#  composition du panier depend donc du choix de la fenetre, et c'est une raison
+#  de ne jamais presenter cette liste comme une evidence.
+#
+#  Le critere reste connu d'avance et n'est jamais un rendement : trier sur la
+#  performance passee a deja ete mesure a vingt ou trente points d'illusion.
 DIX = ["BTC/EUR", "ETH/EUR", "XRP/EUR", "SOL/EUR", "DOGE/EUR",
        "TRX/EUR", "UNI/EUR", "LINK/EUR", "ADA/EUR", "LTC/EUR"]
 PROFILS = {
@@ -147,7 +160,7 @@ REGLAGE = PROFILS["3paliers"]["reglage"]   # le defaut, inchange depuis le 8 sep
 TITRES = {
     "3paliers": "Trois barreaux, panier de cinq",
     "8paliers": "Huit barreaux, panier de cinq",
-    "8paliers_concentre": "Huit barreaux, tout sur une paire",
+    "8paliers_concentre": "Huit barreaux, dix paires",
 }
 EXPLICATIONS = {
     "3paliers":
@@ -167,20 +180,22 @@ EXPLICATIONS = {
         "descente que le precedent — il gagne plus souvent en marche calme et prend "
         "un trou plus profond dans une baisse durable.",
     "8paliers_concentre":
-        "Huit barreaux avec une VRAIE progression : les mille euros sur une seule "
-        "paire liberent la raison 1,6, donc des mises de 14 a 384 EUR, les grosses "
-        "tout en bas. Les barreaux ne sont pas equidistants : ils sont resserres en "
-        "haut (-2, -3, -6, -11 %) et etires en bas (-19, -28, -40, -53 %), parce "
-        "qu'une echelle reguliere descendant a -53 % place la moitie de ses barreaux "
-        "la ou le prix ne va jamais — mesure faite, le dernier barreau n'etait alors "
-        "achete aucune fois en 900 jours. Le prix de cette forme est l'abandon de la "
-        "repartition. Sur 900 jours de passe elle rend moins que BTC laisse "
-        "tranquille (+5,7 % contre +11,8 %) mais avec un creux de -18 % au lieu de "
-        "-53 %. Ce qui est teste ici est donc une assurance, pas un moteur.",
+        "Dix experiences independantes menees en parallele sous la MEME echelle, mille "
+        "euros chacune, pour isoler ce que la paire change. Ce n'est pas un portefeuille "
+        "de dix mille euros : c'est un dispositif de mesure. L'echelle a huit barreaux "
+        "avec une vraie progression des mises — 14 a 384 EUR, les grosses tout en bas — "
+        "que le plancher de 12 EUR par ordre interdit des qu'on repartit un budget plus "
+        "petit. Les barreaux ne sont pas equidistants : resserres en haut (-2, -3, -6, "
+        "-11 %) et etires en bas (-19, -28, -40, -53 %), parce qu'une echelle reguliere "
+        "descendant a -53 % place la moitie de ses barreaux la ou le prix ne va jamais. "
+        "Sur 900 jours de passe, la meme echelle va de +5,3 % par bloc de cent jours sur "
+        "UNI a -1,1 % sur ADA : six points d'ecart pour une echelle identique, et c'est "
+        "precisement ce que le direct doit confirmer ou non.",
 }
 
 
-def etat_json(chemin: Path, sortie: Path, profil: str) -> dict:
+def etat_json(chemin: Path, sortie: Path, profil: str,
+              paires: list[str], budget: float, reglage: dict) -> dict:
     """Relit l'etat, et REFUSE de perdre un t0 par accident.
 
     Le fichier d'etat n'est pas suivi par git : un nettoyage, une copie de
@@ -207,12 +222,35 @@ def etat_json(chemin: Path, sortie: Path, profil: str) -> dict:
     if brut.get("depuis") is None and sortie.exists():
         try:
             publie = json.loads(sortie.read_text(encoding="utf-8"))
-            if publie.get("depuis"):
-                brut["depuis"] = int(publie["depuis"])
-                print(f"  t0 retrouve dans {sortie.name} : la mesure reprend "
-                      f"la ou elle en etait", flush=True)
         except (json.JSONDecodeError, OSError):
-            pass
+            publie = None
+        if publie and publie.get("depuis"):
+            #  ON NE REPREND UN t0 QUE S'IL APPARTIENT A LA MEME CONFIGURATION.
+            #  Le nom du profil ne suffit pas : le profil "8paliers_concentre" est
+            #  passe d'une paire a dix sans changer de nom, et reprendre son
+            #  ancien t0 aurait donne quatre jours d'avance a un panier decide
+            #  apres coup — exactement la faute chiffree a vingt ou trente points
+            #  dans ce depot, et elle aurait ete silencieuse.
+            avant = publie.get("reglage") or {}
+            ecarts = []
+            if avant:
+                if list(avant.get("paires") or []) != list(paires):
+                    ecarts.append(f"paires {len(avant.get('paires') or [])} -> {len(paires)}")
+                if avant.get("budget") is not None and float(avant["budget"]) != float(budget):
+                    ecarts.append(f"budget {avant['budget']} -> {budget}")
+                for k, v in (reglage or {}).items():
+                    if k in avant and avant[k] != v:
+                        ecarts.append(f"{k} {avant[k]} -> {v}")
+            if ecarts:
+                raise SystemExit(
+                    f"{sortie} porte un t0 du "
+                    f"{datetime.fromtimestamp(int(publie['depuis'])/1000, timezone.utc):%Y-%m-%d %H:%M} UTC "
+                    f"mais une AUTRE configuration ({', '.join(ecarts[:4])}). Reprendre ce "
+                    f"t0 donnerait a la nouvelle configuration des jours qu'elle n'a pas "
+                    f"vecus. Archive puis supprime {sortie.name} pour repartir a zero.")
+            brut["depuis"] = int(publie["depuis"])
+            print(f"  t0 retrouve dans {sortie.name} : meme configuration, la mesure "
+                  f"reprend la ou elle en etait", flush=True)
     #  Un etat porte le nom de son profil : deux profils qui se partageraient un
     #  fichier melangeraient deux mesures sans que rien ne le signale.
     if brut.get("profil") not in (None, profil):
@@ -230,9 +268,20 @@ def ecrire_atomique(chemin: Path, contenu: str) -> None:
     alors le programme toutes les trente secondes sur le meme fichier casse.
     """
     chemin.parent.mkdir(parents=True, exist_ok=True)
-    tmp = chemin.with_suffix(chemin.suffix + ".tmp")
-    tmp.write_text(contenu, encoding="utf-8")
-    os.replace(tmp, chemin)
+    #  Le nom du temporaire porte le PID : les trois robots ecrivent les memes
+    #  fichiers de prix, et un nom fixe les faisait se marcher dessus — l'un
+    #  remplacait le temporaire que l'autre etait en train de renommer, et le
+    #  perdant echouait sur un fichier disparu.
+    tmp = chemin.with_suffix(f"{chemin.suffix}.{os.getpid()}.tmp")
+    try:
+        tmp.write_text(contenu, encoding="utf-8")
+        os.replace(tmp, chemin)
+    finally:
+        if tmp.exists():
+            try:
+                tmp.unlink()
+            except OSError:
+                pass
 
 
 #  Le fichier de prix publie pour la page. Un pas plus large a mesure que la
@@ -305,6 +354,25 @@ def ecrire_prix(st: Storage, dossier: Path, depuis: int) -> None:
     facteur = pas // 300_000
     dossier.mkdir(parents=True, exist_ok=True)
     paires = sorted({p for pr in PROFILS.values() for p in pr["paires"]})
+
+    #  Les trois robots appellent cette fonction chaque minute sur le MEME jeu de
+    #  prix : deux tiers du travail sont donc redondants, et c'est le poste le
+    #  plus lourd du cycle puisqu'il relit toute la base pour toutes les paires.
+    #  On sort tout de suite si l'index publie est deja a jour — meme fenetre,
+    #  meme pas, et la derniere bougie connue de la base n'a pas bouge.
+    derniere = st._conn.execute(
+        "SELECT MAX(ts) m FROM candles WHERE timeframe=? AND symbol IN "
+        "(" + ",".join("?" * len(paires)) + ")", (PAS, *paires)).fetchone()["m"]
+    idx = dossier / "index.json"
+    if idx.exists():
+        try:
+            deja = json.loads(idx.read_text(encoding="utf-8"))
+            if (deja.get("depuis") == depuis and deja.get("pas") == pas
+                    and deja.get("derniere") == derniere
+                    and set(deja.get("paires") or {}) == set(paires)):
+                return
+        except (json.JSONDecodeError, OSError):
+            pass
     index = {}
     for s in paires:
         rows = st._conn.execute(
@@ -331,9 +399,10 @@ def ecrire_prix(st: Storage, dossier: Path, depuis: int) -> None:
             "bougies": serie}, separators=(",", ":")))
         index[s] = {"fichier": f"{nom_fichier(s)}.json", "bougies": len(serie),
                     "dernier": serie[-1][0] if serie else None}
-    ecrire_atomique(dossier / "index.json", json.dumps({
+    ecrire_atomique(idx, json.dumps({
         "maj": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "depuis": depuis, "pas": pas, "paires": index}, separators=(",", ":")))
+        "depuis": depuis, "pas": pas, "derniere": derniere,
+        "paires": index}, separators=(",", ":")))
 
 
 def bougies_locales(st: Storage, s: str, depuis: int) -> list[tuple]:
@@ -476,7 +545,7 @@ def main() -> int:
             raise SystemExit(
                 f"{chemin_sortie} a ete ecrit il y a {age:.0f} s : une instance du profil "
                 f"'{args.profil}' tourne deja. Arrete-la, ou passe --force si tu es sur.")
-    etat = etat_json(chemin, chemin_sortie, args.profil)
+    etat = etat_json(chemin, chemin_sortie, args.profil, paires, budget, reglage)
     if etat["depuis"] is None:
         #  t0 : la premiere bougie qui S'OUVRIRA apres le lancement. Arrondir
         #  vers le bas prendrait la bougie deja commencee, dont une partie est
