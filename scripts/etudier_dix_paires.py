@@ -16,7 +16,12 @@ CE QUE LE TABLEAU N'EST PAS. Ce n'est pas un classement a suivre. Trier les
 paires sur ce qu'elles ont rendu et ne garder que les meilleures est exactement
 l'erreur que la validation en avant a chiffree a vingt ou trente points : le
 panier du paper trading est choisi sur la LIQUIDITE, mesuree sur une fenetre
-commune de trente jours, et il le reste quoi que dise cette page.
+commune de CENT QUATRE-VINGTS jours, et il le reste quoi que dise cette page.
+(Cet en-tete disait « trente jours ». C'etait faux, et pas d'une faute anodine :
+trente jours est precisement la methode discreditee, celle dont la moyenne courte
+faisait entrer TRX sixieme sur un mois anormal. Le classement archive dans
+docs/archives/liquidite.json porte « jours: 180 », du 2026-03-10 au 2026-09-06,
+et il prend la MEDIANE, pas la moyenne.)
 
 Ce que le tableau sert a voir, c'est la DISPERSION : de combien deux paires
 peuvent differer sous une echelle identique, et si l'ordre entre elles tient
