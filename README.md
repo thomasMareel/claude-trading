@@ -174,7 +174,12 @@ de Claude sur le dépôt.
 
 ```
 config.yaml            tous les réglages, dont le mandat actif (experiment.mandate)
-docs/index.html        l'interface, servie par GitHub Pages
+docs/index.html        la page d'accueil : toutes les pages, et l'etat de chacune
+docs/paper.html        les trois grilles en direct, crypto par crypto
+docs/simulations.html  les 400 jours rejoues (genere depuis simulations.template.html)
+docs/bot.html          le tableau de bord du bot Claude
+docs/marche.js         le graphique de marche, partage par les pages
+docs/nav.js, nav.css   la barre de navigation, partagee par les pages
 docs/data/*.json       les relevés publiés par le bot (sans aucun secret)
 docs/protocole.md      ce que l'on mesure, ce que l'on peut conclure
 docs/cles-api.md       créer les clés, pas à pas

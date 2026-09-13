@@ -1,14 +1,14 @@
 {
- "maj": "2026-09-13T10:34:03+00:00",
+ "maj": "2026-09-13T11:40:30+00:00",
  "profil": "8paliers_concentre",
  "titre": "Huit barreaux, tout sur une paire",
  "explication": "Huit barreaux avec une VRAIE progression : les mille euros sur une seule paire liberent la raison 1,6, donc des mises de 14 a 384 EUR, les grosses tout en bas. Les barreaux ne sont pas equidistants : ils sont resserres en haut (-2, -3, -6, -11 %) et etires en bas (-19, -28, -40, -53 %), parce qu'une echelle reguliere descendant a -53 % place la moitie de ses barreaux la ou le prix ne va jamais \u2014 mesure faite, le dernier barreau n'etait alors achete aucune fois en 900 jours. Le prix de cette forme est l'abandon de la repartition. Sur 900 jours de passe elle rend moins que BTC laisse tranquille (+5,7 % contre +11,8 %) mais avec un creux de -18 % au lieu de -53 %. Ce qui est teste ici est donc une assurance, pas un moteur.",
  "depuis": 1788935100000,
- "jours": 4.17,
+ "jours": 4.22,
  "budget_total": 1000.0,
- "equity_total": 1000.4,
- "perf_total": 0.000403,
- "hold_moyen": -0.028982,
+ "equity_total": 1000.41,
+ "perf_total": 0.000405,
+ "hold_moyen": -0.028916,
  "reglage": {
   "profondeur": 0.51,
   "paliers": 8,
@@ -29,18 +29,18 @@
  "paires": [
   {
    "paire": "BTC/EUR",
-   "equity": 1000.4,
-   "perf": 0.000403,
+   "equity": 1000.41,
+   "perf": 0.000405,
    "cycles": 1,
    "engage": 37.19,
    "barreaux": 2,
    "reference": 68500.0,
-   "prix": 66210.0,
+   "prix": 66214.5,
    "revient": 66756.212551,
    "sortie": 68159.496298,
    "abandonnee": false,
-   "bougies": 1201,
-   "hold": -0.028982,
+   "bougies": 1215,
+   "hold": -0.028916,
    "echelle": [
     {
      "prix": 67130.0,
@@ -91,7 +91,7 @@
      "mort": false
     }
    ],
-   "part_engage": 0.02702,
+   "part_engage": 0.02714,
    "duree_moyenne_h": 41.5,
    "gain_realise": 0.74,
    "journal": [

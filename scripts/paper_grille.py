@@ -25,6 +25,7 @@ import json
 import os
 import sys
 import time
+from math import floor, isfinite, log10
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -226,6 +227,91 @@ def ecrire_atomique(chemin: Path, contenu: str) -> None:
     os.replace(tmp, chemin)
 
 
+#  Le fichier de prix publie pour la page. Un pas plus large a mesure que la
+#  fenetre s'allonge : garder cinq minutes indefiniment ferait un fichier de
+#  plusieurs megaoctets recharge toutes les deux minutes, pour un detail que
+#  l'oeil ne distingue plus au-dela de quelques jours. La page reagrege encore
+#  par-dessus pour l'affichage, exactement comme la page des simulations.
+PALIERS_PAS = ((7, 300_000), (21, 900_000), (60, 3_600_000), (10 ** 6, 14_400_000))
+
+
+def arrondi(v: float, chiffres: int = 7) -> float:
+    """Arrondit a un nombre de chiffres SIGNIFICATIFS, pas de decimales.
+
+    Un prix de BTC n'a pas besoin de huit decimales et un prix de DOGE en
+    demande six : arrondir a un nombre fixe de decimales gaspille des octets sur
+    l'un et detruit de l'information sur l'autre. Sept chiffres significatifs
+    suffisent partout et allegent le fichier que la page recharge.
+    """
+    if v == 0 or not isfinite(v):
+        return 0.0
+    return round(v, max(0, chiffres - 1 - floor(log10(abs(v)))))
+
+
+def pas_publie(duree_ms: int) -> int:
+    jours = duree_ms / 86_400_000
+    for limite, pas in PALIERS_PAS:
+        if jours <= limite:
+            return pas
+    return PALIERS_PAS[-1][1]
+
+
+def t0_commun() -> int | None:
+    """Le plus ancien depart parmi les profils lances, ou None si aucun.
+
+    Les trois robots ecrivent le MEME fichier de prix. S'ils partaient chacun de
+    leur propre t0, le dernier a ecrire tronquerait la serie des autres ; on
+    prend donc le plus ancien, et les trois produisent alors un contenu
+    identique, ce qui rend la concurrence sans consequence.
+    """
+    t0 = []
+    for nom in PROFILS:
+        suff = "" if nom == "3paliers" else f"_{nom}"
+        f = Path(f"docs/data/paper_grille{suff}_etat.json")
+        if not f.exists():
+            continue
+        try:
+            d = json.loads(f.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if d.get("depuis"):
+            t0.append(int(d["depuis"]))
+    return min(t0) if t0 else None
+
+
+def ecrire_prix(st: Storage, chemin: Path, depuis: int) -> None:
+    """Publie les bougies de toutes les paires suivies, pour les graphiques."""
+    maintenant = int(time.time() * 1000)
+    pas = pas_publie(maintenant - depuis)
+    facteur = pas // 300_000
+    sortie = {}
+    for s in sorted({p for pr in PROFILS.values() for p in pr["paires"]}):
+        rows = st._conn.execute(
+            "SELECT ts, open, high, low, close, volume FROM candles "
+            "WHERE symbol=? AND timeframe=? AND ts >= ? ORDER BY ts",
+            (s, PAS, depuis)).fetchall()
+        serie = []
+        for i in range(0, len(rows), facteur):
+            lot = rows[i:i + facteur]
+            if not lot:
+                continue
+            #  Une bougie agregee ouvre a la premiere ouverture, ferme a la
+            #  derniere cloture, et prend les extremes du groupe : tout autre
+            #  raccourci inventerait des meches.
+            serie.append([int(lot[0]["ts"]),
+                          arrondi(float(lot[0]["open"])),
+                          arrondi(max(float(r["high"]) for r in lot)),
+                          arrondi(min(float(r["low"]) for r in lot)),
+                          arrondi(float(lot[-1]["close"])),
+                          round(sum(float(r["volume"] or 0) for r in lot), 2)])
+        sortie[s] = serie
+    ecrire_atomique(chemin, json.dumps({
+        "maj": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "depuis": depuis, "pas": pas,
+        "colonnes": ["ts", "o", "h", "l", "c", "v"],
+        "paires": sortie}, separators=(",", ":")))
+
+
 def bougies_locales(st: Storage, s: str, depuis: int) -> list[tuple]:
     rows = st._conn.execute(
         "SELECT ts, open, high, low, close FROM candles "
@@ -320,6 +406,14 @@ def un_cycle(cfg, st: Storage, x: Exchange, etat: dict, sortie: Path, verbeux: b
         "paires": lignes,
     }
     ecrire_atomique(sortie, json.dumps(resume_, indent=1))
+    #  Les prix, dans un fichier partage par les trois robots : c'est la meme
+    #  serie pour tous, la republier trois fois ne coute rien et supprime toute
+    #  question de qui doit l'ecrire.
+    debut = t0_commun() or etat["depuis"]
+    try:
+        ecrire_prix(st, Path("docs/data/paper_prix.json"), debut)
+    except Exception as e:                               # noqa: BLE001
+        print(f"  prix non publies : {type(e).__name__} {str(e)[:70]}", flush=True)
     if verbeux:
         print(f"  {jours:.2f} j | book {total_eq:.2f} / {total_bud:.0f} EUR "
               f"({resume_['perf_total']:+.2%}) | repere {resume_['hold_moyen']:+.2%}", flush=True)

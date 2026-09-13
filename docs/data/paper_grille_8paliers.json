@@ -1,14 +1,14 @@
 {
- "maj": "2026-09-13T10:34:03+00:00",
+ "maj": "2026-09-13T11:40:31+00:00",
  "profil": "8paliers",
  "titre": "Huit barreaux, panier de cinq",
  "explication": "La meme idee avec huit ordres etales de -2 % a -52 %, un objectif ramene a 2 % nets, donc des ventes plus frequentes. Le plancher de 12 EUR par ordre impose ici une progression de 1,20 seulement : les mises vont de 12 a 43 EUR, presque plates. Ce bot engage donc plus d'argent haut dans la descente que le precedent \u2014 il gagne plus souvent en marche calme et prend un trou plus profond dans une baisse durable.",
  "depuis": 1788900000000,
- "jours": 4.58,
+ "jours": 4.62,
  "budget_total": 1000.0,
- "equity_total": 999.24,
- "perf_total": -0.00076,
- "hold_moyen": -0.034603,
+ "equity_total": 999.19,
+ "perf_total": -0.000811,
+ "hold_moyen": -0.035445,
  "reglage": {
   "profondeur": 0.5,
   "paliers": 8,
@@ -32,17 +32,17 @@
   {
    "paire": "BTC/EUR",
    "equity": 200.05,
-   "perf": 0.000262,
+   "perf": 0.000266,
    "cycles": 1,
    "engage": 12.12,
    "barreaux": 1,
    "reference": 68500.0,
-   "prix": 66210.0,
+   "prix": 66214.5,
    "revient": 67197.197197,
    "sortie": 68609.750892,
    "abandonnee": false,
-   "bougies": 1318,
-   "hold": -0.02198,
+   "bougies": 1332,
+   "hold": -0.021914,
    "echelle": [
     {
      "prix": 67130.0,
@@ -93,7 +93,7 @@
      "mort": false
     }
    ],
-   "part_engage": 0.04649,
+   "part_engage": 0.04664,
    "duree_moyenne_h": 41.6,
    "gain_realise": 0.24,
    "journal": [
@@ -122,18 +122,18 @@
   },
   {
    "paire": "ETH/EUR",
-   "equity": 199.74,
-   "perf": -0.001315,
+   "equity": 199.73,
+   "perf": -0.001355,
    "cycles": 1,
    "engage": 12.12,
    "barreaux": 1,
    "reference": 2273.57,
-   "prix": 2139.49,
+   "prix": 2138.01,
    "revient": 2230.328929,
    "sortie": 2277.21272,
    "abandonnee": false,
-   "bougies": 1318,
-   "hold": -0.000976,
+   "bougies": 1332,
+   "hold": -0.001667,
    "echelle": [
     {
      "prix": 2228.0986,
@@ -184,7 +184,7 @@
      "mort": false
     }
    ],
-   "part_engage": 0.04663,
+   "part_engage": 0.04678,
    "duree_moyenne_h": 41.8,
    "gain_realise": 0.24,
    "journal": [
@@ -213,18 +213,18 @@
   },
   {
    "paire": "XRP/EUR",
-   "equity": 199.42,
-   "perf": -0.002892,
+   "equity": 199.4,
+   "perf": -0.002982,
    "cycles": 0,
    "engage": 12.12,
    "barreaux": 1,
    "reference": 1.2405,
-   "prix": 1.16,
+   "prix": 1.1582,
    "revient": 1.216907,
    "sortie": 1.242488,
    "abandonnee": false,
-   "bougies": 1318,
-   "hold": -0.049367,
+   "bougies": 1332,
+   "hold": -0.050842,
    "echelle": [
     {
      "prix": 1.21569,
@@ -275,7 +275,7 @@
      "mort": false
     }
    ],
-   "part_engage": 0.0504,
+   "part_engage": 0.05051,
    "duree_moyenne_h": 0.0,
    "gain_realise": 0,
    "journal": [
@@ -290,18 +290,18 @@
   },
   {
    "paire": "SOL/EUR",
-   "equity": 199.84,
-   "perf": -0.00081,
+   "equity": 199.83,
+   "perf": -0.000844,
    "cycles": 1,
    "engage": 12.12,
    "barreaux": 1,
    "reference": 90.76,
-   "prix": 86.15,
+   "prix": 86.1,
    "revient": 89.033834,
    "sortie": 90.905416,
    "abandonnee": false,
-   "bougies": 1318,
-   "hold": -0.032435,
+   "bougies": 1332,
+   "hold": -0.032997,
    "echelle": [
     {
      "prix": 88.9448,
@@ -352,7 +352,7 @@
      "mort": false
     }
    ],
-   "part_engage": 0.05017,
+   "part_engage": 0.05028,
    "duree_moyenne_h": 46.9,
    "gain_realise": 0.24,
    "journal": [
@@ -381,18 +381,18 @@
   },
   {
    "paire": "DOGE/EUR",
-   "equity": 200.19,
-   "perf": 0.000955,
+   "equity": 200.17,
+   "perf": 0.000857,
    "cycles": 1,
    "engage": 12.12,
    "barreaux": 1,
    "reference": 0.0756,
-   "prix": 0.07214,
+   "prix": 0.07202,
    "revient": 0.074162,
    "sortie": 0.075721,
    "abandonnee": false,
-   "bougies": 1318,
-   "hold": -0.068257,
+   "bougies": 1332,
+   "hold": -0.069807,
    "echelle": [
     {
      "prix": 0.074088,
@@ -443,7 +443,7 @@
      "mort": false
     }
    ],
-   "part_engage": 0.06703,
+   "part_engage": 0.06696,
    "duree_moyenne_h": 47.8,
    "gain_realise": 0.53,
    "journal": [
