@@ -479,7 +479,7 @@ def chemin_bougie(o: float, h: float, l: float, c: float) -> tuple[tuple[float, 
 def rejouer(
     symbole: str, bougies: list[tuple[int, float, float, float, float]],
     reglages: Reglages, budget: float, *, reference: float | None = None,
-    trace: bool = True,
+    trace: bool = True, prechauffe: list[float] | None = None,
 ) -> dict:
     """Rejoue la strategie sur des bougies (ts, open, high, low, close).
 
@@ -507,9 +507,16 @@ def rejouer(
     #  sur rien n'a pas de valeur. La somme est tenue a jour plutot que recalculee
     #  — une moyenne sur huit mille six cents bougies recalculee a chaque pas
     #  ferait du rejeu un quadratique.
+    #  LE PRECHAUFFAGE. Une moyenne sur N bougies exige N bougies AVANT la
+    #  premiere. Sans elle, la fenetre grandit de 1 a N pendant les premiers
+    #  pas et chaque N se comporte differemment au debut de chaque bloc — un
+    #  artefact qui vaudrait vingt-huit jours sur cent pour la plus longue.
+    #  L'appelant fournit donc les clotures qui precedent ; a defaut, la fenetre
+    #  est amorcee par la reference de depart, ce qui est l'ancien comportement.
     n_moy = reglages.moyenne_ref
-    fen_ref: deque[float] = deque([ref], maxlen=n_moy)
-    somme_ref = ref
+    amorce = list(prechauffe)[-n_moy:] if prechauffe else [ref]
+    fen_ref: deque[float] = deque(amorce, maxlen=n_moy)
+    somme_ref = sum(fen_ref)
     cash = budget
     cycles: list[Cycle] = []
     equity: list[tuple[int, float]] = []
