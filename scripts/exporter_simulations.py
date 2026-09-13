@@ -311,6 +311,21 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
             print(f"  {s} ignoree : {len(vue)} bougies {PAS_VUE}, {len(sim)} en {PAS_SIM}")
             continue
         d0, dn = grille_reguliere(vue, HEURE)
+        #  LA SIMULATION DOIT COUVRIR EXACTEMENT LA FENETRE AFFICHEE, et rien de
+        #  plus. Les evenements sont ranges par leur indice horaire compte depuis
+        #  le debut de la serie d'AFFICHAGE ; une simulation qui commence plus tot
+        #  produit des indices negatifs, invisibles sur le graphique, et des
+        #  chiffres calcules sur une periode que la page annonce autrement. Le
+        #  chargement de mille jours de bougies de cinq minutes a fait exactement
+        #  cela : deux tiers des evenements sont tombes hors du cadre, et les
+        #  resultats portaient sur mille jours sous un titre qui disait quatre
+        #  cents. On decoupe donc, au lieu de faire confiance a la base.
+        fin_vue = d0 + dn * HEURE
+        sim = [x for x in sim if d0 <= x[0] < fin_vue]
+        if not sim or sim[0][0] != d0:
+            raise SystemExit(
+                f"{s} : la serie {PAS_SIM} ne commence pas a la meme heure que la "
+                f"serie {PAS_VUE}. Complete l'historique avant d'exporter.")
         grille_reguliere(sim, HEURE // par_heure)
         if t0 is None:
             t0, n = d0, dn
@@ -342,13 +357,23 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
 
     #  Les autres finesses de bougies, pour l'epreuve de stabilite. Absentes, elle
     #  est simplement sautee plutot que declaree reussie.
+    #
+    #  CHAQUE FINESSE EST DECOUPEE SUR LA MEME FENETRE que l'affichage. L'epreuve
+    #  compare ce qu'un reglage rend en horaire, en cinq minutes et a la minute :
+    #  elle n'a de sens que si les trois portent sur les MEMES jours. Le
+    #  chargement de mille jours en cinq minutes, alors que l'horaire et la
+    #  minute s'arretaient a quatre cents, comparait +45 % a +13 % et faisait
+    #  echouer l'epreuve pour tous les reglages sans que rien ne le signale.
+    fin_fenetre = t0 + n * HEURE
     autres = {}
     for tf in ("1h", PAS_SIM, "1m"):
-        d = {s: bougies(st, s, tf) for s in cfg.symbols}
-        d = {s: b for s, b in d.items() if len(b) > 500}
+        d = {s: [x for x in bougies(st, s, tf) if t0 <= x[0] < fin_fenetre]
+             for s in cfg.symbols}
+        d = {s: b for s, b in d.items() if len(b) > 500 and b[0][0] == t0}
         if len(d) == len(paires):
             autres[tf] = d
-    print(f"  epreuves de stabilite sur : {', '.join(autres) or 'aucune (donnees absentes)'}")
+    print(f"  epreuves de stabilite sur : {', '.join(autres) or 'aucune (donnees absentes)'}"
+          f" — meme fenetre pour les trois")
 
     sorties = []
     semaines = n / 24 / 7

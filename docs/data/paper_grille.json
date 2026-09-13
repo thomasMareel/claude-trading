@@ -1,14 +1,14 @@
 {
- "maj": "2026-09-13T13:35:42+00:00",
+ "maj": "2026-09-13T14:36:55+00:00",
  "profil": "3paliers",
  "titre": "Trois barreaux, panier de cinq",
  "explication": "Trois ordres d'achat sous le prix, a -2 %, -27 % et -52 %, avec des mises de 13, 43 et 143 EUR : l'essentiel de l'argent est tout en bas. Chaque palier touche fait baisser le prix de revient moyen beaucoup plus vite que le marche. Tout le lot est revendu d'un coup des que le prix repasse 4 % nets au-dessus de ce prix de revient \u2014 le cours n'a donc pas besoin de revenir a son point de depart. Tant que rien n'est achete, l'echelle remonte avec le marche. C'est le reglage issu du balayage : sur 900 jours il est positif sur les neuf blocs de cent jours, pire bloc +0,2 %.",
  "depuis": 1788896400000,
- "jours": 4.75,
+ "jours": 4.79,
  "budget_total": 1000.0,
- "equity_total": 997.64,
- "perf_total": -0.002358,
- "hold_moyen": -0.040523,
+ "equity_total": 998.14,
+ "perf_total": -0.001856,
+ "hold_moyen": -0.032872,
  "reglage": {
   "profondeur": 0.5,
   "paliers": 3,
@@ -31,18 +31,18 @@
  "paires": [
   {
    "paire": "BTC/EUR",
-   "equity": 199.78,
-   "perf": -0.001107,
+   "equity": 199.85,
+   "perf": -0.000765,
    "cycles": 0,
    "engage": 13.17,
    "barreaux": 1,
    "reference": 68514.6,
-   "prix": 66147.5,
+   "prix": 66497.2,
    "revient": 67211.51952,
    "sortie": 69969.950251,
    "abandonnee": false,
-   "bougies": 1367,
-   "hold": -0.021963,
+   "bougies": 1379,
+   "hold": -0.016792,
    "echelle": [
     {
      "prix": 67144.308,
@@ -63,7 +63,7 @@
      "mort": false
     }
    ],
-   "part_engage": 0.05153,
+   "part_engage": 0.05165,
    "duree_moyenne_h": 0.0,
    "gain_realise": 0,
    "journal": [
@@ -78,18 +78,18 @@
   },
   {
    "paire": "ETH/EUR",
-   "equity": 199.93,
-   "perf": -0.000345,
+   "equity": 200.02,
+   "perf": 0.000123,
    "cycles": 1,
    "engage": 13.17,
    "barreaux": 1,
    "reference": 2273.57,
-   "prix": 2131.56,
+   "prix": 2147.44,
    "revient": 2230.328929,
    "sortie": 2321.86395,
    "abandonnee": false,
-   "bougies": 1367,
-   "hold": -0.004819,
+   "bougies": 1379,
+   "hold": 0.002595,
    "echelle": [
     {
      "prix": 2228.0986,
@@ -110,7 +110,7 @@
      "mort": false
     }
    ],
-   "part_engage": 0.05066,
+   "part_engage": 0.05079,
    "duree_moyenne_h": 41.9,
    "gain_realise": 0.53,
    "journal": [
@@ -139,18 +139,18 @@
   },
   {
    "paire": "XRP/EUR",
-   "equity": 199.28,
-   "perf": -0.00359,
+   "equity": 199.41,
+   "perf": -0.002936,
    "cycles": 0,
    "engage": 13.17,
    "barreaux": 1,
    "reference": 1.2405,
-   "prix": 1.1517,
+   "prix": 1.1638,
    "revient": 1.216907,
    "sortie": 1.26685,
    "abandonnee": false,
-   "bougies": 1367,
-   "hold": -0.063474,
+   "bougies": 1379,
+   "hold": -0.053635,
    "echelle": [
     {
      "prix": 1.21569,
@@ -171,7 +171,7 @@
      "mort": false
     }
    ],
-   "part_engage": 0.05456,
+   "part_engage": 0.05466,
    "duree_moyenne_h": 0.0,
    "gain_realise": 0,
    "journal": [
@@ -186,18 +186,18 @@
   },
   {
    "paire": "SOL/EUR",
-   "equity": 199.61,
-   "perf": -0.001949,
+   "equity": 199.72,
+   "perf": -0.001421,
    "cycles": 0,
    "engage": 13.17,
    "barreaux": 1,
    "reference": 90.23,
-   "prix": 85.98,
+   "prix": 86.69,
    "revient": 88.513914,
    "sortie": 92.146617,
    "abandonnee": false,
-   "bougies": 1367,
-   "hold": -0.035105,
+   "bougies": 1379,
+   "hold": -0.027137,
    "echelle": [
     {
      "prix": 88.4254,
@@ -218,7 +218,7 @@
      "mort": false
     }
    ],
-   "part_engage": 0.05461,
+   "part_engage": 0.05471,
    "duree_moyenne_h": 0.0,
    "gain_realise": 0,
    "journal": [
@@ -233,18 +233,18 @@
   },
   {
    "paire": "DOGE/EUR",
-   "equity": 199.04,
-   "perf": -0.004799,
+   "equity": 199.14,
+   "perf": -0.00428,
    "cycles": 0,
    "engage": 13.17,
    "barreaux": 1,
    "reference": 0.07866,
-   "prix": 0.07161,
+   "prix": 0.07222,
    "revient": 0.077164,
    "sortie": 0.080331,
    "abandonnee": false,
-   "bougies": 1367,
-   "hold": -0.077252,
+   "bougies": 1379,
+   "hold": -0.069391,
    "echelle": [
     {
      "prix": 0.077087,
@@ -265,7 +265,7 @@
      "mort": false
     }
    ],
-   "part_engage": 0.05514,
+   "part_engage": 0.05523,
    "duree_moyenne_h": 0.0,
    "gain_realise": 0,
    "journal": [
