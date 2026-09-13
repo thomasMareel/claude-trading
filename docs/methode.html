@@ -10,17 +10,29 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="nav.css">
 <link rel="stylesheet" href="jetons.css">
+<link rel="stylesheet" href="gabarit.css">
+<script src="prefs.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0; background:var(--ground); color:var(--ink);
   font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  font-size:15px; line-height:1.65; -webkit-text-size-adjust:100%}
+  font-size:var(--corps); line-height:1.65; -webkit-text-size-adjust:100%}
 .enveloppe{max-width:800px; margin:0 auto; padding:clamp(22px,5vw,44px) 18px 90px}
-h1,h2,h3{font-family:"Newsreader",Georgia,serif; font-weight:500; margin:0; text-wrap:balance}
-h1{font-size:clamp(1.9rem,5.6vw,2.9rem); line-height:1.1; letter-spacing:-.015em}
+h1,h2,h3{font-family:var(--f-titre); font-weight:500; margin:0;
+  text-wrap:balance; font-optical-sizing:auto}
+h1{font-size:var(--t-affiche); line-height:1.03; letter-spacing:-.022em}
 h1 em,h2 em{font-style:italic; color:var(--achat)}
-h2{font-size:clamp(1.3rem,3.4vw,1.7rem); line-height:1.2; margin:44px 0 2px}
-h3{font-size:1.05rem; font-weight:600; font-family:inherit; margin:26px 0 2px}
+h2{font-size:var(--t-section); line-height:1.15; letter-spacing:-.012em;
+  margin:var(--e-8) 0 var(--e-2)}
+/*  Une section commence par un filet, et un segment pétrole de quarante pixels
+    posé dessus : la hiérarchie se voit avant même qu'on ait lu le titre. */
+h2{position:relative; padding-top:var(--e-5); border-top:1px solid var(--rule)}
+h2::before{content:""; position:absolute; top:-1px; left:0;
+  width:40px; height:2px; background:var(--achat)}
+h2:first-of-type{margin-top:var(--e-6)}
+@media(max-width:700px){h2{margin-top:var(--e-6)}}
+
+h3{font-size:var(--t-sous); font-weight:600; line-height:1.3; margin:var(--e-6) 0 2px}
 p{margin:.75em 0; max-width:68ch}
 a{color:var(--achat)}
 .num{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -96,15 +108,20 @@ tbody tr:last-child td{border-bottom:none; font-weight:600}
 footer{margin-top:44px; padding-top:18px; border-top:1px solid var(--rule);
   font-size:.82rem; color:var(--ink-3); max-width:72ch}
 .suite{display:flex; flex-wrap:wrap; gap:10px; margin-top:20px}
-.suite a{display:inline-block; padding:9px 14px; border-radius:9px; font-size:.88rem;
+.suite a{display:inline-block; padding:9px 14px; border-radius:var(--r-2); font-size:.88rem;
   border:1px solid var(--rule); background:var(--surface); text-decoration:none;
-  color:var(--ink-2); box-shadow:var(--ombre)}
-.suite a:hover,.suite a:focus-visible{color:var(--ink); border-color:var(--achat)}
+  color:var(--ink-2); box-shadow:var(--ombre);
+  transition:background-color var(--t-court) var(--c-std),
+    border-color var(--t-court) var(--c-std), color var(--t-court) var(--c-std)}
+.suite a:hover,.suite a:focus-visible{color:var(--ink); border-color:var(--achat);
+  background:var(--surface-survol)}
+.suite a:active{background:var(--surface-actif)}
 @media(prefers-reduced-motion:reduce){*{transition:none !important}}
 </style>
 </head>
 <body>
 <script src="nav.js" defer></script>
+<script src="reglages.js" defer></script>
 <div class="enveloppe">
 
 <header class="tete">
@@ -147,8 +164,8 @@ footer{margin-top:44px; padding-top:18px; border-top:1px solid var(--rule);
   <p class="titre" id="t-cycle">…</p>
   <div class="toile" id="planche-cycle"></div>
   <div class="legende">
-    <span><i class="tri" style="border-bottom:8px solid var(--achat)"></i>achat</span>
-    <span><i class="tri" style="border-top:8px solid var(--vente)"></i>vente</span>
+    <span data-vignette="achat">achat</span>
+    <span data-vignette="vente">vente</span>
     <span><i class="puce" style="background:var(--blocage)"></i>prix de revient moyen</span>
     <span><i class="puce" style="background:var(--vente)"></i>prix de vente visé</span>
     <span><i class="puce" style="background:var(--rule-fort);height:1px"></i>barreaux de l'échelle</span>
@@ -239,7 +256,7 @@ footer{margin-top:44px; padding-top:18px; border-top:1px solid var(--rule);
    retenue : une bougie haussière passe par son bas puis par son haut, une baissière
    l'inverse. Sur une bougie horaire c'est un pari lourd ; au pas de cinq minutes il ne
    reste presque rien à deviner. Toutes les mesures du site sont faites à cinq minutes,
-   et l'épreuve de stabilité rejoue le même réglage à l'heure, a cinq minutes et a la
+   et l'épreuve de stabilité rejoue le même réglage à l'heure, à cinq minutes et à la
    minute pour vérifier que le résultat n'est pas un artefact de finesse.</p>
 
 <h3>Les frais, le plancher, et ce qu'on suppose</h3>
@@ -342,33 +359,70 @@ function toile(hote, hauteur, dessiner){
 /* -------------------------------------------------- I. l'echelle dessinee */
 function dessinerEchelle(svg, L, H, d){
   const ech = d.echelle, ref = d.cycle.reference;
-  const G = 62, D = 14, T = 16, B = 14;
+  const G = 112, D = 14, T = 16, B = 14;
   const bas = ech[ech.length-1].prix;
   const Y = v => T + (ref - v) / (ref - bas) * (H - T - B);
   const mMax = Math.max(...ech.map(b => b.mise));
   const larg = L - G - D;
   svg.setAttribute("aria-label",
-    `Échelle a ${ech.length} barreaux, de ${((ech[0].prix/ref-1)*100).toFixed(0)} % a `
+    `Échelle à ${ech.length} barreaux, de ${((ech[0].prix/ref-1)*100).toFixed(0)} % à `
     + `${((bas/ref-1)*100).toFixed(0)} % sous la référence, mises de `
-    + `${Math.round(ech[0].mise)} a ${Math.round(mMax)} euros`);
+    + `${Math.round(ech[0].mise)} à ${Math.round(mMax)} euros`);
 
   //  la reference, tout en haut : c'est d'elle que l'echelle descend
   svgEl("line", {x1:G, x2:L-D, y1:T, y2:T, stroke:"var(--prix)", "stroke-width":1.5}, svg);
-  svgEl("text", {x:G-8, y:T+4, "text-anchor":"end", "font-size":10, fill:"var(--prix)",
+  svgEl("text", {x:G-22, y:T+4, "text-anchor":"end", "font-size":10, fill:"var(--prix)",
     "font-family":'"IBM Plex Mono",monospace', "font-weight":600}, svg, "prix");
 
-  for (const b of ech){
-    const y = Y(b.prix);
-    const w = Math.max(3, b.mise / mMax * larg * 0.82);
+  /*  LES BARRES RESTENT OU ELLES SONT, LES ETIQUETTES S'ECARTENT.
+   *
+   *  L'echelle est courbee : les quatre premiers barreaux sont a -2, -3, -6 et
+   *  -11 %, donc a quatre pixels les uns des autres dans cette hauteur. C'est
+   *  precisement ce que la figure doit montrer — mais les etiquettes, elles,
+   *  s'ecrivaient les unes sur les autres et on lisait « -2-3 % 1423 € ».
+   *
+   *  La position verticale d'une barre est une donnee et ne bouge pas d'un
+   *  pixel. Une etiquette est une annotation : elle peut descendre pour laisser
+   *  la place, a condition qu'un filet dise a quelle barre elle appartient. Un
+   *  seul passage vers le bas, avec un ecart minimal de onze pixels.  */
+  const lignes = ech.map(b => ({b, y: Y(b.prix),
+                                w: Math.max(3, b.mise / mMax * larg * 0.82)}));
+  //  Treize pixels pour une police de dix : onze ne laissaient aucun interligne
+  //  et « -2 % » touchait « -3 % ». Le compte demarre a l'etiquette « prix »,
+  //  qui est la premiere de la colonne et qui doit compter comme les autres.
+  let prec = T + 4 - 3.5;
+  for (const l of lignes){
+    l.yl = Math.max(l.y, prec + 13);
+    prec = l.yl;
+  }
+  //  Si le dernier a ete pousse hors du cadre, tout remonte d'autant : mieux
+  //  vaut un leger decalage partage qu'une etiquette qui sort du dessin.
+  const debord = lignes[lignes.length-1].yl - (H - B + 4);
+  if (debord > 0) for (const l of lignes) l.yl -= debord;
+
+  for (const l of lignes){
+    const {b, y, w, yl} = l;
     //  la barre EST la mise : sa longueur dit combien d'argent part sur ce barreau,
     //  ce qu'un simple point ne dirait pas
     svgEl("rect", {x:G, y:y-5, width:w, height:10, rx:2,
       fill:"var(--achat)", opacity:b.rempli ? 0.95 : 0.28}, svg);
-    svgEl("text", {x:G-8, y:y+4, "text-anchor":"end", "font-size":10,
-      fill:"var(--ink-3)", "font-family":'"IBM Plex Mono",monospace'}, svg,
-      ((b.prix/ref-1)*100).toFixed(0) + " %");
-    svgEl("text", {x:G+w+7, y:y+4, "font-size":10, fill:"var(--ink-2)",
-      "font-family":'"IBM Plex Mono",monospace'}, svg, Math.round(b.mise) + " €");
+    if (Math.abs(yl - y) > 1.5){
+      //  le filet qui relie l'etiquette deplacee a sa barre
+      svgEl("path", {d:`M${G-6} ${yl} H${G-12} V${y} H${G-18}`, fill:"none",
+        stroke:"var(--rule-fort)", "stroke-width":1, opacity:.7}, svg);
+    }
+    //  LES DEUX CHIFFRES DANS LA MEME ETIQUETTE. La mise s'ecrivait au bout de
+    //  sa barre : des que l'etiquette de gauche descendait, celle de droite
+    //  descendait avec elle et se retrouvait a cote d'une AUTRE barre. Un seul
+    //  bloc, dans la gouttiere, et le doute disparait.
+    const t = svgEl("text", {x:G-22, y:yl+3.5, "text-anchor":"end", "font-size":10,
+      fill:"var(--ink-3)", "font-family":'"IBM Plex Mono",monospace'}, svg);
+    t.textContent = ((b.prix/ref-1)*100).toFixed(0) + " % ";
+    const m = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+    m.setAttribute("fill", "var(--ink)");
+    m.setAttribute("font-weight", b.rempli ? "600" : "400");
+    m.textContent = Math.round(b.mise) + " €";
+    t.appendChild(m);
   }
 }
 
@@ -411,11 +465,11 @@ function glossaire(d){
   return [
     ["Barreau", "Un des ordres d'achat de l'échelle, avec son prix et sa mise. Le "
       + "moteur les appelle « paliers » dans ses réglages ; c'est le même objet.",
-      `${ech.length} barreaux, de ${Math.round(ech[0].mise)} € a ${Math.round(ech[ech.length-1].mise)} €`],
-    ["Echelle", "L'ensemble des barreaux posés sous le prix de référence. Sa forme "
+      `${ech.length} barreaux, de ${Math.round(ech[0].mise)} € à ${Math.round(ech[ech.length-1].mise)} €`],
+    ["Échelle", "L'ensemble des barreaux posés sous le prix de référence. Sa forme "
       + "est décrite par sa profondeur, son nombre de barreaux et la progression de "
-      + "ses mises.", `de ${((ech[0].prix/c.reference-1)*100).toFixed(0)} % a ${((ech[ech.length-1].prix/c.reference-1)*100).toFixed(0)} % sous la référence`],
-    ["Reference", "Le prix à partir duquel l'échelle est posée. Tant que rien n'est "
+      + "ses mises.", `de ${((ech[0].prix/c.reference-1)*100).toFixed(0)} % à ${((ech[ech.length-1].prix/c.reference-1)*100).toFixed(0)} % sous la référence`],
+    ["Référence", "Le prix à partir duquel l'échelle est posée. Tant que rien n'est "
       + "acheté, elle remonte avec le marché ; des le premier achat, elle est figée "
       + "jusqu'à la vente.", `${px(c.reference)} pour le cycle ci-dessus`],
     ["Prix de revient", "Ce que coûte en moyenne une unité du lot détenu, frais "
@@ -478,27 +532,28 @@ function glossaire(d){
   const jour = t => new Date(t).toISOString().slice(0,10);
 
   toile(document.getElementById("planche-echelle"),
-        () => 26 + d.echelle.length * 26, (s,L,H) => dessinerEchelle(s,L,H,d));
+        () => 30 + d.echelle.length * 30, (s,L,H) => dessinerEchelle(s,L,H,d));
   toile(document.getElementById("planche-suivi"),
         L => Math.round(Math.min(220, Math.max(150, L*0.3))), dessinerSuivi);
 
   document.getElementById("intro-cycle").innerHTML =
-    `Voici ce qui s'est passe sur <b>${esc(d.paire)}</b> entre le `
+    `Voici ce qui s'est passé sur <b>${esc(d.paire)}</b> entre le `
     + `<span class="num">${jour(c.ouvert_le)}</span> et le `
-    + `<span class="num">${jour(c.ferme_le)}</span>. Le prix est tombe de `
-    + `<span class="num">${px(c.premier_achat)}</span> a `
+    + `<span class="num">${jour(c.ferme_le)}</span>. Le prix est tombé de `
+    + `<span class="num">${px(c.premier_achat)}</span> à `
     + `<span class="num">${px(c.dernier_achat)}</span>, et quatre barreaux ont été `
-    + `touches. Suivez la ligne rouge : c'est le prix de revient moyen du lot. `
-    + `A chaque achat elle fait un pas vers le bas, et elle descend <b>plus vite que `
+    + `touchés. Suivez la ligne rouge : c'est le prix de revient moyen du lot. `
+    + `À chaque achat elle fait un pas vers le bas, et elle descend <b>plus vite que `
     + `le prix</b>.`;
   document.getElementById("t-cycle").textContent =
-    `${d.paire} · ${c.barreaux} barreaux touches · ${c.heures.toFixed(0)} heures · `
+    `${d.paire} · ${c.barreaux} barreaux touchés · ${c.heures.toFixed(0)} heures · `
     + `${jour(c.ouvert_le)} au ${jour(c.ferme_le)}`;
 
   const niveaux = d.echelle.filter(b => b.prix <= c.reference * 1.01)
     .map(b => ({prix:b.prix, couleur:"var(--rule-fort)", epais:1,
       pointille:b.rempli ? "none" : "3 4", opacite:b.rempli ? .8 : .45,
       texte:`${((b.prix/c.reference-1)*100).toFixed(0)} %`}));
+  Marche.poserVignettes();
   new Marche(document.getElementById("planche-cycle"), {
     bougies: d.bougies, pas: (d.bougies[1][0] - d.bougies[0][0]) || 300000, unite: 1,
     volume: false,

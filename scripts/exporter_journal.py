@@ -31,6 +31,48 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 RACINE = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from accentuer import accentuer_prose   # noqa: E402
+
+#  ———————————————————————————————————————————————————————————————————
+#  LES ACCENTS, POSES A L'EXPORT ET NON DANS GIT.
+#
+#  Les messages de commit de ce depot sont ecrits sans accents : ils passent par
+#  des lignes de commande, des heredocs et des terminaux dont l'encodage n'est
+#  pas garanti, et un message a moitie casse ne se rattrape pas. La page, elle,
+#  est du HTML en UTF-8 et doit se lire en francais correct — c'etait la seule
+#  des six ou tout etait encore ecrit « methode », « reglage », « donnees ».
+#
+#  Le meme dictionnaire que le reste du site, donc les memes prudences : les
+#  mots ambigus n'y sont pas, et « a » ne devient jamais « a » accentue tout
+#  seul. Restent a masquer les identifiants que ces messages citent sans arret —
+#  selecteurs CSS, appels de fonction, noms de fichiers — sans quoi « .legende
+#  span{ } » deviendrait « .legende » avec un accent dans une page qui explique
+#  precisement qu'il ne faut pas faire ca.
+CODE = [
+    re.compile(r"`[^`]*`"),
+    re.compile(r"(?<![\w])[.#][A-Za-z][\w-]*"),      # .legende, #bulle
+    re.compile(r"\b[A-Za-z_][\w]*\([^)\n]*\)"),   # etat_json(...), sgn()
+    re.compile(r"\b[A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)+"),  # E.calques, Marche.prixCourt
+]
+
+
+def accentuer_entree(t: str) -> str:
+    garde: list[str] = []
+
+    def mettre(m):
+        garde.append(m.group(0))
+        return "%d" % (len(garde) - 1)
+
+    for rx in CODE:
+        t = rx.sub(mettre, t)
+    t = accentuer_prose(t)
+    for _ in range(8):
+        neuf = re.sub("(\\d+)", lambda m: garde[int(m.group(1))], t)
+        if neuf == t:
+            break
+        t = neuf
+    return t
 
 #  Un separateur que rien, dans un message de commit francais, ne produira.
 SEP = "\x1e"
@@ -79,7 +121,9 @@ def lire_git(depuis: Path, limite: int | None) -> list[dict]:
         sha, court, date, titre, corps = parts[0], parts[1], parts[2], parts[3], parts[4]
         #  La ligne d'attribution n'apporte rien au lecteur du site.
         corps = re.sub(r"\n*Co-Authored-By:.*$", "", corps, flags=re.I | re.S).strip()
-        out.append(dict(sha=sha, court=court, date=date, titre=titre.strip(), corps=corps))
+        out.append(dict(sha=sha, court=court, date=date,
+                        titre=accentuer_entree(titre.strip()),
+                        corps=accentuer_entree(corps)))
     return out
 
 
@@ -121,8 +165,8 @@ def main() -> int:
         #  Le journal est fabrique AVANT le commit qui le publie : la derniere
         #  entree visible est donc toujours l'avant-derniere du depot. Le dire
         #  plutot que de laisser croire a un retard inexplique.
-        "note": "Genere depuis l'historique git avant le commit qui le publie ; "
-                "la toute derniere entree du depot y manque donc toujours.",
+        "note": "Généré depuis l'historique git avant le commit qui le publie ; "
+                "la toute dernière entrée du dépôt y manque donc toujours.",
         "entrees": entrees,
     }, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"{len(entrees)} entrees ecrites dans {sortie}")

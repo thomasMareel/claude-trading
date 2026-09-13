@@ -10,14 +10,17 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="nav.css">
 <link rel="stylesheet" href="jetons.css">
+<link rel="stylesheet" href="gabarit.css">
+<script src="prefs.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0; background:var(--ground); color:var(--ink);
   font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  font-size:15px; line-height:1.6; -webkit-text-size-adjust:100%}
+  font-size:var(--corps); line-height:1.6; -webkit-text-size-adjust:100%}
 .enveloppe{max-width:860px; margin:0 auto; padding:clamp(22px,5vw,44px) 18px 80px}
-h1,h2,h3{font-family:"Newsreader",Georgia,serif; font-weight:500; margin:0; text-wrap:balance}
-h1{font-size:clamp(1.9rem,5.6vw,2.9rem); line-height:1.1; letter-spacing:-.015em}
+h1,h2,h3{font-family:var(--f-titre); font-weight:500; margin:0;
+  text-wrap:balance; font-optical-sizing:auto}
+h1{font-size:var(--t-affiche); line-height:1.03; letter-spacing:-.022em}
 h1 em{font-style:italic; color:var(--achat)}
 p{margin:.6em 0}
 a{color:var(--achat)}
@@ -32,7 +35,7 @@ header.tete .chapo{max-width:62ch; color:var(--ink-2); margin-top:.8em}
 header.tete .chapo em{color:var(--ink); font-style:normal; font-weight:600}
 
 .resume{display:flex; flex-wrap:wrap; gap:10px; margin:22px 0 8px}
-.jeton{background:var(--surface); border:1px solid var(--rule); border-radius:9px;
+.jeton{background:var(--surface); border:1px solid var(--rule); border-radius:var(--r-3);
   padding:9px 13px; box-shadow:var(--ombre)}
 .jeton .v{font-family:"IBM Plex Mono",monospace; font-size:1.22rem; line-height:1.1}
 .jeton .k{font-size:.68rem; color:var(--ink-3); text-transform:uppercase;
@@ -43,11 +46,20 @@ header.tete .chapo em{color:var(--ink); font-style:normal; font-weight:600}
 .filtres .lib{font-family:"IBM Plex Mono",monospace; font-size:.64rem; letter-spacing:.12em;
   text-transform:uppercase; color:var(--ink-3); margin-right:2px}
 .opt{appearance:none; background:var(--surface); color:var(--ink-2);
-  border:1px solid var(--rule); border-radius:7px; padding:6px 12px; cursor:pointer;
-  font:inherit; font-size:.84rem; white-space:nowrap}
-.opt:hover{color:var(--ink); border-color:var(--rule-fort)}
-.opt[aria-pressed="true"]{background:var(--achat); border-color:var(--achat);
-  color:var(--sur-vif); font-weight:600}
+  border:1px solid var(--rule); border-radius:var(--r-2); padding:6px 12px; cursor:pointer;
+  font:inherit; font-size:.84rem; white-space:nowrap;
+  transition:background-color var(--t-court) var(--c-std),
+    border-color var(--t-court) var(--c-std),
+    color var(--t-court) var(--c-std)}
+/*  Le survol prend enfin une surface : sans les marches 4 et 5 de la palette,
+    il ne changeait que le texte et le filet, et paraissait mou. */
+.opt:hover{color:var(--ink); background:var(--surface-survol);
+  border-color:var(--rule-survol)}
+.opt:active{background:var(--surface-actif)}
+/*  PAS de font-weight ici : la graisse decalait les dix jetons a chaque clic.
+    L'aplat petrole porte deja l'etat, et il le porte sans bouger. */
+.opt[aria-pressed="true"]{background:var(--achat-plein);
+  border-color:var(--achat-plein); color:var(--sur-vif)}
 
 /*  La frise : un filet vertical que les pastilles ponctuent. Les entrees qui
     corrigent quelque chose de deja publie portent une pastille pleine et un
@@ -92,6 +104,7 @@ footer{margin-top:34px; padding-top:18px; border-top:1px solid var(--rule);
 </head>
 <body>
 <script src="nav.js" defer></script>
+<script src="reglages.js" defer></script>
 <div class="enveloppe">
 
 <header class="tete">

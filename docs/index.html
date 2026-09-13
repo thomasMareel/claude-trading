@@ -10,17 +10,29 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="nav.css">
 <link rel="stylesheet" href="jetons.css">
+<link rel="stylesheet" href="gabarit.css">
+<script src="prefs.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0; background:var(--ground); color:var(--ink);
   font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  font-size:15px; line-height:1.6; -webkit-text-size-adjust:100%}
+  font-size:var(--corps); line-height:1.6; -webkit-text-size-adjust:100%}
 .enveloppe{max-width:980px; margin:0 auto; padding:clamp(24px,6vw,54px) 18px 80px}
-h1,h2,h3{font-family:"Newsreader",Georgia,serif; font-weight:500; margin:0; text-wrap:balance}
-h1{font-size:clamp(2rem,6.2vw,3.2rem); line-height:1.08; letter-spacing:-.015em}
+h1,h2,h3{font-family:var(--f-titre); font-weight:500; margin:0;
+  text-wrap:balance; font-optical-sizing:auto}
+h1{font-size:var(--t-affiche); line-height:1.03; letter-spacing:-.022em}
 h1 em{font-style:italic; color:var(--achat)}
-h2{font-size:clamp(1.15rem,3vw,1.45rem)}
-h3{font-size:1.12rem; font-weight:500}
+h2{font-size:var(--t-section); line-height:1.15; letter-spacing:-.012em;
+  margin:var(--e-8) 0 var(--e-2)}
+/*  Une section commence par un filet, et un segment pétrole de quarante pixels
+    posé dessus : la hiérarchie se voit avant même qu'on ait lu le titre. */
+h2{position:relative; padding-top:var(--e-5); border-top:1px solid var(--rule)}
+h2::before{content:""; position:absolute; top:-1px; left:0;
+  width:40px; height:2px; background:var(--achat)}
+h2:first-of-type{margin-top:var(--e-6)}
+@media(max-width:700px){h2{margin-top:var(--e-6)}}
+
+h3{font-size:var(--t-sous); font-weight:600; line-height:1.25}
 p{margin:.6em 0}
 a{color:var(--achat)}
 .num{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -41,10 +53,14 @@ header.tete .chapo{max-width:60ch; color:var(--ink-2); font-size:clamp(1rem,2.4v
   .grille .large{grid-column:1 / -1}
 }
 .porte{display:block; text-decoration:none; color:inherit;
-  background:var(--surface); border:1px solid var(--rule); border-radius:13px;
+  background:var(--surface); border:1px solid var(--rule); border-radius:var(--r-3);
   padding:20px 20px 18px; box-shadow:var(--ombre);
-  transition:border-color .15s ease, transform .15s ease}
-.porte:hover,.porte:focus-visible{border-color:var(--achat); transform:translateY(-1px)}
+  transition:border-color var(--t-moyen) var(--c-std),
+    background-color var(--t-moyen) var(--c-std),
+    transform var(--t-moyen) var(--c-std)}
+.porte:hover,.porte:focus-visible{border-color:var(--achat);
+  background:var(--surface-survol); transform:translateY(-1px)}
+.porte:active{transform:none; background:var(--surface-actif)}
 .porte .haut{display:flex; align-items:baseline; justify-content:space-between; gap:12px}
 .porte h3{line-height:1.2}
 .porte .fleche{color:var(--achat); font-size:1.1rem; flex:none}
@@ -68,16 +84,21 @@ header.tete .chapo{max-width:60ch; color:var(--ink-2); font-size:clamp(1rem,2.4v
 .constats .quoi b{color:var(--ink); font-weight:600}
 
 .docs{display:flex; flex-wrap:wrap; gap:8px 10px; margin-top:12px}
-.docs a{display:inline-block; padding:6px 11px; border-radius:8px; font-size:.84rem;
+.docs a{display:inline-block; padding:6px 11px; border-radius:var(--r-2); font-size:.84rem;
   border:1px solid var(--rule); background:var(--surface-2); text-decoration:none;
-  color:var(--ink-2)}
-.docs a:hover,.docs a:focus-visible{color:var(--ink); border-color:var(--rule-fort)}
+  color:var(--ink-2);
+  transition:background-color var(--t-court) var(--c-std),
+    border-color var(--t-court) var(--c-std), color var(--t-court) var(--c-std)}
+.docs a:hover,.docs a:focus-visible{color:var(--ink);
+  background:var(--surface-survol); border-color:var(--rule-survol)}
+.docs a:active{background:var(--surface-actif)}
 footer{margin-top:34px; padding-top:18px; border-top:1px solid var(--rule);
   font-size:.82rem; color:var(--ink-3); max-width:70ch}
 </style>
 </head>
 <body>
 <script src="nav.js" defer></script>
+<script src="reglages.js" defer></script>
 <div class="enveloppe">
 
 <header class="tete">

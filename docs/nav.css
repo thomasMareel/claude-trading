@@ -1,62 +1,86 @@
-/*  La barre de navigation, partagee par toutes les pages.
+/*  La barre de navigation, partagée par toutes les pages.
  *
- *  Elle n'impose aucune palette : chaque page a la sienne, et les variables
- *  sont lues avec des solutions de repli en cascade — d'abord le nom utilise
- *  par la page des simulations et du paper trading, puis celui du tableau de
- *  bord, puis une valeur en dur. Une page qui ne definit rien reste donc
- *  lisible, et une page qui definit tout garde son identite.
+ *  Elle lit les jetons de jetons.css et gabarit.css, et garde des solutions de
+ *  repli en dur : une page qui oublierait un lien reste lisible.
  */
 .barre-nav {
-  position: sticky; top: 0; z-index: 50;
+  position: sticky; top: 0; z-index: 100;
   display: flex; align-items: center; gap: 4px;
   flex-wrap: wrap;
   padding: 7px clamp(10px, 3vw, 22px);
-  background: var(--surface, var(--card, #fff));
-  border-bottom: 1px solid var(--rule, var(--border, #D6DEDC));
-  font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--surface, #fff);
+  border-bottom: 1px solid var(--rule, #D6DEDC);
+  font-family: var(--f-corps, "IBM Plex Sans", system-ui, sans-serif);
   font-size: .82rem;
   /*  translateZ force une couche de composition : sans elle, Safari laisse
-   *  filtrer les chandeliers SVG a travers la barre pendant le defilement.  */
+   *  filtrer les chandeliers SVG à travers la barre pendant le défilement.  */
   transform: translateZ(0);
   backdrop-filter: saturate(1.2) blur(6px);
 }
 .barre-nav a {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 5px 9px; border-radius: 7px;
-  color: var(--ink-2, var(--muted, #485552));
+  padding: 5px 9px; border-radius: var(--r-2, 8px);
+  color: var(--ink-2, #485552);
   text-decoration: none; white-space: nowrap;
   border: 1px solid transparent;
+  transition: background-color var(--t-court, 110ms) var(--c-std, ease),
+              color var(--t-court, 110ms) var(--c-std, ease),
+              border-color var(--t-court, 110ms) var(--c-std, ease);
 }
 .barre-nav a:hover, .barre-nav a:focus-visible {
-  background: var(--surface-2, var(--card-2, rgba(127,127,127,.10)));
-  color: var(--ink, var(--fg, #141D1C));
+  background: var(--surface-survol, rgba(127,127,127,.10));
+  color: var(--ink, #141D1C);
 }
 .barre-nav a[aria-current="page"] {
-  color: var(--ink, var(--fg, #141D1C));
+  color: var(--ink, #141D1C);
   font-weight: 600;
-  border-color: var(--rule, var(--border, #D6DEDC));
-  background: var(--surface-2, var(--card-2, rgba(127,127,127,.08)));
+  border-color: var(--rule, #D6DEDC);
+  background: var(--surface-actif, rgba(127,127,127,.08));
+}
+/*  La page courante passe en gras, et les six liens se décalaient à chaque
+ *  page. Un fantôme en gras, haut de zéro pixel, occupe la largeur définitive :
+ *  la barre ne bouge plus d'une page à l'autre. En grille, le texte et le
+ *  fantôme se superposent en colonne et la largeur prise est la plus grande.  */
+.barre-nav a[data-nom] { display: inline-grid; justify-items: center }
+.barre-nav a[data-nom]::after {
+  content: attr(data-nom); font-weight: 600;
+  height: 0; overflow: hidden; visibility: hidden; pointer-events: none;
 }
 .barre-nav .retour {
   font-weight: 600;
-  color: var(--achat, var(--accent, #0E7C86));
+  color: var(--achat, #0E7C86);
 }
 .barre-nav .retour svg { width: 14px; height: 14px; flex: none; }
 .barre-nav .sep {
   width: 1px; height: 18px; margin: 0 6px;
-  background: var(--rule, var(--border, #D6DEDC));
+  background: var(--rule, #D6DEDC);
   flex: none;
 }
 .barre-nav .pousse { margin-left: auto; }
 .barre-nav .etiquette {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: .66rem; letter-spacing: .12em; text-transform: uppercase;
-  color: var(--ink-3, var(--muted, #5F6D6A));
+  font-family: var(--f-mono, "IBM Plex Mono", monospace);
+  font-size: var(--t-oeil, .66rem); letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-3, #5F6D6A);
   padding: 5px 2px;
+}
+/*  Le thème et l'engrenage, au bout de la barre. Ils sont posés par reglages.js
+ *  APRÈS le lien « Code source » ; c'est ce lien qui porte margin-left:auto,
+ *  donc le groupe entier se colle à droite.  */
+.barre-nav .outils { display: flex; align-items: center; gap: 4px; flex: none }
+
+@media (max-width: 860px) {
+  /*  En étroit, les trois mots du sélecteur de thème coûtent une ligne entière
+   *  de barre. Les icônes portent le même sens et le nom reste dans le titre
+   *  accessible ; le réglage complet, libellé, vit de toute façon aussi dans le
+   *  panneau.  */
+  .barre-nav .segmente button > span { display: none }
+  .barre-nav .segmente button { padding: 6px 8px }
 }
 @media (max-width: 560px) {
   .barre-nav { font-size: .78rem; gap: 2px; }
   .barre-nav .etiquette { display: none; }
   .barre-nav a { padding: 5px 7px; }
+  .barre-nav .source { display: none }
+  .barre-nav .outils { margin-left: auto }
 }
 @media print { .barre-nav { display: none; } }

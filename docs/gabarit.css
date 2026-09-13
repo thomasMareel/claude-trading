@@ -1,0 +1,312 @@
+/*  La géométrie du site : espacement, rayons, typographie, mouvement.
+ *
+ *  jetons.css avait déjà réuni les couleurs après les avoir vues diverger. Le
+ *  reste ne l'était pas, et divergeait de la même façon : douze rayons de bord
+ *  différents dans le dépôt (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13 pixels),
+ *  deux tailles de corps, deux vocabulaires de carte, et des durées de
+ *  transition choisies au hasard — .15s ici, .08s là, `ease` partout, c'est-à-dire
+ *  la courbe qu'on n'a pas choisie.
+ *
+ *  Ce fichier se charge APRÈS jetons.css et AVANT le <style> de chaque page :
+ *  il pose les jetons, la page s'en sert. Il ne contient de vraies règles que
+ *  pour ce qu'aucune page ne définit — la barre segmentée, le panneau de
+ *  réglages, les états de survol qui manquaient.
+ */
+
+:root{
+  /* ——— espacement : base 4, neuf marches ——— */
+  --e-1:4px; --e-2:8px; --e-3:12px; --e-4:16px; --e-5:24px;
+  --e-6:32px; --e-7:48px; --e-8:72px; --e-9:112px;
+
+  /*  ——— rayons : un objet, un rayon ———
+   *  1 pastille d'axe, étiquette, puce · 2 jeton, bouton, champ
+   *  3 carte, figure, bloc · 4 panneau, dialogue
+   *  Corollaire : pas de `border-radius:0 11px 11px 0`. Un exergue n'est pas
+   *  une carte ; s'il a besoin d'un coin arrondi d'un seul côté, c'est qu'il
+   *  hésite entre les deux.  */
+  --r-1:4px; --r-2:8px; --r-3:12px; --r-4:16px;
+
+  /*  ——— densité ———
+   *  Un multiplicateur, pas une deuxième feuille de style. Les rembourrages et
+   *  les hauteurs de graphique passent par calc(... * var(--ech)).  */
+  --ech:1;
+
+  /*  Hauteur réelle de la barre de navigation, publiée par nav.js et relue au
+   *  redimensionnement. Deux barres collantes à top:0 se recouvrent ; celle de
+   *  la page se pose donc à top:var(--h-nav).  */
+  --h-nav:44px;
+
+  /* ——— familles ——— */
+  --f-titre:"Newsreader",Georgia,"Times New Roman",serif;
+  --f-corps:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+
+  /*  ——— tailles ———
+   *  --corps vaut 1rem : la taille choisie par le lecteur dans son navigateur
+   *  compte enfin. Cinq pages posaient `font-size:15px` en dur, ce qui l'ignore.  */
+  --corps:1rem;
+  --t-affiche:clamp(2.3rem,5.4vw,3.9rem);
+  --t-section:clamp(1.55rem,3.2vw,2.05rem);
+  --t-figure:clamp(1.06rem,2.2vw,1.3rem);
+  --t-sous:1.06rem;
+  --t-chapo:1.15rem;
+  --t-appui:.92rem;
+  --t-note:.78rem;
+  --t-oeil:.66rem;                              /* l'œil : petites capitales espacées */
+  --t-vedette:clamp(1.9rem,4vw,2.6rem);         /* le −4,82 pt, la perf d'un robot */
+  --t-fort:1.35rem;
+
+  /*  ——— mouvement ———
+   *  Trois durées et trois courbes, choisies. `ease` n'est pas un choix.  */
+  --t-court:110ms; --t-moyen:150ms; --t-long:240ms;
+  --c-std:cubic-bezier(.2,0,.38,.9);       /* transforme sur place */
+  --c-entree:cubic-bezier(0,0,.38,.9);     /* ce qui entre : part vite, freine */
+  --c-sortie:cubic-bezier(.2,0,1,.9);      /* ce qui sort : part doucement, file */
+}
+
+/*  ——— la densité compacte ———
+ *  Elle ne touche pas à la taille des lettres : réduire le corps n'est pas une
+ *  densité, c'est une autre lisibilité — et le navigateur sait déjà le faire.
+ *  Ce qui se resserre, c'est l'air : les marges des sections, les rembourrages
+ *  des blocs, l'interligne du texte courant.
+ *
+ *  Les sélecteurs sont préfixés par :root[data-densite] donc ils pèsent (0,2,1)
+ *  contre (0,1,0) pour la règle de page qu'ils corrigent : ils gagnent sans un
+ *  seul !important. Un réglage qui ne se verrait pas n'aurait rien à faire dans
+ *  le panneau — c'est le critère d'admission, et il vaut aussi pour celui-ci.
+ */
+:root[data-densite="compacte"]{ --ech:.85 }
+:root[data-densite="compacte"] body{ line-height:1.45 }
+:root[data-densite="compacte"] .enveloppe{
+  padding-top:var(--e-5); padding-bottom:var(--e-7);
+}
+:root[data-densite="compacte"] h2{ margin-top:var(--e-6); padding-top:var(--e-4) }
+:root[data-densite="compacte"] h3{ margin-top:var(--e-4) }
+:root[data-densite="compacte"] p{ margin-block:var(--e-2) }
+:root[data-densite="compacte"] .bloc,
+:root[data-densite="compacte"] .porte,
+:root[data-densite="compacte"] .planche,
+:root[data-densite="compacte"] .carte,
+:root[data-densite="compacte"] .garde,
+:root[data-densite="compacte"] .entree,
+:root[data-densite="compacte"] .tuile,
+:root[data-densite="compacte"] .jeton{
+  padding-top:calc(var(--e-3) * 1.1); padding-bottom:calc(var(--e-3) * 1.1);
+}
+:root[data-densite="compacte"] .rangee{ padding-block:var(--e-1) }
+:root[data-densite="compacte"] table td,
+:root[data-densite="compacte"] table th{ padding-block:var(--e-1) }
+
+/*  Les chiffres ne dansent pas. tabular-nums aligne les colonnes, `zero` barre
+ *  le zéro dans les polices qui le proposent. Sur les <text> SVG c'était absent :
+ *  les graduations de l'axe tressautaient d'une bougie à l'autre.  */
+svg text{ font-family:var(--f-mono); font-feature-settings:"tnum" 1 }
+.num,.tuile .v,.carte .gros{
+  font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1,"zero" 1;
+}
+h1,h2,h3,.f-titre{ font-optical-sizing:auto; text-rendering:optimizeLegibility }
+
+:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; border-radius:var(--r-1) }
+
+/*  AUCUNE TRANSITION SUR UN CHIFFRE. Ni fondu, ni compteur qui s'incrémente :
+ *  un prix qu'on ne peut pas lire pendant cent cinquante millisecondes est un
+ *  prix non vérifiable. Et la préférence système est respectée partout, pas sur
+ *  deux pages sur six comme avant.  */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    transition-duration:1ms !important; animation-duration:1ms !important;
+    animation-iteration-count:1 !important; scroll-behavior:auto !important;
+  }
+}
+/*  Le réglage « mouvement réduit » du panneau, qui vaut pour un lecteur dont le
+ *  système ne porte pas la préférence.  */
+:root[data-mouvement="reduit"] *,
+:root[data-mouvement="reduit"] *::before,
+:root[data-mouvement="reduit"] *::after{
+  transition-duration:1ms !important; animation-duration:1ms !important;
+}
+
+/* ————————————————————————————————————————————————————————————————
+ *  La barre segmentée : trois états qui se voient tous les trois.
+ *  Une bascule à deux positions rendrait « système » inatteignable une fois
+ *  quitté — et c'est l'état réel de la plupart des visiteurs.
+ * ———————————————————————————————————————————————————————————————— */
+.segmente{
+  display:inline-flex; align-items:stretch; gap:0;
+  border:1px solid var(--rule); border-radius:var(--r-2);
+  background:var(--surface-2); padding:2px; flex:none;
+}
+.segmente button{
+  appearance:none; border:0; background:transparent; cursor:pointer;
+  font:inherit; font-size:var(--t-note); line-height:1;
+  color:var(--ink-3); padding:5px 9px; border-radius:6px;
+  display:inline-flex; align-items:center; gap:5px; white-space:nowrap;
+  transition:background-color var(--t-court) var(--c-std),
+             color var(--t-court) var(--c-std);
+}
+.segmente button:hover{ color:var(--ink); background:var(--surface-survol) }
+.segmente button[aria-checked="true"]{
+  background:var(--surface); color:var(--ink); font-weight:600;
+  box-shadow:0 0 0 1px var(--o1), 0 1px 2px -1px var(--o2);
+}
+.segmente svg{ width:13px; height:13px; flex:none }
+/*  La graisse passe de 400 à 600 quand l'option est cochée : sans réserver la
+ *  place, les trois boutons se décalent à chaque clic. Le fantôme en gras
+ *  occupe la largeur définitive et ne se voit pas.  */
+.segmente button > span{ display:inline-grid }
+.segmente button > span::after{
+  content:attr(data-nom); font-weight:600; height:0; overflow:hidden;
+  visibility:hidden; pointer-events:none;
+}
+.segmente button > span > i{ font-style:normal; grid-area:1/1 }
+
+/* ——— le bouton en icône, pour ouvrir les réglages ——— */
+.btn-icone{
+  appearance:none; cursor:pointer; font:inherit;
+  display:inline-flex; align-items:center; justify-content:center;
+  width:30px; height:30px; flex:none;
+  border:1px solid transparent; border-radius:var(--r-2);
+  background:transparent; color:var(--ink-2);
+  transition:background-color var(--t-court) var(--c-std),
+             color var(--t-court) var(--c-std),
+             border-color var(--t-court) var(--c-std);
+}
+.btn-icone:hover{
+  background:var(--surface-survol); color:var(--ink); border-color:var(--rule);
+}
+.btn-icone[aria-expanded="true"]{
+  background:var(--surface-actif); color:var(--ink); border-color:var(--rule-survol);
+}
+.btn-icone svg{ width:16px; height:16px }
+
+/* ————————————————————————————————————————————————————————————————
+ *  Le panneau de réglages.
+ * ———————————————————————————————————————————————————————————————— */
+.panneau{
+  position:fixed; z-index:120;
+  width:min(320px, calc(100vw - 24px));
+  max-height:min(78vh, 640px); overflow:auto; overscroll-behavior:contain;
+  background:var(--surface-haut); color:var(--ink);
+  border-radius:var(--r-4); box-shadow:var(--ombre-haut);
+  padding:var(--e-4) var(--e-4) var(--e-3);
+  font-family:var(--f-corps); font-size:var(--t-appui); line-height:1.5;
+}
+.panneau[hidden]{ display:none }
+.panneau.entre{ animation:panneau-entre var(--t-moyen) var(--c-entree) }
+@keyframes panneau-entre{
+  from{ opacity:0; transform:translateY(-6px) }
+  to  { opacity:1; transform:none }
+}
+.panneau h2{
+  font-family:var(--f-titre); font-size:1.1rem; font-weight:600;
+  margin:0 0 var(--e-1); line-height:1.2;
+}
+.panneau .intro{ color:var(--ink-3); font-size:var(--t-note); margin:0 0 var(--e-4) }
+.panneau section{ border-top:1px solid var(--rule); padding:var(--e-3) 0 var(--e-1) }
+.panneau section:first-of-type{ border-top:0; padding-top:0 }
+.panneau .oeil{
+  font-family:var(--f-mono); font-size:var(--t-oeil); letter-spacing:.16em;
+  text-transform:uppercase; color:var(--ink-3); margin:0 0 var(--e-2);
+}
+.panneau .ligne{ margin:0 0 var(--e-3) }
+.panneau .ligne > .lib{
+  display:block; font-size:var(--t-note); color:var(--ink-2); margin:0 0 5px;
+}
+.panneau .ligne .segmente{ display:flex; width:100% }
+.panneau .ligne .segmente button{ flex:1; justify-content:center; padding:6px 4px }
+/*  accent-color rend au navigateur une case à cocher native à la bonne teinte :
+ *  une case redessinée en CSS perd le mode contraste forcé et la coche du
+ *  système.  */
+.panneau .bascule{
+  display:flex; align-items:center; gap:var(--e-2); margin-top:var(--e-2);
+  font-size:var(--t-note); color:var(--ink-2); cursor:pointer;
+}
+.panneau .bascule input{
+  accent-color:var(--achat); width:15px; height:15px; flex:none; margin:0;
+}
+/*  En colonne et non en ligne : la phrase et le bouton se serraient l'un contre
+ *  l'autre dans trois cent vingt pixels, et la phrase tombait sur trois lignes
+ *  hachees.  */
+.panneau .pied{
+  border-top:1px solid var(--rule); margin-top:var(--e-2);
+  padding-top:var(--e-3); display:grid; gap:var(--e-2); justify-items:start;
+}
+.panneau .pied p{ margin:0; font-size:var(--t-note); color:var(--ink-3) }
+.panneau .raz{
+  appearance:none; cursor:pointer; font:inherit; font-size:var(--t-note);
+  padding:6px 10px; border-radius:var(--r-2);
+  border:1px solid var(--rule); background:var(--surface);
+  color:var(--ink-2); white-space:nowrap;
+  transition:background-color var(--t-court) var(--c-std),
+             border-color var(--t-court) var(--c-std);
+}
+.panneau .raz:hover{ background:var(--surface-survol); border-color:var(--rule-survol) }
+
+/*  La confirmation de remise à zéro : une ligne qui s'efface, pas une boîte de
+ *  dialogue. On vient d'appuyer sur le bouton ; on sait ce qu'on a fait.  */
+.dit{
+  position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
+  z-index:200; padding:8px 14px; border-radius:var(--r-2);
+  background:var(--ink); color:var(--ground); font-size:var(--t-note);
+  font-family:var(--f-corps); box-shadow:var(--ombre-haut);
+  animation:dit-sort 1.4s var(--c-sortie) forwards;
+}
+@keyframes dit-sort{
+  0%{ opacity:0; transform:translate(-50%,6px) }
+  12%,72%{ opacity:1; transform:translate(-50%,0) }
+  100%{ opacity:0; transform:translate(-50%,-4px) }
+}
+
+/* ————————————————————————————————————————————————————————————————
+ *  Le bandeau de cycle : ce qui s'ouvre sous le graphique quand on clique un
+ *  cycle. Un bandeau et non une infobulle, parce qu'on doit pouvoir le lire
+ *  longtemps, le relire, et copier ses chiffres.
+ * ———————————————————————————————————————————————————————————————— */
+.bandeau-cycle{
+  border:1px solid var(--rule); border-radius:var(--r-3);
+  background:var(--surface-creux); padding:var(--e-3) var(--e-4);
+  margin-top:var(--e-3);
+}
+.bandeau-cycle[hidden]{ display:none }
+.bandeau-cycle .tete{
+  display:flex; align-items:baseline; gap:var(--e-2); flex-wrap:wrap;
+  margin-bottom:var(--e-3);
+}
+.bandeau-cycle .tete h3{
+  font-family:var(--f-titre); font-size:var(--t-sous); font-weight:600;
+  margin:0; line-height:1.2;
+}
+.bandeau-cycle .tete .quand{
+  font-family:var(--f-mono); font-size:var(--t-note); color:var(--ink-3);
+}
+.bandeau-cycle .tete .actions{ margin-left:auto; display:flex; gap:6px }
+.bandeau-cycle .tete button{
+  appearance:none; cursor:pointer; font:inherit; font-size:var(--t-note);
+  padding:4px 9px; border-radius:var(--r-2);
+  border:1px solid var(--rule); background:var(--surface); color:var(--ink-2);
+  transition:background-color var(--t-court) var(--c-std),
+             border-color var(--t-court) var(--c-std);
+}
+.bandeau-cycle .tete button:hover{
+  background:var(--surface-survol); border-color:var(--rule-survol); color:var(--ink);
+}
+.bandeau-cycle dl{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
+  gap:var(--e-2) var(--e-5); margin:0;
+}
+.bandeau-cycle dl > div{
+  display:flex; justify-content:space-between; gap:var(--e-2);
+  border-bottom:1px dotted var(--rule); padding-bottom:3px;
+}
+.bandeau-cycle dt{ color:var(--ink-3); font-size:var(--t-note) }
+.bandeau-cycle dd{
+  margin:0; font-family:var(--f-mono); font-variant-numeric:tabular-nums;
+  font-size:var(--t-note); color:var(--ink);
+}
+.bandeau-cycle dd.h{ color:var(--hausse) } .bandeau-cycle dd.b{ color:var(--baisse) }
+.bandeau-cycle .these{
+  margin:var(--e-3) 0 0; padding-left:var(--e-3);
+  border-left:3px solid var(--achat); color:var(--ink-2); font-size:var(--t-note);
+}
+
+@media print{ .panneau,.dit,.btn-icone,.segmente{ display:none !important } }

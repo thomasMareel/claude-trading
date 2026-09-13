@@ -50,7 +50,7 @@ NOMMES = [
      dict(profondeur=0.50, paliers=3, ratio=3.3, objectif_net=0.04, depart_sous=0.02)),
     ("Huit barreaux, mises plates",
      dict(profondeur=0.50, paliers=8, ratio=1.20, objectif_net=0.02, depart_sous=0.02)),
-    ("Echelle courte et frequente",
+    ("Échelle courte et fréquente",
      dict(profondeur=0.12, paliers=4, ratio=1.8, objectif_net=0.015, depart_sous=0.0)),
 ]
 

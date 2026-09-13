@@ -4,6 +4,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="jetons.css">
+<link rel="stylesheet" href="gabarit.css">
+<script src="prefs.js"></script>
 <style>
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -62,7 +64,8 @@ h1 em{font-style:italic; color:var(--achat)}
   border-radius:3px; overflow:hidden}
 .groupe-b button{background:var(--surface); border:none; padding:.3rem .55rem; cursor:pointer;
   font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-2); white-space:nowrap}
-.groupe-b button:hover{background:var(--surface-3)}
+.groupe-b button:hover{background:var(--surface-survol)}
+.groupe-b button:active{background:var(--surface-actif)}
 .groupe-b button[aria-pressed="true"]{background:var(--achat-plein); color:var(--sur-vif);
   font-weight:500}
 .lab-o{font-family:"IBM Plex Mono",monospace; font-size:.62rem; letter-spacing:.11em;
@@ -81,7 +84,9 @@ h1 em{font-style:italic; color:var(--achat)}
   font-size:.76rem; background:var(--surface-2)}
 
 /* ------------------------------------------------------------------ selecteur */
-.barre{position:sticky; top:0; z-index:30;
+/*  Sous la barre de navigation, et non dessous : deux elements colles a
+    top:0 se recouvrent, et c'est la barre d'outils qui disparaissait. */
+.barre{position:sticky; top:var(--h-nav); z-index:30;
   background:color-mix(in srgb,var(--ground) 90%,transparent);
   backdrop-filter:blur(10px); border-block:1px solid var(--rule); margin-top:1.6rem}
 .barre-in{display:flex; flex-wrap:wrap; gap:.35rem .9rem; align-items:center;
@@ -132,11 +137,14 @@ select{font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--ink);
   text-transform:uppercase; color:var(--ink-3); padding:.65rem .85rem .1rem}
 .puces{display:flex; gap:.3rem; flex-wrap:wrap; margin-bottom:.7rem}
 .puce{font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-2);
-  background:var(--surface); border:1px solid var(--rule); border-radius:3px;
+  background:var(--surface); border:1px solid var(--rule); border-radius:var(--r-2);
+  transition:background-color var(--t-court) var(--c-std),
+    border-color var(--t-court) var(--c-std);
   padding:.28rem .55rem; cursor:pointer; white-space:nowrap}
 .puce[aria-pressed="true"]{background:var(--achat-plein); border-color:var(--achat-plein);
   color:var(--sur-vif); font-weight:500}
-.puce:hover{border-color:var(--rule-fort)}
+.puce:hover{border-color:var(--rule-survol); background:var(--surface-survol)}
+.puce:active{background:var(--surface-actif)}
 
 /* ------------------------------------------------------------------ dessin */
 .axe{stroke:var(--rule)} .axe-fort{stroke:var(--rule-fort)}
@@ -176,7 +184,9 @@ footer b{color:var(--ink-2)}
   border-bottom:1px solid currentColor}
 </style>
 <link rel="stylesheet" href="nav.css">
+<script src="marche.js"></script>
 <script src="nav.js" defer></script>
+<script src="reglages.js" defer></script>
 <header class="tete">
   <div class="texte">
     <div class="eyebrow">Banc d'essai · 400 jours rejoués sur 345 600 bougies de cinq minutes</div>
@@ -214,7 +224,7 @@ footer b{color:var(--ink-2)}
     </div>
     <div class="toile" id="toile-marche"></div>
     <p class="aide">Molette ou pincement pour zoomer, glisser pour déplacer, double-clic pour tout revoir.
-      Les triangles sont les ordres réellement passés par le réglage sélectionné ci-dessous.</p>
+      Les marques sont les ordres réellement passés par le réglage sélectionné ci-dessous ; cliquez-en une pour étudier son cycle.</p>
   </section>
 </div>
 
@@ -285,6 +295,12 @@ const jj = i => dateDe(i).toLocaleDateString("fr-FR",
 const jjc = i => dateDe(i).toLocaleDateString("fr-FR", { ...UTC, day: "2-digit", month: "short" });
 const jjh = i => jjc(i) + " " + String(dateDe(i).getUTCHours()).padStart(2, "0") + "h";
 const dec = v => v >= 1000 ? 2 : v >= 10 ? 2 : v >= 1 ? 3 : 4;
+/*  Les quatre epreuves portent des cles anglaises courtes dans les donnees ;
+ *  ces cles n'ont pas a s'afficher telles quelles. Le libelle vit ici, pas dans
+ *  le fichier : renommer une cle casserait tous les jeux deja publies.  */
+const NOM_EPREUVE = {voisinage:"voisinage", paires:"paires",
+  trimestres:"trimestres", resolutions:"résolutions"};
+const epr = k => NOM_EPREUVE[k] || k;
 const nb = (v, d) => v.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
 const eur = (v, d) => nb(v, d === undefined ? dec(v) : d) + " €";
 const pct = (v, d = 1) => nb(v * 100, d) + " %";
@@ -552,6 +568,7 @@ function dessinerMarche(svg, W, H) {
 
   //  les ordres du reglage selectionne, poses sur le chandelier
   M.ordres = {};
+  M.marques = [];
   if (M.calques.ordres) {
     const s = S(), go = el("g", {}, svg);
     const mises = R().mises_pct, mMax = Math.max(...mises);
@@ -566,13 +583,13 @@ function dessinerMarche(svg, W, H) {
       //  de souris, et le dernier ecrivain gagne. Les sept lignes d'infobulle
       //  d'un ordre étaient donc du code injoignable. L'ordre est desormais lu
       //  par le reticule lui-meme, dans la meme boite que l'OHLC.
-      if (genre === 0)
-        el("path", { d: `M${x} ${y + t}L${x + t} ${y - t * .6}L${x - t} ${y - t * .6}Z`,
-          class: "m-achat", stroke: "var(--surface)", "stroke-width": .7 }, go);
-      else
-        el("path", { d: `M${x} ${y - t}L${x + t} ${y + t * .6}L${x - t} ${y + t * .6}Z`,
-          class: "m-vente", stroke: "var(--surface)", "stroke-width": .7 }, go);
+      //  Le meme dessin que sur la page « en direct » et que les vignettes de
+      //  legende : la forme et la taille choisies dans le panneau valent ici
+      //  aussi. Une preference qui ne s'applique qu'a une page sur deux donne a
+      //  croire que le site est incoherent.
+      Marche.dessinerMarque(go, x, y, t, genre === 0);
       (M.ordres[k] || (M.ordres[k] = [])).push({ genre, prix, pal, euros, gain, i });
+      M.marques.push({ x, y, i });
     }
   }
 
@@ -626,6 +643,29 @@ function croixSur(evt) {
 }
 
 /* --------------------------------------------------- zoom, deplacement, doigt */
+/*  Un appui bref sur un ordre ouvre SON cycle dans la planche 1. Les quatre
+ *  puces pre-reglees — le plus profond, le plus long, le plus rapide, le plus
+ *  rentable — ne menaient pas a celui qu'on a sous les yeux, c'est-a-dire
+ *  precisement celui sur lequel on se pose une question.  */
+function ouvrirCycleSous(e) {
+  if (!M.marques || !M.marques.length || !M.toile) return false;
+  const r = M.toile.svg.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  let best = null, d0 = 14;
+  for (const m of M.marques) {
+    const d = Math.hypot(m.x - x, m.y - y);
+    if (d < d0) { d0 = d; best = m; }
+  }
+  if (!best) return false;
+  const c = S().cycles.find(c => best.i >= c[0] && best.i <= c[1]);
+  if (!c) return false;
+  cycleChoisi = c;
+  rendu();
+  const p = document.getElementById("planche-1");
+  if (p) p.scrollIntoView({ behavior: "smooth", block: "start" });
+  return true;
+}
+
 function brancherGestes(toile) {
   const n = toile.el;
   let glisse = null, pointeurs = new Map(), ecart0 = 0, span0 = 0, centre0 = 0;
@@ -661,7 +701,9 @@ function brancherGestes(toile) {
     //  un appui bref n'est pas un déplacement : c'est une demande de lecture.
     //  Sans cela, le reticule et l'encadre OHLC — la fonction la plus utile du
     //  graphique — n'existaient tout simplement pas au doigt.
-    if (depart && Math.hypot(e.clientX - depart.x, e.clientY - depart.y) < 7) croixSur(e);
+    if (depart && Math.hypot(e.clientX - depart.x, e.clientY - depart.y) < 7) {
+      if (!ouvrirCycleSous(e)) croixSur(e);
+    }
     depart = null; pointeurs.delete(e.pointerId); glisse = null;
   };
   n.addEventListener("pointerup", relacher);
@@ -716,7 +758,9 @@ const cadreToile = (parent, hauteur, dessiner) => {
 };
 
 function planche(n, titre, question, corps, alire, legende) {
-  const c = h("section", { class: "planche" });
+  //  L'identifiant est pose en dur : c'est une ancre partageable, et un
+  //  compteur CSS ne sert qu'a l'affichage.
+  const c = h("section", { class: "planche", id: "planche-" + n });
   c.append(h("div", { class: "pl-tete" }, h("span", { class: "pl-num" }, "Planche " + n),
     h("h2", {}, titre)), h("p", { class: "pl-q" }, question), corps);
   if (legende) {
@@ -726,7 +770,7 @@ function planche(n, titre, question, corps, alire, legende) {
     //  une legende n'a de sens que dans un cadre : posee sur une grille elle y
     //  occuperait une cellule et laisserait un grand bloc gris sans contenu
     const hote = corps.classList.contains("cadre") ? corps : corps.querySelector(".cadre");
-    if (hote) hote.append(L); else corps.after(h("div", { class: "légende cadre" }, ...L.childNodes));
+    if (hote) hote.append(L); else corps.after(h("div", { class: "legende cadre" }, ...L.childNodes));
   }
   if (alire) c.append(h("p", { class: "alire", html: alire }));
   return c;
@@ -744,6 +788,9 @@ function plancheCycle() {
   }
   const choix = [];
   const pousse = (c, nom) => { if (c && !choix.some(x => x.c === c)) choix.push({ c, nom }); };
+  //  Celui qu'on vient d'ouvrir depuis le graphique passe en tete, et reste
+  //  atteignable : sans cette puce, il disparaitrait au premier reclic ailleurs.
+  if (cycleChoisi && cy.includes(cycleChoisi)) pousse(cycleChoisi, "celui que vous avez choisi");
   pousse([...cy].sort((a, b) => b[2] - a[2])[0], "le plus profond");
   pousse([...cy].sort((a, b) => (b[1] - b[0]) - (a[1] - a[0]))[0], "le plus long");
   pousse([...cy].sort((a, b) => (a[1] - a[0]) - (b[1] - b[0]))[0], "le plus rapide");
@@ -1198,7 +1245,7 @@ function tuiles() {
       `sur ${M.paire} · rang ${r.rang}/${D.reglages.length}, ${sgn(r.gain_moyen, 1)} sur les 3 paires`],
     ["Épreuves passées", `${r.epreuves.reussies}/4`,
       r.epreuves.reussies === 4 ? "pos" : r.epreuves.reussies <= 2 ? "neg" : "",
-      Object.entries(r.epreuves.passe).filter(([, v]) => !v).map(([k]) => "échoue : " + k).join(", ")
+      Object.entries(r.epreuves.passe).filter(([, v]) => !v).map(([k]) => "échoue : " + epr(k)).join(", ")
         || "voisinage, paires, trimestres, résolutions"],
     ["Acheter et attendre", sgn(st.hold, 1), st.hold >= 0 ? "pos" : "neg", "le repère, même fenêtre"],
     ["Cycles par semaine", nb(st.parSemaine, 2), "", `${st.cycles} cycles · médiane ${duree(st.medianeH)}`],
@@ -1285,7 +1332,7 @@ function detailReglage() {
   const r = R();
   const cad = D.meta.paires.reduce((a, s) => a + r.sims[s].cycles_par_semaine, 0)
     / D.meta.paires.length;
-  const rate = Object.entries(r.epreuves.passe).filter(([, v]) => !v).map(([k]) => k);
+  const rate = Object.entries(r.epreuves.passe).filter(([, v]) => !v).map(([k]) => epr(k));
   document.getElementById("detail-reglage").textContent =
     `profondeur ${pct(r.profondeur, 0)} · ${r.paliers} paliers · progression ×${r.ratio}`
     + ` · premier barreau ${pct(-(r.depart_sous || 0), 0)} · objectif ${pct(r.objectif, 1)}`
@@ -1378,6 +1425,10 @@ brancherGestes(M.toile);
 majOutils();
 rendu();
 ecrireUrl();
+//  Un reglage d'affichage change la forme des marques, le fuseau et le nombre
+//  de decimales : il faut refaire le graphique ET les planches, qui portent
+//  leurs propres dessins.
+if (window.Prefs) Prefs.sur(() => { if (M.toile) M.toile.rendre(true); rendu(); });
 //  Un lien colle dans la barre d'adresse doit refaire l'affichage sans recharger.
 addEventListener("hashchange", () => {
   lireUrl(); bornerVue(); majPaires(); majStats();

@@ -1,13 +1,16 @@
-/*  La barre de navigation, posee en tete de chaque page.
+/*  La barre de navigation, posée en tête de chaque page.
  *
- *  Une seule liste de pages, ici. Ajouter une page se fait a UN endroit, et
- *  toutes les barres l'apprennent — c'est la raison d'etre du fichier : une
- *  liste recopiee dans quatre pages finit toujours par diverger.
+ *  Une seule liste de pages, ici. Ajouter une page se fait à UN endroit, et
+ *  toutes les barres l'apprennent — c'est la raison d'être du fichier : une
+ *  liste recopiée dans quatre pages finit toujours par diverger.
  *
  *  Usage, avant la fermeture du corps de page :
  *      <link rel="stylesheet" href="nav.css">
- *      <script src="nav.js"></script>
- *  La page courante est reconnue a son nom de fichier ; rien a declarer.
+ *      <script src="nav.js" defer></script>
+ *      <script src="reglages.js" defer></script>
+ *  La page courante est reconnue à son nom de fichier ; rien à déclarer.
+ *  reglages.js vient ensuite poser le thème et l'engrenage au bout de la barre ;
+ *  il n'est pas indispensable — sans lui, la navigation fonctionne.
  */
 (function () {
   "use strict";
@@ -25,6 +28,18 @@
     const p = location.pathname.replace(/\/+$/, "");
     const f = p.slice(p.lastIndexOf("/") + 1);
     return f === "" ? "index.html" : f;
+  }
+
+  /*  La hauteur réelle de la barre, publiée pour les pages qui ont leur propre
+   *  barre d'outils collante. Deux éléments à top:0 se recouvrent : une fois
+   *  figée, la seconde disparaissait derrière la première. La valeur est relue
+   *  au redimensionnement parce que la barre passe sur deux lignes en étroit.  */
+  function publierHauteur(nav) {
+    const poser = () => document.documentElement.style
+      .setProperty("--h-nav", nav.offsetHeight + "px");
+    poser();
+    addEventListener("resize", poser, { passive: true });
+    if (window.ResizeObserver) new ResizeObserver(poser).observe(nav);
   }
 
   function poser() {
@@ -56,19 +71,27 @@
       if (p.f === "index.html") continue;
       const a = document.createElement("a");
       a.href = p.f;
-      a.textContent = p.court;
+      //  La page courante passe en gras. Sans réserver la place, les six liens
+      //  se décalent d'un ou deux pixels selon la page où l'on est : le fantôme
+      //  en gras occupe la largeur définitive, invisible.
+      a.dataset.nom = p.court;
+      a.innerHTML = "";
+      a.appendChild(document.createTextNode(p.court));
       if (p.f === ici) a.setAttribute("aria-current", "page");
       nav.appendChild(a);
     }
 
     const d = document.createElement("a");
-    d.className = "pousse";
+    d.className = "pousse source";
     d.href = "https://github.com/thomasMareel/claude-trading";
     d.rel = "noopener";
     d.textContent = "Code source";
     nav.appendChild(d);
 
     document.body.insertBefore(nav, document.body.firstChild);
+    publierHauteur(nav);
+    //  reglages.js écoute : il peut arriver avant ou après selon le cache.
+    document.dispatchEvent(new CustomEvent("barre-posee", { detail: nav }));
   }
 
   if (document.readyState === "loading")

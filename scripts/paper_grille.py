@@ -164,33 +164,34 @@ TITRES = {
 }
 EXPLICATIONS = {
     "3paliers":
-        "Trois ordres d'achat sous le prix, a -2 %, -27 % et -52 %, avec des mises "
+        "Trois ordres d'achat sous le prix, à -2 %, -27 % et -52 %, avec des mises "
         "de 13, 43 et 143 EUR : l'essentiel de l'argent est tout en bas. Chaque "
-        "palier touche fait baisser le prix de revient moyen beaucoup plus vite que "
-        "le marche. Tout le lot est revendu d'un coup des que le prix repasse "
-        "4 % nets au-dessus de ce prix de revient — le cours n'a donc pas besoin de "
-        "revenir a son point de depart. Tant que rien n'est achete, l'echelle "
-        "remonte avec le marche. C'est le reglage issu du balayage : sur 900 jours "
+        "palier touché fait baisser le prix de revient moyen beaucoup plus vite que "
+        "le marché. Tout le lot est revendu d'un coup dès que le prix repasse 4 % "
+        "nets au-dessus de ce prix de revient — le cours n'a donc pas besoin de "
+        "revenir à son point de départ. Tant que rien n'est acheté, l'échelle "
+        "remonte avec le marché. C'est le réglage issu du balayage : sur 900 jours "
         "il est positif sur les neuf blocs de cent jours, pire bloc +0,2 %.",
     "8paliers":
-        "La meme idee avec huit ordres etales de -2 % a -52 %, un objectif ramene a "
-        "2 % nets, donc des ventes plus frequentes. Le plancher de 12 EUR par ordre "
-        "impose ici une progression de 1,20 seulement : les mises vont de 12 a "
-        "43 EUR, presque plates. Ce bot engage donc plus d'argent haut dans la "
-        "descente que le precedent — il gagne plus souvent en marche calme et prend "
+        "La même idée avec huit ordres étalés de -2 % à -52 %, un objectif ramené à "
+        "2 % nets, donc des ventes plus fréquentes. Le plancher de 12 EUR par ordre "
+        "impose ici une progression de 1,20 seulement : les mises vont de 12 à 43 "
+        "EUR, presque plates. Ce bot engage donc plus d'argent haut dans la "
+        "descente que le précédent — il gagne plus souvent en marché calme et prend "
         "un trou plus profond dans une baisse durable.",
     "8paliers_concentre":
-        "Dix experiences independantes menees en parallele sous la MEME echelle, mille "
-        "euros chacune, pour isoler ce que la paire change. Ce n'est pas un portefeuille "
-        "de dix mille euros : c'est un dispositif de mesure. L'echelle a huit barreaux "
-        "avec une vraie progression des mises — 14 a 384 EUR, les grosses tout en bas — "
-        "que le plancher de 12 EUR par ordre interdit des qu'on repartit un budget plus "
-        "petit. Les barreaux ne sont pas equidistants : resserres en haut (-2, -3, -6, "
-        "-11 %) et etires en bas (-19, -28, -40, -53 %), parce qu'une echelle reguliere "
-        "descendant a -53 % place la moitie de ses barreaux la ou le prix ne va jamais. "
-        "Sur 900 jours de passe, la meme echelle va de +5,3 % par bloc de cent jours sur "
-        "UNI a -1,1 % sur ADA : six points d'ecart pour une echelle identique, et c'est "
-        "precisement ce que le direct doit confirmer ou non.",
+        "Dix expériences indépendantes menées en parallèle sous la MÊME échelle, "
+        "mille euros chacune, pour isoler ce que la paire change. Ce n'est pas un "
+        "portefeuille de dix mille euros : c'est un dispositif de mesure. L'échelle "
+        "à huit barreaux avec une vraie progression des mises — 14 à 384 EUR, les "
+        "grosses tout en bas — que le plancher de 12 EUR par ordre interdit dès "
+        "qu'on répartit un budget plus petit. Les barreaux ne sont pas équidistants "
+        ": resserrés en haut (-2, -3, -6, -11 %) et étirés en bas (-19, -28, -40, "
+        "-53 %), parce qu'une échelle régulière descendant à -53 % place la moitié "
+        "de ses barreaux là où le prix ne va jamais. Sur 900 jours de passé, la "
+        "même échelle va de +5,3 % par bloc de cent jours sur UNI à -1,1 % sur ADA "
+        ": six points d'écart pour une échelle identique, et c'est précisément ce "
+        "que le direct doit confirmer ou non.",
 }
 
 

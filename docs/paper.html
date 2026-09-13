@@ -9,16 +9,19 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="nav.css">
 <link rel="stylesheet" href="jetons.css">
+<link rel="stylesheet" href="gabarit.css">
+<script src="prefs.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0; background:var(--ground); color:var(--ink);
   font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  font-size:15px; line-height:1.55; -webkit-text-size-adjust:100%}
+  font-size:var(--corps); line-height:1.55; -webkit-text-size-adjust:100%}
 .enveloppe{max-width:1120px; margin:0 auto; padding:22px 16px 72px}
-h1,h2,h3{font-family:"Newsreader",Georgia,serif; font-weight:500; margin:0; text-wrap:balance}
+h1,h2,h3{font-family:var(--f-titre); font-weight:500; margin:0;
+  text-wrap:balance; font-optical-sizing:auto}
 h1{font-size:clamp(1.7rem,5vw,2.5rem); line-height:1.15; letter-spacing:-.01em}
 h2{font-size:clamp(1.2rem,3.2vw,1.6rem); line-height:1.2}
-h3{font-size:1rem; font-weight:600; font-family:inherit}
+h3{font-size:1rem; font-weight:600; line-height:1.3}
 p{margin:.55em 0}
 .num{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
   font-variant-numeric:tabular-nums; letter-spacing:-.01em}
@@ -55,21 +58,36 @@ header.tete p{max-width:64ch; color:var(--ink-2); margin:.7em 0 0}
 .rangee > .lib{font-family:"IBM Plex Mono",monospace; font-size:.64rem; letter-spacing:.12em;
   text-transform:uppercase; color:var(--ink-3); margin-right:2px; flex:none}
 .opt{appearance:none; background:var(--surface); color:var(--ink-2);
-  border:1px solid var(--rule); border-radius:7px; padding:5px 11px; cursor:pointer;
-  font:inherit; font-size:.83rem; line-height:1.3; white-space:nowrap}
-.opt:hover{color:var(--ink); border-color:var(--rule-fort)}
-.opt[aria-pressed="true"]{background:var(--achat); border-color:var(--achat);
-  color:var(--sur-vif); font-weight:600}
+  border:1px solid var(--rule); border-radius:var(--r-2); padding:5px 11px; cursor:pointer;
+  font:inherit; font-size:.83rem; line-height:1.3; white-space:nowrap;
+  transition:background-color var(--t-court) var(--c-std),
+    border-color var(--t-court) var(--c-std),
+    color var(--t-court) var(--c-std)}
+/*  Le survol prend enfin une surface : sans les marches 4 et 5 de la palette,
+    il ne changeait que le texte et le filet, et paraissait mou. */
+.opt:hover{color:var(--ink); background:var(--surface-survol);
+  border-color:var(--rule-survol)}
+.opt:active{background:var(--surface-actif)}
+/*  PAS de font-weight ici : la graisse decalait les dix jetons a chaque clic.
+    L'aplat petrole porte deja l'etat, et il le porte sans bouger. */
+.opt[aria-pressed="true"]{background:var(--achat-plein);
+  border-color:var(--achat-plein); color:var(--sur-vif)}
 .opt .p{display:block; font-family:"IBM Plex Mono",monospace; font-size:.78rem}
 .opt .v{display:block; font-family:"IBM Plex Mono",monospace; font-size:.7rem; opacity:.85}
 .pousse{margin-left:auto}
 
 .cadre{position:relative; padding:10px 12px 4px}
 .toile{position:relative; width:100%}
+/*  Elle FLOTTE au-dessus de la carte : elle prend donc la surface haute et
+    l'ombre haute, et perd sa bordure — l'anneau fait partie de l'ombre. En
+    sombre, elle portait la meme surface que la carte qu'elle survolait et les
+    deux plans fusionnaient. */
 .marche-info{position:absolute; pointer-events:none; z-index:5;
-  background:var(--surface); border:1px solid var(--rule-fort); border-radius:7px;
-  box-shadow:var(--ombre); padding:7px 9px; font-size:.73rem; line-height:1.5;
+  background:var(--surface-haut); border-radius:var(--r-2);
+  box-shadow:var(--ombre-haut); padding:7px 9px; font-size:.73rem; line-height:1.5;
   display:flex; flex-direction:column; min-width:132px}
+.marche-info .astuce{margin-top:4px; padding-top:4px; border-top:1px solid var(--rule);
+  color:var(--ink-3); font-size:.68rem; display:block}
 .marche-info b{font-family:"IBM Plex Mono",monospace; font-size:.72rem; font-weight:600;
   color:var(--ink-3); margin-bottom:2px}
 .marche-info span{display:flex; justify-content:space-between; gap:10px; color:var(--ink-2)}
@@ -126,6 +144,7 @@ footer{margin-top:30px; padding-top:16px; border-top:1px solid var(--rule);
 </head>
 <body>
 <script src="nav.js" defer></script>
+<script src="reglages.js" defer></script>
 <div class="enveloppe">
 
 <header class="tete">
@@ -158,10 +177,11 @@ footer{margin-top:30px; padding-top:16px; border-top:1px solid var(--rule);
     </div>
   </div>
   <div class="cadre"><div class="toile" id="toile"></div></div>
+  <div class="bandeau-cycle" id="bandeau-cycle" hidden></div>
   <div class="rail" id="rail"></div>
   <div class="legende">
-    <span><i class="tri" style="border-bottom:8px solid var(--achat)"></i>achat</span>
-    <span><i class="tri" style="border-top:8px solid var(--vente)"></i>vente</span>
+    <span data-vignette="achat">achat</span>
+    <span data-vignette="vente">vente</span>
     <span><i class="puce" style="background:var(--achat);opacity:.25"></i>capital engagé</span>
     <span><i class="puce" style="background:var(--rule-fort)"></i>barreau en attente</span>
     <span><i class="puce" style="background:var(--achat)"></i>barreau acheté</span>
@@ -225,9 +245,16 @@ const VISE = 130;
 const E = {jeux:[null,null,null], index:null, series:{}, bot:0, paire:null,
            unite:0, fenetre:0, calques:{vol:true, echelle:true, bandes:true}, g:null};
 
-const pct  = (v,d=2) => (v>=0?"+":"") + (v*100).toFixed(d) + " %";
+/*  UN ZERO NE SE COLORE PAS, ET NE PREND PAS DE SIGNE.
+ *  perf_total valait 0,000029 sur le robot concentre : imprime « +0,00 % » et
+ *  peint en vert par un sgn() qui testait la valeur BRUTE. Sur un site dont le
+ *  sujet est la verifiabilite, c'est le pire defaut de la liste malgre sa
+ *  taille. Le signe et la couleur suivent desormais la valeur AFFICHEE.  */
+const nulAff = (v,d=2) => parseFloat((v*100).toFixed(d)) === 0;
+const pct  = (v,d=2) => (nulAff(v,d) ? "" : v>0 ? "+" : "")
+                      + (v*100).toFixed(d).replace(".",",") + " %";
 const eur  = (v,d=2) => v.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d}) + " €";
-const sgn  = v => v > 0 ? "h" : (v < 0 ? "b" : "");
+const sgn  = (v,d=2) => nulAff(v,d) ? "" : (v > 0 ? "h" : "b");
 const esc  = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const px   = v => Marche.prixCourt(v);
 function duree(ms){
@@ -293,59 +320,107 @@ function carte(d, id, i){
 }
 
 /* ------------------------------------------------------------- les sélecteurs */
+function contenuBouton(txt, sous){
+  return sous ? `<span class="p">${esc(txt)}</span><span class="v">${esc(sous)}</span>`
+              : esc(txt);
+}
 function bouton(txt, actif, onclick, sous){
   const b = document.createElement("button");
   b.type = "button"; b.className = "opt";
   b.setAttribute("aria-pressed", actif ? "true" : "false");
-  b.innerHTML = sous ? `<span class="p">${esc(txt)}</span><span class="v">${esc(sous)}</span>`
-                     : esc(txt);
-  b.addEventListener("click", onclick);
+  b.innerHTML = contenuBouton(txt, sous);
+  //  onclick et non addEventListener : un bouton reutilise par reconcilier()
+  //  doit pouvoir remplacer son gestionnaire, pas en accumuler un deuxieme.
+  b.onclick = onclick;
   return b;
 }
+
+/*  RECONCILIER PLUTOT QUE RECONSTRUIRE.
+ *
+ *  poserSelecteurs() detruisait puis recreait TOUS les boutons a chaque clic.
+ *  Consequence, invisible a la souris et penible au clavier : le noeud qui
+ *  avait le focus disparaissait, le focus retombait sur <body>, et choisir une
+ *  deuxieme crypto obligeait a retraverser la page entiere depuis le haut.
+ *  Accessoirement, toute transition de survol repartait de zero a chaque rendu.
+ *
+ *  Un bouton deja present garde donc son noeud — donc son focus, son survol et
+ *  son etat — et ne recoit que ce qui a change.  */
+function reconcilier(hote, items){
+  const vus = new Set();
+  for (const it of items){
+    let b = hote.querySelector(`button[data-cle="${CSS.escape(it.cle)}"]`);
+    if (!b){
+      b = bouton(it.txt, it.actif, it.onclick, it.sous);
+      b.dataset.cle = it.cle;
+      hote.appendChild(b);
+    } else {
+      b.setAttribute("aria-pressed", it.actif ? "true" : "false");
+      const html = contenuBouton(it.txt, it.sous);
+      if (b.innerHTML !== html) b.innerHTML = html;
+      b.onclick = it.onclick;
+    }
+    vus.add(it.cle);
+  }
+  for (const b of [...hote.querySelectorAll("button")])
+    if (!vus.has(b.dataset.cle)) b.remove();
+  //  L'ordre peut changer — une periode devient disponible des que la mesure est
+  //  assez longue. On ne deplace les noeuds que s'il a REELLEMENT change :
+  //  deplacer un bouton qui a le focus le lui fait perdre dans certains
+  //  navigateurs, ce qui est exactement le defaut qu'on vient de corriger.
+  const ordre = [...hote.querySelectorAll("button")].map(b => b.dataset.cle).join("\u0000");
+  if (ordre !== items.map(i => i.cle).join("\u0000"))
+    for (const it of items)
+      hote.appendChild(hote.querySelector(`button[data-cle="${CSS.escape(it.cle)}"]`));
+}
 function poserSelecteurs(){
-  const rb = document.getElementById("r-bot");
-  rb.querySelectorAll("button").forEach(n=>n.remove());
-  E.jeux.forEach((d,i) => {
-    const t = (d && d.titre) || SECOURS[SOURCES[i].id].titre;
-    rb.appendChild(bouton(t, i===E.bot, () => { E.bot=i; ecrireUrl(); apres(); },
-      d ? pct(d.perf_total) : "—"));
-  });
-  const rp = document.getElementById("r-paire");
-  rp.querySelectorAll("button").forEach(n=>n.remove());
   const d = jeu();
-  if (d) for (const p of d.paires)
-    rp.appendChild(bouton(p.paire.split("/")[0], p.paire===E.paire,
-      () => { choisirPaire(p.paire); }, pct(p.perf,1)));
 
-  const rf = document.getElementById("opts-fenetre");
-  rf.replaceChildren();
+  reconcilier(document.getElementById("r-bot"), E.jeux.map((x,i) => ({
+    cle: SOURCES[i].id,
+    txt: (x && x.titre) || SECOURS[SOURCES[i].id].titre,
+    sous: x ? pct(x.perf_total) : "—",
+    actif: i === E.bot,
+    onclick: () => { E.bot = i; ecrireUrl(); apres(); },
+  })));
+
+  reconcilier(document.getElementById("r-paire"), (d ? d.paires : []).map(p => ({
+    cle: p.paire,
+    txt: p.paire.split("/")[0],
+    sous: pct(p.perf, 1),
+    actif: p.paire === E.paire,
+    onclick: () => { choisirPaire(p.paire); },
+  })));
+
   //  Une fenetre plus longue que la mesure elle-meme n'a pas de sens : on ne
-  //  propose que celles que la duree ecoulee permet reellement.
+  //  propose que celles que la duree ecoulee permet reellement. Sauf celle qui
+  //  est active : une periode choisie par l'adresse doit rester visible, sinon
+  //  l'etat de la page cesse de correspondre a ce qu'elle affiche.
   const ecoule = d ? (Date.now() - d.depuis) / 3600000 : 0;
-  for (const f of FENETRES){
-    //  On masque les periodes plus longues que la mesure — sauf celle qui est
-    //  active : une periode choisie par l'adresse doit rester visible, sinon
-    //  l'état de la page cesse de correspondre a ce qu'elle affiche.
-    if (f.h && f.h > ecoule * 1.5 && f.h !== E.fenetre) continue;
-    rf.appendChild(bouton(f.lib, f.h===E.fenetre,
-      () => { E.fenetre=f.h; ecrireUrl(); apres(); }));
-  }
+  reconcilier(document.getElementById("opts-fenetre"),
+    FENETRES.filter(f => !(f.h && f.h > ecoule * 1.5 && f.h !== E.fenetre)).map(f => ({
+      cle: "f" + f.h,
+      txt: f.lib,
+      actif: f.h === E.fenetre,
+      onclick: () => { E.fenetre = f.h; ecrireUrl(); apres(); },
+    })));
 
-  const ru = document.getElementById("opts-unite");
-  ru.replaceChildren();
   const pasMin = (E.index ? E.index.pas : 300000)/60000;
-  for (const u of UNITES){
-    if (u.min && u.min < pasMin) continue;
-    ru.appendChild(bouton(
-      u.min === 0 ? `auto · ${uniteAuto()} min` : u.lib,
-      u.min===E.unite, () => { E.unite=u.min; ecrireUrl(); apres(); }));
-  }
-  const rc = document.getElementById("opts-calques");
-  rc.replaceChildren();
-  const noms = {vol:"volume", echelle:"echelle", bandes:"capital engagé"};
-  for (const k of ["echelle","bandes","vol"])
-    rc.appendChild(bouton(noms[k], E.calques[k],
-      () => { E.calques[k] = !E.calques[k]; ecrireUrl(); apres(); }));
+  reconcilier(document.getElementById("opts-unite"),
+    UNITES.filter(u => !(u.min && u.min < pasMin)).map(u => ({
+      cle: "u" + u.min,
+      txt: u.min === 0 ? `auto · ${uniteAuto()} min` : u.lib,
+      actif: u.min === E.unite,
+      onclick: () => { E.unite = u.min; ecrireUrl(); apres(); },
+    })));
+
+  const noms = {vol:"volume", echelle:"échelle", bandes:"capital engagé"};
+  reconcilier(document.getElementById("opts-calques"),
+    ["echelle","bandes","vol"].map(k => ({
+      cle: k,
+      txt: noms[k],
+      actif: E.calques[k],
+      onclick: () => { E.calques[k] = !E.calques[k]; ecrireUrl(); apres(); },
+    })));
 }
 
 /*  Les bougies effectivement montrees : celles du robot affiche, coupees a la
@@ -417,10 +492,120 @@ function donneesGraphique(){
       pointille:"5 3", texte:"revient", cadrer:true});
     if (p.sortie > 0)
       niveaux.push({prix:p.sortie, couleur:"var(--vente)", epais:1.4,
-        pointille:"6 3", texte:"vend a "+px(p.sortie), cadrer:true});
+        pointille:"6 3", texte:"vend à "+px(p.sortie), cadrer:true});
   }
   return {bougies, unite, ordres, niveaux, bandes, volume:E.calques.vol,
+          cycles:cyclesDe(p.journal), nom:p.paire,
           aria:`Prix de ${p.paire} depuis le lancement, avec les ordres du robot`};
+}
+
+/* ------------------------------------------------ les cycles, et leur etude
+ *  UN CYCLE, ICI : du premier achat jusqu'à la vente qui solde le lot. C'est
+ *  l'unité de la stratégie — ce n'est ni une journée, ni un ordre. Les bandes
+ *  de capital engagé dessinaient déjà exactement ces intervalles ; on les
+ *  calcule désormais une fois, avec ce qu'il faut pour les raconter.
+ *
+ *  Aucun prix de revient n'est reconstitué : il demanderait de réappliquer les
+ *  frais à des quantités qu'on ne publie pas, et un chiffre reconstruit à la
+ *  louche n'a rien à faire sur un site dont l'argument est qu'on peut vérifier.
+ *  Ce qui est affiché vient du journal tel quel — les prix, les euros, le gain.
+ */
+function cyclesDe(journal){
+  const out = [];
+  let c = null;
+  for (const e of (journal||[])){
+    if (e.genre === "achat"){
+      if (!c) c = {t0:e.ts, achats:0, engage:0, bas:Infinity, premier:e.prix, prix:[]};
+      c.achats++; c.engage += e.euros||0;
+      c.bas = Math.min(c.bas, e.prix);
+      c.prix.push([e.prix, e.euros||0]);
+    } else if (e.genre === "vente" && c){
+      c.t1 = e.ts; c.sortie = e.prix; c.gain = e.gain||0; c.recu = e.euros||0;
+      out.push(c); c = null;
+    }
+  }
+  //  Le lot encore détenu est un cycle comme un autre, simplement inachevé :
+  //  le masquer donnerait à croire que le robot ne fait rien en ce moment.
+  if (c){ c.t1 = Date.now(); c.encours = true; out.push(c); }
+  for (const x of out){
+    let e = 0, q = 0;
+    for (const [pr, eu] of x.prix){ e += eu; q += pr > 0 ? eu/pr : 0; }
+    x.moyen = q > 0 ? e/q : NaN;      // moyenne des achats pondérée par la mise
+    x.gainPct = (x.gain != null && x.engage) ? x.gain / x.engage : null;
+  }
+  return out;
+}
+
+function ligneCycle(dt, dd, classe){
+  return `<div><dt>${dt}</dt><dd class="${classe||""}">${dd}</dd></div>`;
+}
+
+function poserBandeauCycle(c){
+  const b = document.getElementById("bandeau-cycle");
+  if (!b) return;
+  if (!c){ b.hidden = true; b.replaceChildren(); return; }
+  const p = pair();
+  const total = p ? (p.gain_realise||0) : 0;
+  const part = (!c.encours && total) ? c.gain/total : null;
+  const sousPremier = c.sortie ? c.sortie/c.premier - 1 : null;
+  const surLeBas    = c.sortie ? c.sortie/c.bas - 1    : null;
+
+  const lignes = [
+    ligneCycle("début", quand(c.t0)),
+    ligneCycle(c.encours ? "en cours depuis" : "durée", duree(c.t1 - c.t0)),
+    ligneCycle("barreaux touchés", c.achats),
+    ligneCycle("capital engagé", eur(c.engage)),
+    ligneCycle("premier achat", px(c.premier)),
+    ligneCycle("plus bas acheté", px(c.bas)),
+    ligneCycle("moyenne des achats", px(c.moyen)),
+    c.encours ? ligneCycle("visé", p && p.sortie > 0 ? px(p.sortie) : "—")
+              : ligneCycle("vendu à", px(c.sortie)),
+  ];
+  if (!c.encours){
+    lignes.push(ligneCycle("gain", eur(c.gain), sgn(c.gain, 2)));
+    if (c.gainPct != null) lignes.push(ligneCycle("sur la mise", pct(c.gainPct), sgn(c.gainPct)));
+    if (part != null) lignes.push(ligneCycle("part du gain du robot", pct(part, 1)));
+  }
+
+  //  LA THÈSE DU BANC, posée sur le cycle qui la prouve. On ne l'affirme que
+  //  lorsque le cycle l'a réellement montrée : vendu SOUS le premier achat.
+  let these = "";
+  if (!c.encours && sousPremier != null && surLeBas != null){
+    these = sousPremier < 0
+      ? `Vendu ${pct(-sousPremier).replace("+","")} <b>sous</b> le premier achat,
+         et pourtant en gain : c'est l'étalement des achats qui paie, pas un
+         retour au point de départ. Le marché n'a remonté que
+         ${pct(surLeBas).replace("+","")} depuis le plus bas acheté.`
+      : `Vendu ${pct(sousPremier).replace("+","")} au-dessus du premier achat :
+         ce cycle-là s'est refermé avant que l'échelle n'ait vraiment servi.`;
+  }
+
+  b.replaceChildren();
+  b.innerHTML = `
+    <div class="tete">
+      <h3>Un cycle${c.encours ? " en cours" : ""}</h3>
+      <span class="quand">${quand(c.t0)} &rarr; ${c.encours ? "maintenant" : quand(c.t1)}</span>
+      <span class="actions">
+        <button type="button" data-agir="copier">Copier ces chiffres</button>
+        <button type="button" data-agir="sortir">Tout revoir</button>
+      </span>
+    </div>
+    <dl>${lignes.join("")}</dl>
+    ${these ? `<p class="these">${these}</p>` : ""}`;
+  b.hidden = false;
+
+  b.querySelector('[data-agir="sortir"]').onclick = () => { if (E.g) E.g.quitterCycle(); };
+  b.querySelector('[data-agir="copier"]').onclick = ev => {
+    //  En colonnes séparées par des tabulations : ça se colle dans un tableur
+    //  sans rien reformater, ce qui est la seule raison d'avoir ce bouton.
+    const tsv = [...b.querySelectorAll("dl > div")]
+      .map(d => d.querySelector("dt").textContent + "\t" + d.querySelector("dd").textContent)
+      .join("\n");
+    navigator.clipboard.writeText(tsv).then(() => {
+      ev.target.textContent = "Copié";
+      setTimeout(() => { ev.target.textContent = "Copier ces chiffres"; }, 1400);
+    }, () => {});
+  };
 }
 
 /* ------------------------------------- le rail de l'echelle, prix compris */
@@ -447,7 +632,7 @@ function poserRail(){
   const X = v => G + (ref - v) / (ref - bas || 1) * (L - G - D);
   E1("line", {x1:G, x2:L-D, y1:y, y2:y, stroke:"var(--rule-fort)", "stroke-width":1.5});
   E1("text", {x:G, y:y-11, "font-size":9.5, fill:"var(--ink-3)",
-    "font-family":'"IBM Plex Mono",monospace'}, "reference");
+    "font-family":'"IBM Plex Mono",monospace'}, "référence");
   for (const b of p.echelle){
     const x = X(b.prix);
     const c = b.mort ? "var(--dort)" : (b.rempli ? "var(--achat)" : "var(--rule-fort)");
@@ -490,11 +675,11 @@ function poserStats(){
   const ecart = p.perf - p.hold;
   const cases = [
     ["prix", px(p.prix), ""],
-    ["reference", px(p.reference), ""],
+    ["référence", px(p.reference), ""],
     ["performance", pct(p.perf), sgn(p.perf)],
     ["ne rien faire", pct(p.hold), sgn(p.hold)],
-    ["ecart", pct(ecart), sgn(ecart)],
-    ["engage", eur(p.engage,0)+" / "+eur(d.reglage.budget,0), ""],
+    ["écart", pct(ecart), sgn(ecart)],
+    ["engagé", eur(p.engage,0)+" / "+eur(d.reglage.budget,0), ""],
     ["cycles clos", String(p.cycles), ""],
   ];
   s.innerHTML = cases.map(([k,v,c]) =>
@@ -525,7 +710,7 @@ function poserDetail(){
   const journal = evts.length ? `<ol>${evts.map(e => `<li>
       <span class="num sourdine">${quand(e.ts)}</span>
       <span class="genre ${e.genre}">${e.genre}</span>
-      <span class="num">${esc(e.paire)} a ${px(e.prix)}</span>
+      <span class="num">${esc(e.paire)} à ${px(e.prix)}</span>
       <span class="num">${eur(e.euros)}${e.gain!=null?` · <span class="${sgn(e.gain)}">${
         (e.gain>=0?"+":"")+e.gain.toFixed(2)} €</span>`:""}</span></li>`).join("")}</ol>`
     : `<p class="vide">Aucun ordre pour le moment : le prix n'est pas encore descendu
@@ -567,8 +752,16 @@ function apres(){
   const opts = Object.assign({pas:E.series[pair().paire].pas, hauteur:l => Math.round(
     Math.min(460, Math.max(260, l*0.42)))}, dg);
   if (E.g && E.g.o && E.g.o.pas !== opts.pas) E.g = null;   // paire au pas different
-  if (!E.g){ t.replaceChildren(); E.g = new Marche(t, opts); }
+  if (!E.g){
+    t.replaceChildren();
+    opts.surCycle = c => poserBandeauCycle(c);
+    E.g = new Marche(t, opts);
+    Marche.poserVignettes();
+  }
   else E.g.majDonnees(opts);
+  //  Changer de paire ou de robot sort du mode cycle côté graphique ; le
+  //  bandeau doit suivre, sinon il décrit un cycle d'un autre marché.
+  poserBandeauCycle(E.g.cycle);
 }
 
 async function lire(f){

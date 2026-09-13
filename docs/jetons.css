@@ -1,71 +1,188 @@
-/*  Les couleurs du site, en un seul endroit.
+/*  Les couleurs du site, en un seul endroit — et chacune écrite UNE fois.
  *
- *  Elles etaient recopiees dans cinq pages, environ cent vingt lignes chacune,
- *  et elles avaient DEJA DIVERGE sans que personne le voie : --hausse valait
+ *  Elles vivaient recopiées dans cinq pages, environ cent vingt lignes chacune,
+ *  et elles avaient DÉJÀ DIVERGÉ sans que personne le voie : --hausse valait
  *  #0A7A54 sur quatre pages et #0B8F63 sur celle des simulations, qui portait
- *  en plus deux verts differents pour « positif » dans son propre fichier —
- *  --hausse-txt pour le texte, --hausse pour les valeurs. On retient #0A7A54,
- *  et --hausse-txt devient un alias de --hausse plutot qu'une seconde verite.
+ *  en plus deux verts différents pour « positif » dans son propre fichier.
  *
- *  TROIS ETATS, PAS DEUX. Le visiteur peut avoir choisi clair, choisi sombre,
- *  ou n'avoir rien choisi — et c'est le cas le plus frequent, ou seul
- *  prefers-color-scheme decide. Le bloc :root nu porte donc la palette claire
- *  complete ; la media-query ne REDEFINIT que les memes jetons, protegee par
- *  :not([data-theme="light"]) pour qu'un choix explicite de clair l'emporte sur
- *  un systeme sombre ; et [data-theme="dark"] les redefinit encore pour que le
- *  choix explicite de sombre l'emporte dans l'autre sens. Aucune couleur
- *  n'existe uniquement derriere une media-query : elle ne s'appliquerait pas
- *  dans l'etat par defaut du navigateur.
+ *  La première réunion gardait la forme classique à trois blocs : la palette
+ *  claire dans :root, la sombre répétée deux fois — une fois derrière
+ *  prefers-color-scheme, une fois derrière [data-theme="dark"]. Ça marchait, et
+ *  ça rejouait exactement la faute qu'on venait de corriger : une même couleur
+ *  écrite à deux endroits finit par n'être plus la même. Avec quinze jetons de
+ *  plus, c'était trente occasions de diverger.
+ *
+ *  D'OÙ light-dark(). Chaque jeton porte ses deux valeurs sur la même ligne, et
+ *  c'est color-scheme qui choisit. Le visiteur a trois états : clair choisi,
+ *  sombre choisi, ou rien choisi — le plus fréquent, où le système décide seul.
+ *  `color-scheme: light dark` couvre le troisième ; les deux premiers se
+ *  tamponnent par data-theme sur <html>, qui ne fait plus que changer
+ *  color-scheme. Un seul attribut, aucune palette dupliquée.
+ *
+ *  Et color-scheme rend au passage ce qu'aucune variable CSS ne peut rendre :
+ *  des ascenseurs, une sélection de texte, des cases à cocher et des menus
+ *  déroulants natifs à la bonne teinte. Sans lui, un site sombre garde des
+ *  ascenseurs blancs, ce qui se voit tout de suite.
+ *
+ *  LE REPLI. light-dark() est arrivé fin 2023 dans Firefox, début 2024 chez les
+ *  autres. Un navigateur plus ancien ne le comprend pas ; comme une variable
+ *  personnalisée accepte n'importe quoi à l'analyse et n'échoue qu'au moment de
+ *  servir, une page sans repli s'afficherait sans AUCUNE couleur — fonds
+ *  transparents, texte noir par défaut. Le bloc :root nu porte donc la palette
+ *  claire en toutes lettres, et @supports ne l'écrase que là où light-dark()
+ *  existe vraiment. Un vieux navigateur voit le site en clair : dégradé, lisible.
  */
+
 :root{
-  /* surfaces et fonds */
+  color-scheme: light;
+
+  /*  ——— surfaces ———
+   *  ground   le fond de page, en retrait
+   *  surface  une carte posée dessus
+   *  creux    un encart en retrait DANS une carte (stats, barres)
+   *  haut     ce qui flotte : infobulle, panneau de réglages
+   *  survol / actif : les marches 4 et 5, celles qui manquaient et qui sont la
+   *  raison mécanique pour laquelle les jetons paraissaient morts au survol.  */
   --ground:#EEF1F0; --surface:#FFFFFF; --surface-2:#F5F8F7; --surface-3:#EAEFED;
-  /* encres */
+  --surface-creux:#F5F8F7; --surface-haut:#FFFFFF;
+  --surface-survol:#EDF2F0; --surface-actif:#E2EAE7;
+
+  /* ——— encres ——— */
   --ink:#141D1C; --ink-2:#485552; --ink-3:#5F6D6A;
-  /* filets */
-  --rule:#D6DEDC; --rule-fort:#B2BFBB;
-  /* le vocabulaire du banc : un achat, une vente, un blocage */
+
+  /*  ——— filets ———
+   *  rule       le bord d'une carte
+   *  rule-fort  un en-tête de tableau, une séparation qui compte
+   *  rule-survol  le bord d'un jeton survolé — il empruntait rule-fort, et un
+   *               jeton survolé ressemblait donc à un en-tête de tableau
+   *  grille     la grille du graphique : plus claire que le bord de la carte,
+   *             sinon elle concurrence le cadre qui la contient  */
+  --rule:#D6DEDC; --rule-fort:#B2BFBB; --rule-survol:#9FAFAA; --grille:#E4EAE8;
+
+  /* ——— le vocabulaire du banc : un achat, une vente, un blocage ——— */
   --achat:#0E7C86; --vente:#B0700A; --blocage:#A34A3A;
-  /* la direction d'un prix */
+  --achat-doux:#E2F0F1; --vente-doux:#F6EBD9;
+
+  /* ——— la direction d'un prix ——— */
   --hausse:#0A7A54; --baisse:#C0392E;
-  /* les memes, en aplat, quand du texte clair se pose dessus */
   --achat-plein:#0C6E70; --hausse-plein:#0A7A54; --baisse-plein:#B23A2E;
-  --hausse-txt:#0A7A54;          /* alias historique : meme valeur que --hausse */
-  --sur-vif:#FFFFFF;             /* texte pose sur un aplat vif */
-  /* ce qui dort, et le prix lui-meme */
-  --dort:#C7D1CE; --prix:#3F4B47;
-  --ombre:0 1px 2px rgba(20,29,28,.06), 0 10px 28px -14px rgba(20,29,28,.22);
+  --hausse-txt:#0A7A54;          /* alias historique : même valeur que --hausse */
+  --sur-vif:#FFFFFF;             /* texte posé sur un aplat vif */
+
+  /*  Les chandeliers passent par leur propre alias : la variante pour daltoniens
+   *  n'a alors qu'un seul endroit à changer, et elle ne touche pas au sens de
+   *  --hausse dans le texte courant.  */
+  --chandelier-h:var(--hausse); --chandelier-b:var(--baisse);
+
+  /* ——— le graphique ——— */
+  --dort:#C7D1CE; --prix:#3F4B47; --reticule:#5F6D6A;
+  --bande:rgba(14,124,134,.10);  /* période où du capital dort, derrière les bougies */
   --focus:#0E7C86;
+
+  /*  ——— élévation ———
+   *  Le filet d'un pixel n'est pas une bordure : c'est la première couche de
+   *  l'ombre, en gris ALPHA, donc posable sur n'importe quelle surface. En
+   *  sombre, une ombre noire sur un fond presque noir ne soulève rien : on
+   *  renforce l'anneau au lieu d'augmenter le flou, et la surface s'éclaircit.
+   *  Seules les couleurs changent d'un thème à l'autre ; la géométrie, non.
+   *  Appariement obligatoire : --ombre va avec --surface, --ombre-haut avec
+   *  --surface-haut. Une infobulle qui porte --surface fusionne avec la carte
+   *  qu'elle survole — c'était le cas en sombre.  */
+  --o1:rgba(20,29,28,.07); --o2:rgba(20,29,28,.10); --o3:rgba(20,29,28,.22);
+  --oh1:rgba(20,29,28,.12); --oh2:rgba(20,29,28,.12);
+  --oh3:rgba(20,29,28,.20); --oh4:rgba(20,29,28,.24);
+  --ombre:0 0 0 1px var(--o1), 0 1px 2px -1px var(--o2), 0 6px 16px -10px var(--o3);
+  --ombre-haut:0 0 0 1px var(--oh1), 0 2px 4px -2px var(--oh2),
+               0 12px 28px -8px var(--oh3), 0 24px 56px -24px var(--oh4);
+
+  /*  ——— mise en veille ———
+   *  Quand on étudie un cycle, le reste de la série reste VISIBLE mais s'atténue :
+   *  on met en évidence, on n'isole pas. Ces deux-là ne sont pas des couleurs,
+   *  donc light-dark() ne les prend pas ; ils gardent l'ancienne forme, en bas
+   *  de fichier. À perception égale, il faut atténuer plus fort en sombre.  */
+  --veille:.35; --veille-bougies:.55;
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --ground:#0E1413; --surface:#161E1D; --surface-2:#1C2625; --surface-3:#243130;
-    --ink:#E6ECEA; --ink-2:#A6B4B0; --ink-3:#8A9995;
-    /*  --rule remonte de #27332F a #2E3B37 : sur un fond presque noir, l'ancien
-     *  filet etait invisible et les cartes n'avaient plus de bord.  */
-    --rule:#2E3B37; --rule-fort:#3A4844;
-    --achat:#45C2CE; --vente:#DDA33F; --blocage:#DB7A63;
-    --hausse:#22C58B; --baisse:#EB6B5F;
-    --achat-plein:#45C2CE; --hausse-plein:#22C58B; --baisse-plein:#EB6B5F;
-    --hausse-txt:#22C58B;
-    --sur-vif:#0E1413;
-    --dort:#2C3937; --prix:#93A19D;
-    /*  Une ombre noire sur un fond presque noir ne souleve rien. On garde une
-     *  ombre resserree pour la profondeur, et le relief vient du filet.  */
-    --ombre:0 1px 2px rgba(0,0,0,.4), 0 6px 18px -10px rgba(0,0,0,.75);
-    --focus:#45C2CE;
+
+@supports (color: light-dark(#000, #fff)){
+  :root{
+    color-scheme: light dark;
+
+    --ground:light-dark(#EEF1F0,#0E1413);
+    --surface:light-dark(#FFFFFF,#161E1D);
+    --surface-2:light-dark(#F5F8F7,#1C2625);
+    --surface-3:light-dark(#EAEFED,#243130);
+    --surface-creux:light-dark(#F5F8F7,#1C2625);
+    --surface-haut:light-dark(#FFFFFF,#1E2827);
+    --surface-survol:light-dark(#EDF2F0,#202B29);
+    --surface-actif:light-dark(#E2EAE7,#273431);
+
+    --ink:light-dark(#141D1C,#E6ECEA);
+    --ink-2:light-dark(#485552,#A6B4B0);
+    --ink-3:light-dark(#5F6D6A,#8A9995);
+
+    /*  --rule était remonté de #27332F à #2E3B37 : sur un fond presque noir,
+     *  l'ancien filet était invisible et les cartes n'avaient plus de bord.  */
+    --rule:light-dark(#D6DEDC,#2E3B37);
+    --rule-fort:light-dark(#B2BFBB,#3A4844);
+    --rule-survol:light-dark(#9FAFAA,#4A5A55);
+    --grille:light-dark(#E4EAE8,#222E2C);
+
+    --achat:light-dark(#0E7C86,#45C2CE);
+    --vente:light-dark(#B0700A,#DDA33F);
+    --blocage:light-dark(#A34A3A,#DB7A63);
+    --achat-doux:light-dark(#E2F0F1,#16302F);
+    --vente-doux:light-dark(#F6EBD9,#33281A);
+
+    --hausse:light-dark(#0A7A54,#22C58B);
+    --baisse:light-dark(#C0392E,#EB6B5F);
+    --achat-plein:light-dark(#0C6E70,#45C2CE);
+    --hausse-plein:light-dark(#0A7A54,#22C58B);
+    --baisse-plein:light-dark(#B23A2E,#EB6B5F);
+    --hausse-txt:light-dark(#0A7A54,#22C58B);
+    --sur-vif:light-dark(#FFFFFF,#0E1413);
+
+    --dort:light-dark(#C7D1CE,#2C3937);
+    --prix:light-dark(#3F4B47,#93A19D);
+    --reticule:light-dark(#5F6D6A,#93A19D);
+    --bande:light-dark(rgba(14,124,134,.10),rgba(69,194,206,.16));
+    --focus:light-dark(#0E7C86,#45C2CE);
+
+    --o1:light-dark(rgba(20,29,28,.07),rgba(255,255,255,.06));
+    --o2:light-dark(rgba(20,29,28,.10),rgba(0,0,0,.50));
+    --o3:light-dark(rgba(20,29,28,.22),rgba(0,0,0,.80));
+    --oh1:light-dark(rgba(20,29,28,.12),rgba(255,255,255,.13));
+    --oh2:light-dark(rgba(20,29,28,.12),rgba(0,0,0,.60));
+    --oh3:light-dark(rgba(20,29,28,.20),rgba(0,0,0,.85));
+    --oh4:light-dark(rgba(20,29,28,.24),rgba(0,0,0,.55));
+  }
+  /*  Le choix explicite, dans les deux sens. C'est tout ce que fait data-theme.  */
+  :root[data-theme="light"]{ color-scheme: light }
+  :root[data-theme="dark"] { color-scheme: dark }
+}
+
+/*  ——— la variante pour daltoniens ———
+ *  Environ huit hommes sur cent ne lisent pas un axe vert/rouge. Seul cet axe
+ *  change : le couple achat/vente (pétrole et ambre) est déjà distinguable en
+ *  deutéranopie, et le reste de la page ne bouge pas. #D97706 tombe à 3,9:1 sur
+ *  blanc et ne passe pas ; #B45309 tient 4,9:1.  */
+:root[data-marques="bleu-orange"]{
+  --hausse:#1D63D8; --baisse:#B45309;
+  --hausse-plein:#1D63D8; --baisse-plein:#B45309; --hausse-txt:#1D63D8;
+}
+@supports (color: light-dark(#000, #fff)){
+  :root[data-marques="bleu-orange"]{
+    --hausse:light-dark(#1D63D8,#7FB2FF);
+    --baisse:light-dark(#B45309,#F0A44A);
+    --hausse-plein:light-dark(#1D63D8,#7FB2FF);
+    --baisse-plein:light-dark(#B45309,#F0A44A);
+    --hausse-txt:light-dark(#1D63D8,#7FB2FF);
   }
 }
-:root[data-theme="dark"]{
-  --ground:#0E1413; --surface:#161E1D; --surface-2:#1C2625; --surface-3:#243130;
-  --ink:#E6ECEA; --ink-2:#A6B4B0; --ink-3:#8A9995;
-  --rule:#2E3B37; --rule-fort:#3A4844;
-  --achat:#45C2CE; --vente:#DDA33F; --blocage:#DB7A63;
-  --hausse:#22C58B; --baisse:#EB6B5F;
-  --achat-plein:#45C2CE; --hausse-plein:#22C58B; --baisse-plein:#EB6B5F;
-  --hausse-txt:#22C58B;
-  --sur-vif:#0E1413;
-  --dort:#2C3937; --prix:#93A19D;
-  --ombre:0 1px 2px rgba(0,0,0,.4), 0 6px 18px -10px rgba(0,0,0,.75);
-  --focus:#45C2CE;
+
+/*  Les deux jetons qui ne sont pas des couleurs : light-dark() ne s'applique
+ *  qu'à une couleur, donc ces deux-là gardent la forme à trois états. Ils sont
+ *  seuls, et ils sont ici pour qu'on les voie.  */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --veille:.45; --veille-bougies:.62 }
 }
+:root[data-theme="dark"]{ --veille:.45; --veille-bougies:.62 }

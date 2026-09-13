@@ -215,7 +215,15 @@ REGLES = [
      r"l'avance|l'instant|l'endroit|l'heure|l'inverse|l'identique|l'oeil|l'envers|"
      r"la main|la fois|la hausse|la baisse|la place|la suite|la difference)\b",
      r"à \1"),
-    #  « a » devant un nombre, un signe ou un symbole : toujours la preposition.
+    #  « a » devant un nombre, un signe ou un symbole : la preposition, presque
+    #  toujours. « de 2 % a 8 % » devient « a » accentue, ce qu'on veut ; « le
+    #  robot a 8 barreaux » le deviendrait aussi, ce qu'on ne veut pas. Les deux
+    #  formes existent dans ces pages et aucune regle ne les separe ; le depot a
+    #  ete relu a la main sur ce point (« reste a -27 % », « barreau a -53 % »).
+    #  DEUXIEME PIEGE, celui qui a laisse passer « communs a 5 paires » : quand
+    #  le nombre vient d'une interpolation, elle est deja masquee au moment ou
+    #  cette regle s'applique et le chiffre est invisible. Ces cas-la se
+    #  reprennent a la main, en cherchant « a ${ ».
     (r"\ba (?=[-+]?\d)", "à "),
     (r"\ba (?=[-+]\s*\d)", "à "),
 ]
@@ -240,7 +248,14 @@ APPELS = re.compile(
     r"""removeAttribute|toggleAttribute|hasAttribute|createElementNS|createElement|"""
     r"""classList\.\w+|addEventListener|removeEventListener|getPropertyValue|"""
     r"""setProperty|getItem|setItem|removeItem|URLSearchParams)\s*\("""
-    r"""\s*(?:"[^"]*"|'[^']*')""")
+    r"""\s*(?:"[^"]*"|'[^']*')"""
+    #  UNE LISTE DE CLASSES CONTIENT DES ESPACES. La regle « une chaine avec une
+    #  espace est de la prose » a donc laisse passer h("div", {class:"legende
+    #  cadre"}) et ecrit « legende » avec un accent : le style disparaissait en
+    #  silence, sans erreur, sans rien dans la console. La position syntaxique
+    #  est la seule chose fiable — on masque la valeur de class, className et
+    #  classList, sans jamais regarder ce qu'elle contient.
+    r"""|(?:class|className)\s*[:=]\s*(?:"[^"]*"|'[^']*')""")
 
 
 def accentuer_texte(s: str) -> str:
@@ -249,6 +264,11 @@ def accentuer_texte(s: str) -> str:
         a = MOTS.get(w.lower())
         if not a:
             return w
+        #  « DEJA » en capitales doit rendre « DEJA » accentue en capitales, pas
+        #  « Deja ». Les messages de commit emploient les capitales pour insister
+        #  et la premiere version les recasait toutes en minuscules.
+        if len(w) > 1 and w.isupper():
+            return a.upper()
         return a[0].upper() + a[1:] if w[0].isupper() else a
     s = re.sub(r"\b[A-Za-zÀ-ÿ']+\b", mot, s)
     for rx, rep in REGLES:
