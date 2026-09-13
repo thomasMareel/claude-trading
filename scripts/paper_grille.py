@@ -117,6 +117,14 @@ PAS = "5m"              # le pas auquel toute l'etude a ete menee
 #              jamais vu : c'est une assurance, pas un moteur.
 _COMMUN = dict(suivre_hausse=True, vente_meme_bougie=False, mise_min=12.0)
 CINQ = ["BTC/EUR", "ETH/EUR", "XRP/EUR", "SOL/EUR", "DOGE/EUR"]
+#  Les dix paires EUR les plus LIQUIDES d'OKX, mesurees sur une fenetre commune
+#  de trente jours en volume quote (prix x volume), classement reproductible par
+#  la requete qui figure dans docs/archives. AVAX et DOT sont ecartees : vingt
+#  fois moins liquides que la dixieme. Le critere est connu d'avance et n'est
+#  jamais un rendement — trier sur la performance passee a deja ete mesure a
+#  vingt ou trente points d'illusion.
+DIX = ["BTC/EUR", "ETH/EUR", "XRP/EUR", "SOL/EUR", "DOGE/EUR",
+       "TRX/EUR", "UNI/EUR", "LINK/EUR", "ADA/EUR", "LTC/EUR"]
 PROFILS = {
     "3paliers": dict(
         paires=CINQ, budget=200.0,
@@ -127,7 +135,7 @@ PROFILS = {
         reglage=dict(profondeur=0.50, paliers=8, ratio=1.20, objectif_net=0.02,
                      depart_sous=0.02, **_COMMUN)),
     "8paliers_concentre": dict(
-        paires=["BTC/EUR"], budget=1000.0,
+        paires=DIX, budget=1000.0,
         reglage=dict(profondeur=0.51, paliers=8, ratio=1.6, objectif_net=0.02,
                      depart_sous=0.02, espacement="puissance", courbure=2.0, **_COMMUN)),
 }
@@ -279,13 +287,26 @@ def t0_commun() -> int | None:
     return min(t0) if t0 else None
 
 
-def ecrire_prix(st: Storage, chemin: Path, depuis: int) -> None:
-    """Publie les bougies de toutes les paires suivies, pour les graphiques."""
+def nom_fichier(symbole: str) -> str:
+    return symbole.replace("/", "-")
+
+
+def ecrire_prix(st: Storage, dossier: Path, depuis: int) -> None:
+    """Publie les bougies, UN FICHIER PAR PAIRE, plus un index.
+
+    Un seul fichier pour dix paires atteindrait le megaoctet, et la page n'en
+    affiche qu'une a la fois : elle telechargerait donc neuf dixiemes de rien.
+    Un fichier par paire reste sous cent kilo-octets quelle que soit la duree,
+    puisque le pas s'elargit avec la fenetre, et la page ne charge que la serie
+    qu'elle montre.
+    """
     maintenant = int(time.time() * 1000)
     pas = pas_publie(maintenant - depuis)
     facteur = pas // 300_000
-    sortie = {}
-    for s in sorted({p for pr in PROFILS.values() for p in pr["paires"]}):
+    dossier.mkdir(parents=True, exist_ok=True)
+    paires = sorted({p for pr in PROFILS.values() for p in pr["paires"]})
+    index = {}
+    for s in paires:
         rows = st._conn.execute(
             "SELECT ts, open, high, low, close, volume FROM candles "
             "WHERE symbol=? AND timeframe=? AND ts >= ? ORDER BY ts",
@@ -304,12 +325,15 @@ def ecrire_prix(st: Storage, chemin: Path, depuis: int) -> None:
                           arrondi(min(float(r["low"]) for r in lot)),
                           arrondi(float(lot[-1]["close"])),
                           round(sum(float(r["volume"] or 0) for r in lot), 2)])
-        sortie[s] = serie
-    ecrire_atomique(chemin, json.dumps({
+        ecrire_atomique(dossier / f"{nom_fichier(s)}.json", json.dumps({
+            "paire": s, "depuis": depuis, "pas": pas,
+            "colonnes": ["ts", "o", "h", "l", "c", "v"],
+            "bougies": serie}, separators=(",", ":")))
+        index[s] = {"fichier": f"{nom_fichier(s)}.json", "bougies": len(serie),
+                    "dernier": serie[-1][0] if serie else None}
+    ecrire_atomique(dossier / "index.json", json.dumps({
         "maj": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "depuis": depuis, "pas": pas,
-        "colonnes": ["ts", "o", "h", "l", "c", "v"],
-        "paires": sortie}, separators=(",", ":")))
+        "depuis": depuis, "pas": pas, "paires": index}, separators=(",", ":")))
 
 
 def bougies_locales(st: Storage, s: str, depuis: int) -> list[tuple]:
@@ -411,7 +435,7 @@ def un_cycle(cfg, st: Storage, x: Exchange, etat: dict, sortie: Path, verbeux: b
     #  question de qui doit l'ecrire.
     debut = t0_commun() or etat["depuis"]
     try:
-        ecrire_prix(st, Path("docs/data/paper_prix.json"), debut)
+        ecrire_prix(st, Path("docs/data/prix"), debut)
     except Exception as e:                               # noqa: BLE001
         print(f"  prix non publies : {type(e).__name__} {str(e)[:70]}", flush=True)
     if verbeux:

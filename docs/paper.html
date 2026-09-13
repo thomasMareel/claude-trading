@@ -220,7 +220,10 @@ const UNITES = [
   {min:240, lib:"4 h"},    {min:1440,lib:"1 j"},
 ];
 
-const E = {jeux:[null,null,null], prix:null, bot:0, paire:null,
+//  Les prix sont publies UN FICHIER PAR PAIRE : la page n'en affiche qu'une a la
+//  fois, et un fichier unique pour dix paires ferait telecharger neuf dixiemes
+//  de rien. `series` garde en cache celles deja lues.
+const E = {jeux:[null,null,null], index:null, series:{}, bot:0, paire:null,
            unite:60, calques:{vol:true, echelle:true, bandes:true}, g:null};
 
 const pct  = (v,d=2) => (v>=0?"+":"") + (v*100).toFixed(d) + " %";
@@ -282,11 +285,11 @@ function poserSelecteurs(){
   const d = jeu();
   if (d) for (const p of d.paires)
     rp.appendChild(bouton(p.paire.split("/")[0], p.paire===E.paire,
-      () => { E.paire=p.paire; apres(); }, pct(p.perf,1)));
+      () => { choisirPaire(p.paire); }, pct(p.perf,1)));
 
   const ru = document.getElementById("opts-unite");
   ru.replaceChildren();
-  const pasMin = (E.prix ? E.prix.pas : 300000)/60000;
+  const pasMin = (E.index ? E.index.pas : 300000)/60000;
   for (const u of UNITES){
     if (u.min < pasMin) continue;
     ru.appendChild(bouton(u.lib, u.min===E.unite, () => { E.unite=u.min; apres(); }));
@@ -302,12 +305,12 @@ function poserSelecteurs(){
 /* ------------------------------------------------- ce que le graphique reçoit */
 function donneesGraphique(){
   const d = jeu(), p = pair();
-  if (!d || !p || !E.prix || !E.prix.paires[p.paire]) return null;
-  const brut = E.prix.paires[p.paire];
+  const serie = p && E.series[p.paire];
+  if (!d || !p || !serie) return null;
   //  Le fichier de prix commence au plus ancien des trois departs : on coupe au
   //  t0 DU robot affiche, sinon on montrerait des bougies qu'il n'a jamais vues.
-  const bougies = brut.filter(b => b[0] >= d.depuis);
-  const unite = Math.max(1, Math.round(E.unite*60000 / E.prix.pas));
+  const bougies = serie.bougies.filter(b => b[0] >= d.depuis);
+  const unite = Math.max(1, Math.round(E.unite*60000 / serie.pas));
 
   const ordres = (p.journal||[]).map(e => ({
     ts:e.ts, genre:e.genre, prix:e.prix, euros:e.euros, gain:e.gain}));
@@ -485,7 +488,7 @@ function apres(){
       Pas encore de prix publies pour cette paire.</p>`;
     return;
   }
-  const opts = Object.assign({pas:E.prix.pas, hauteur:l => Math.round(
+  const opts = Object.assign({pas:E.series[pair().paire].pas, hauteur:l => Math.round(
     Math.min(460, Math.max(260, l*0.42)))}, dg);
   if (!E.g){ t.replaceChildren(); E.g = new Marche(t, opts); }
   else E.g.majDonnees(opts);
@@ -499,24 +502,42 @@ async function lire(f){
   }catch(e){ return null; }
 }
 //  Les journaux des robots pesent quelques kilo-octets et changent a chaque
-//  minute ; la serie de prix pese quelques centaines et ne gagne qu'une bougie
+//  minute ; une serie de prix pese cent fois plus et ne gagne qu'une bougie
 //  toutes les cinq minutes. Les recharger au meme rythme ferait passer des
 //  megaoctets par heure pour rien.
 let prochainPrix = 0;
+async function serie(paire){
+  const idx = E.index && E.index.paires[paire];
+  if (!idx) return null;
+  const cache = E.series[paire];
+  if (cache && cache.dernier === idx.dernier && cache.pas === E.index.pas) return cache;
+  const d = await lire("data/prix/" + idx.fichier);
+  if (!d) return cache || null;
+  E.series[paire] = {pas:d.pas, bougies:d.bougies, dernier:idx.dernier};
+  return E.series[paire];
+}
+async function choisirPaire(p){
+  E.paire = p;
+  await serie(p);
+  apres();
+}
 async function charger(){
-  const veutPrix = !E.prix || Date.now() > prochainPrix;
-  const [jeux, prix] = await Promise.all([
+  const veutIndex = !E.index || Date.now() > prochainPrix;
+  const [jeux, idx] = await Promise.all([
     Promise.all(SOURCES.map(s => lire(s.f))),
-    veutPrix ? lire("data/paper_prix.json") : Promise.resolve(E.prix),
+    veutIndex ? lire("data/prix/index.json") : Promise.resolve(E.index),
   ]);
   E.jeux = jeux.map(d => (d && d.paires && d.paires.length) ? d : null);
-  if (prix) { E.prix = prix; if (veutPrix) prochainPrix = Date.now() + 600000; }
+  if (idx) { E.index = idx; if (veutIndex) prochainPrix = Date.now() + 600000; }
   if (!E.jeux[E.bot]){
     const i = E.jeux.findIndex(Boolean);
     if (i >= 0) E.bot = i;
   }
   document.getElementById("compare").innerHTML =
     SOURCES.map((s,i) => carte(E.jeux[i], s.id, i)).join("");
+  const d = jeu();
+  if (d && !d.paires.some(p => p.paire === E.paire)) E.paire = d.paires[0].paire;
+  if (E.paire) await serie(E.paire);
   apres();
   const maj = E.jeux.filter(Boolean).map(d => d.maj).sort().pop();
   document.getElementById("maj").textContent = maj

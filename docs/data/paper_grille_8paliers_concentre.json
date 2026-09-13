@@ -1,14 +1,14 @@
 {
- "maj": "2026-09-13T11:40:30+00:00",
+ "maj": "2026-09-13T11:50:42+00:00",
  "profil": "8paliers_concentre",
  "titre": "Huit barreaux, tout sur une paire",
  "explication": "Huit barreaux avec une VRAIE progression : les mille euros sur une seule paire liberent la raison 1,6, donc des mises de 14 a 384 EUR, les grosses tout en bas. Les barreaux ne sont pas equidistants : ils sont resserres en haut (-2, -3, -6, -11 %) et etires en bas (-19, -28, -40, -53 %), parce qu'une echelle reguliere descendant a -53 % place la moitie de ses barreaux la ou le prix ne va jamais \u2014 mesure faite, le dernier barreau n'etait alors achete aucune fois en 900 jours. Le prix de cette forme est l'abandon de la repartition. Sur 900 jours de passe elle rend moins que BTC laisse tranquille (+5,7 % contre +11,8 %) mais avec un creux de -18 % au lieu de -53 %. Ce qui est teste ici est donc une assurance, pas un moteur.",
- "depuis": 1788935100000,
- "jours": 4.22,
- "budget_total": 1000.0,
- "equity_total": 1000.41,
- "perf_total": 0.000405,
- "hold_moyen": -0.028916,
+ "depuis": 1789300200000,
+ "jours": 0.0,
+ "budget_total": 0.0,
+ "equity_total": 0.0,
+ "perf_total": 0.0,
+ "hold_moyen": 0.0,
  "reglage": {
   "profondeur": 0.51,
   "paliers": 8,
@@ -22,115 +22,18 @@
   "mise_min": 12.0,
   "budget": 1000.0,
   "paires": [
-   "BTC/EUR"
+   "BTC/EUR",
+   "ETH/EUR",
+   "XRP/EUR",
+   "SOL/EUR",
+   "DOGE/EUR",
+   "TRX/EUR",
+   "UNI/EUR",
+   "LINK/EUR",
+   "ADA/EUR",
+   "LTC/EUR"
   ],
   "pas": "5m"
  },
- "paires": [
-  {
-   "paire": "BTC/EUR",
-   "equity": 1000.41,
-   "perf": 0.000405,
-   "cycles": 1,
-   "engage": 37.19,
-   "barreaux": 2,
-   "reference": 68500.0,
-   "prix": 66214.5,
-   "revient": 66756.212551,
-   "sortie": 68159.496298,
-   "abandonnee": false,
-   "bougies": 1215,
-   "hold": -0.028916,
-   "echelle": [
-    {
-     "prix": 67130.0,
-     "mise": 14.3,
-     "rempli": true,
-     "mort": false
-    },
-    {
-     "prix": 66417.040816,
-     "mise": 22.88,
-     "rempli": true,
-     "mort": false
-    },
-    {
-     "prix": 64278.163265,
-     "mise": 36.62,
-     "rempli": false,
-     "mort": false
-    },
-    {
-     "prix": 60713.367347,
-     "mise": 58.58,
-     "rempli": false,
-     "mort": false
-    },
-    {
-     "prix": 55722.653061,
-     "mise": 93.74,
-     "rempli": false,
-     "mort": false
-    },
-    {
-     "prix": 49306.020408,
-     "mise": 149.98,
-     "rempli": false,
-     "mort": false
-    },
-    {
-     "prix": 41463.469388,
-     "mise": 239.96,
-     "rempli": false,
-     "mort": false
-    },
-    {
-     "prix": 32195.0,
-     "mise": 383.94,
-     "rempli": false,
-     "mort": false
-    }
-   ],
-   "part_engage": 0.02714,
-   "duree_moyenne_h": 41.5,
-   "gain_realise": 0.74,
-   "journal": [
-    {
-     "ts": 1788985500000,
-     "genre": "achat",
-     "prix": 67144.308,
-     "euros": 14.3,
-     "gain": null
-    },
-    {
-     "ts": 1789044300000,
-     "genre": "achat",
-     "prix": 66431.196857,
-     "euros": 22.88,
-     "gain": null
-    },
-    {
-     "ts": 1789134900000,
-     "genre": "vente",
-     "prix": 68174.023724,
-     "euros": 37.93,
-     "gain": 0.74
-    },
-    {
-     "ts": 1789141800000,
-     "genre": "achat",
-     "prix": 67130.0,
-     "euros": 14.3,
-     "gain": null
-    },
-    {
-     "ts": 1789149900000,
-     "genre": "achat",
-     "prix": 66417.040816,
-     "euros": 22.88,
-     "gain": null
-    }
-   ]
-  }
- ]
+ "paires": []
 }
