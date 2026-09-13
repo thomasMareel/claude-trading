@@ -228,8 +228,16 @@ nav.pages a:hover,nav.pages a:focus-visible{border-bottom-color:currentColor}
 </style>
 </head>
 <body>
-<link rel="stylesheet" href="nav.css">
-<script src="nav.js" defer></script>
+<div style="background:#7a2e1e;color:#fff;padding:12px 18px;font:15px/1.5 system-ui,sans-serif">
+  <b>Experience close.</b> Ce tableau de bord est celui d'une experience arretee le
+  6 septembre 2026 : un modele de langage qui tradait seul face a un repere. Sa fenetre
+  n'a jamais abouti — 0,8 jour sur les 14 requis, aucun trade clos sur les 15 requis —
+  et les chiffres ci-dessous sont figes a cet instant. Il est conserve pour memoire et
+  ne fait plus partie du site.
+  <a href="../../index.html" style="color:#fff;text-decoration:underline">Retour au banc d'essai</a>
+</div>
+
+
 <div class="wrap" id="app">
   <header>
     <div class="titlebar">
@@ -325,7 +333,7 @@ const FILES = ['etat', 'courbes', 'metriques', 'decisions', 'trades', 'evenement
 async function load() {
   const t = Date.now(), out = {};
   await Promise.all(FILES.map(async (f) => {
-    const r = await fetch(`data/${f}.json?t=${t}`, { cache: 'no-store' });
+    const r = await fetch(`${f}.json?t=${t}`, { cache: 'no-store' });
     if (!r.ok) throw new Error(`${f}.json : ${r.status}`);
     out[f] = await r.json();
   }));

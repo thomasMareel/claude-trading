@@ -13,10 +13,9 @@
   "use strict";
 
   const PAGES = [
-    { f: "index.html",       nom: "Accueil",        court: "Accueil" },
+    { f: "index.html",       nom: "Accueil",           court: "Accueil" },
     { f: "paper.html",       nom: "Grilles en direct", court: "En direct" },
-    { f: "simulations.html", nom: "Simulations",    court: "Simulations" },
-    { f: "bot.html",         nom: "Bot Claude",     court: "Bot Claude" },
+    { f: "simulations.html", nom: "Simulations",       court: "Simulations" },
   ];
 
   function fichier() {

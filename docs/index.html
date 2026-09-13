@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Banc d'essai de trading</title>
-<meta name="description" content="Trois grilles en paper trading, quatre cents jours de simulations, et un bot Claude qui decide seul face a un repere.">
+<meta name="description" content="Trois grilles de trading en paper trading sur dix cryptos, et quatre cents jours rejoues bougie par bougie.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -137,12 +137,6 @@ footer{margin-top:34px; padding-top:18px; border-top:1px solid var(--rule);
     <div class="etat"><span>BTC · ETH · SOL</span><span>400 jours</span><span>pas de 5 min</span></div>
   </a>
 
-  <a class="porte" href="bot.html">
-    <div class="haut"><h3>Bot Claude</h3><span class="fleche">→</span></div>
-    <p>L'autre experience : un modele de langage qui decide seul, face a un repere,
-       avec ses mandats, son journal et les criteres du protocole.</p>
-    <div class="etat" id="etat-bot"><span>chargement…</span></div>
-  </a>
 </div>
 
 <section class="constats">
@@ -199,9 +193,9 @@ async function lire(f){
   catch(e){ return null; }
 }
 (async function(){
-  const [a,b,c,bot] = await Promise.all([
+  const [a,b,c] = await Promise.all([
     lire("data/paper_grille.json"), lire("data/paper_grille_8paliers.json"),
-    lire("data/paper_grille_8paliers_concentre.json"), lire("data/etat.json"),
+    lire("data/paper_grille_8paliers_concentre.json"),
   ]);
   const jeux = [a,b,c].filter(d => d && d.paires && d.paires.length);
   const n = document.getElementById("etat-paper");
@@ -218,13 +212,6 @@ async function lire(f){
       + jeux.map(d => `<span>${nomCourt[d.profil]||d.profil} <b class="${sgn(d.perf_total)}">`
           + `${pct(d.perf_total)}</b></span>`).join("");
   }
-  const m = document.getElementById("etat-bot");
-  if (bot && bot.genere_le){
-    const vieux = Date.now() - Date.parse(bot.genere_le) > 12*3600000;
-    m.innerHTML = `<span><span class="pastille ${vieux?"froid":"vif"}"></span>`
-      + `${vieux?"en sommeil":"actif"}</span>`
-      + `<span>dernier releve ${String(bot.genere_le).slice(0,16).replace("T"," ")}</span>`;
-  } else m.innerHTML = "<span>pas encore de releve</span>";
   const majs = jeux.map(d => d.maj).sort();
   document.getElementById("maj").textContent = majs.length
     ? "Dernier relevé : " + majs[majs.length-1].replace("T"," ").replace("+00:00"," UTC") + "."
