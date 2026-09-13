@@ -213,6 +213,12 @@ footer{margin:clamp(3rem,7vw,5rem) 0 4rem; border-top:1px solid var(--rule);
 footer p + p{margin-top:.7rem}
 footer b{color:var(--ink-2)}
 @media (prefers-reduced-motion:reduce){ *{transition:none!important; animation:none!important} }
+.avertissement-fenetre{max-width:78ch; margin:0 auto 22px; padding:12px 16px;
+  border-left:3px solid var(--vente); background:var(--surface-2);
+  border-radius:0 8px 8px 0; font-size:.86rem; color:var(--ink-2); line-height:1.55}
+.avertissement-fenetre b{color:var(--ink)}
+.avertissement-fenetre a{color:var(--achat); text-decoration:none;
+  border-bottom:1px solid currentColor}
 </style>
 <link rel="stylesheet" href="nav.css">
 <script src="nav.js" defer></script>
@@ -222,11 +228,21 @@ footer b{color:var(--ink-2)}
     <h1>Anatomie d'une <em>descente</em></h1>
     <p class="chapo">Une stratégie de grille rejouée sur BTC, ETH et SOL, du 2 août 2025 au 6 septembre 2026.
       Chaque ordre réellement exécutable est posé sur le chandelier. Les réglages sont rangés
-      <strong>du plus rentable au moins rentable</strong>, avec à côté le nombre d'épreuves de robustesse
+      <strong>ranges par gain sur cette fenetre</strong>, avec à côté le nombre d'épreuves de robustesse
       qu'ils passent — car le plus rentable n'est pas toujours le plus fiable. Sur cette fenêtre,
       ne rien faire faisait perdre 30 %.</p>
   </div>
 </header>
+<div class="avertissement-fenetre">
+  <b>A lire avant le classement.</b> Ces huit reglages sont ranges par ce qu'ils ont
+  rendu SUR CETTE FENETRE de quatre cents jours — la meme qui a servi a les choisir.
+  Une validation en avant menee depuis, sur neuf cents jours decoupes en blocs de cent,
+  a chiffre ce biais : un reglage choisi sur le passe recent rend <b>4,82 points de
+  moins par bloc</b> que le meme reglage designe apres coup. Lisez donc cette page
+  comme l'anatomie d'une strategie, jamais comme un palmares a suivre.
+  <a href="index.html">Les cinq resultats etablis</a>
+</div>
+
 
 <div class="large">
   <section class="marche" id="marche">

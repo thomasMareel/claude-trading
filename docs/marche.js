@@ -68,7 +68,10 @@
       }, opts || {});
       this.svg = el("svg", { role: "img", "aria-label": this.o.aria || "graphique de marche" });
       this.svg.style.display = "block";
-      this.svg.style.touchAction = "none";
+      //  pan-y et non none : ce graphique n'a ni zoom ni deplacement au doigt, donc
+      //  confisquer le geste vertical prenait un demi-ecran de defilement en echange
+      //  de rien. Le reticule, lui, fonctionne toujours au survol et au glissement.
+      this.svg.style.touchAction = "pan-y";
       conteneur.appendChild(this.svg);
       this.info = document.createElement("div");
       this.info.className = "marche-info";
