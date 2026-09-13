@@ -29,6 +29,7 @@ structurel. Seuls le budget et la regle d'abandon le bornent.
 """
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import dataclass, field
 from typing import Iterator
 
@@ -51,6 +52,21 @@ class Reglages:
     mise_min: float = 0.0           # taille minimale d'un ordre, en quote
     suivre_hausse: bool = False     # remonter la reference quand le marche monte a vide
     reancrage_min: float = 0.0      # hausse minimale avant de deplacer la reference
+    #  ---- sur quoi l'echelle s'accroche ----
+    moyenne_ref: int = 1            # bougies moyennees pour la reference ; 1 = la derniere cloture
+    #  La reference est le prix sous lequel toute l'echelle se pose. Elle vaut,
+    #  depuis l'origine, la DERNIERE CLOTURE au moment ou l'echelle se re-ancre.
+    #  Une cloture est un instant : elle porte tout le bruit de la bougie, et une
+    #  meche suffit a reposer l'echelle un pour cent plus haut. moyenne_ref
+    #  remplace cet instant par la moyenne des N dernieres clotures.
+    #
+    #  UN VAUT EXACTEMENT L'ANCIEN COMPORTEMENT : avec N = 1 la moyenne d'une
+    #  seule cloture EST cette cloture, et le moteur repasse au bit pres sur le
+    #  chemin d'avant. C'est ce qui rend le parametre sur — et c'est verifie.
+    #
+    #  Le parametre n'agit QUE par le re-ancrage, donc uniquement si
+    #  suivre_hausse est vrai. Avec suivre_hausse = False, l'echelle ne bouge
+    #  jamais et moyenne_ref est inerte.
     espacement: str = "lineaire"    # "lineaire", "geometrique" ou "puissance"
     courbure: float = 1.0           # espacement="puissance" : 1 = lineaire, plus = resserre en haut
     #  L'etude des chutes des 400 jours donne une distribution tres asymetrique :
@@ -106,6 +122,9 @@ class Reglages:
             raise GrilleError(f"mise_min doit etre >= 0, trouve {self.mise_min}")
         if not 0 <= self.reancrage_min < 1:
             raise GrilleError(f"reancrage_min doit etre dans [0, 1[, trouve {self.reancrage_min}")
+        if not isinstance(self.moyenne_ref, int) or self.moyenne_ref < 1:
+            raise GrilleError(
+                f"moyenne_ref doit etre un entier >= 1, trouve {self.moyenne_ref!r}")
         if self.espacement not in ("lineaire", "geometrique", "puissance"):
             raise GrilleError(f"espacement inconnu : {self.espacement}")
         if self.courbure <= 0:
@@ -187,6 +206,22 @@ class Descente:
     reference: float
     budget: float
     reglages: Reglages
+    #  LE PRIX AU MOMENT OU L'ECHELLE EST POSEE. Zero = inerte.
+    #
+    #  Tant que la reference EST la derniere cloture, aucun barreau ne peut se
+    #  retrouver au-dessus du cours et ce champ ne sert a rien. Des que la
+    #  reference devient une moyenne (moyenne_ref > 1), elle passe au-dessus du
+    #  prix la moitie du temps, et les barreaux du haut se posent AU-DESSUS DU
+    #  MARCHE. Le moteur les remplissait alors a leur prix limite : marche plat
+    #  a 100, reference 120, il achetait a 117,60 puis 116,35 puis 112,60 et
+    #  perdait 1,32 % sans que le prix ait bouge d'un centime.
+    #
+    #  Un ordre d'achat limite pose au-dessus du marche n'attend pas : il part
+    #  au marche, au tarif taker, immediatement. Plutot que d'inventer cette
+    #  execution-la et son tarif, on refuse le barreau — exactement comme on
+    #  refuse celui dont la mise n'atteint pas le minimum de la plateforme. Son
+    #  budget reste en caisse et rien n'est redistribue.
+    plafond: float = 0.0
     ouverte_le: int | None = None                # horodatage ms du premier achat
     dernier_achat_le: int | None = None          # horodatage ms du dernier achat
     #  Deux horodatages, parce qu'ils repondent a deux questions. ouverte_le date
@@ -250,7 +285,20 @@ class Descente:
         douce l'echelle que l'on pretend tester.
         """
         m = self.reglages.mise_min
-        return [i for i, (_, e) in enumerate(self.echelle) if e < m] if m else []
+        pl = self.plafond
+        return [i for i, (p, e) in enumerate(self.echelle)
+                if (m and e < m) or (pl > 0 and p > pl)]
+
+    @property
+    def barreaux_au_dessus(self) -> list[int]:
+        """Ceux que le plafond ecarte, et eux seuls : la mesure de l'artefact.
+
+        Comptes a part des barreaux trop petits, parce qu'ils ne disent pas la
+        meme chose. Un barreau trop petit dit que le budget est trop mince ; un
+        barreau au-dessus du cours dit que la reference a decroche du marche.
+        """
+        pl = self.plafond
+        return [i for i, (p, _) in enumerate(self.echelle) if pl > 0 and p > pl]
 
     def rentabilite(self, prix: float) -> float:
         """Ce que rapporterait une sortie AU MARCHE a ce prix, nette de tout."""
@@ -304,8 +352,9 @@ class Descente:
         if self.abandonnee or self.stop:
             return []
         m = self.reglages.mise_min
+        pl = self.plafond
         return [(i, p, e) for i, (p, e) in enumerate(self.echelle)
-                if i not in self.remplis and e >= m]
+                if i not in self.remplis and e >= m and not (pl > 0 and p > pl)]
 
     # ---------------------------------------------------------------- mutations
     def acheter(self, indice: int, prix: float, ts: int = 0) -> tuple[float, float]:
@@ -452,7 +501,15 @@ def rejouer(
     if not bougies:
         raise GrilleError("aucune bougie a rejouer")
     ref = reference if reference is not None else bougies[0][1]
-    d = Descente(symbole, ref, budget, reglages)
+    d = Descente(symbole, ref, budget, reglages, plafond=bougies[0][1])
+    #  La fenetre glissante des clotures, amorcee par la reference de depart : a
+    #  la premiere bougie il n'existe aucune cloture precedente, et une moyenne
+    #  sur rien n'a pas de valeur. La somme est tenue a jour plutot que recalculee
+    #  — une moyenne sur huit mille six cents bougies recalculee a chaque pas
+    #  ferait du rejeu un quadratique.
+    n_moy = reglages.moyenne_ref
+    fen_ref: deque[float] = deque([ref], maxlen=n_moy)
+    somme_ref = ref
     cash = budget
     cycles: list[Cycle] = []
     equity: list[tuple[int, float]] = []
@@ -481,7 +538,7 @@ def rejouer(
             if trace:
                 journal.append(Evenement(ts, "vente", px, -1, det["recu"],
                                          det["prix_revient"], det["gain"]))
-            d = Descente(symbole, c, budget, reglages)
+            d = Descente(symbole, c, budget, reglages, plafond=c)
             ferme = True
 
         #  Un trou de cotation : la bougie OUVRE deja sous le stop. Le stop n'a pas
@@ -518,7 +575,7 @@ def rejouer(
                     if trace:
                         journal.append(Evenement(ts, "vente", px, -1, det["recu"],
                                                  det["prix_revient"], det["gain"]))
-                    d = Descente(symbole, c, budget, reglages)   # on repart du prix du moment
+                    d = Descente(symbole, c, budget, reglages, plafond=c)   # on repart du prix du moment
                     d.abandonnee = False
             else:
                 #  Un ordre stop dormant au carnet se declenche en seance, sur le bas.
@@ -567,9 +624,21 @@ def rejouer(
         #  suivre en portant un lot deplacerait l'echelle sous ses propres achats.
         #  reancrage_min evite de courir apres le bruit : sur des bougies a la
         #  minute, deplacer l'echelle a chaque tick haussier la collerait au prix.
+        #  L'ANCRE : la cloture du moment, ou la moyenne des N dernieres.
+        #  Elle inclut la bougie courante, exactement comme la cloture qu'elle
+        #  remplace : aucune information future n'entre ici.
+        if n_moy > 1:
+            if len(fen_ref) == n_moy:
+                somme_ref -= fen_ref[0]
+            fen_ref.append(c)
+            somme_ref += c
+            ancre = somme_ref / len(fen_ref)
+        else:
+            ancre = c
+
         if (reglages.suivre_hausse and not d.engagee
-                and c > d.reference * (1 + reglages.reancrage_min)):
-            d = Descente(symbole, c, budget, reglages)
+                and ancre > d.reference * (1 + reglages.reancrage_min)):
+            d = Descente(symbole, ancre, budget, reglages, plafond=c)
 
         valeur = cash + d.valeur(c)
         if valeur > pic:
