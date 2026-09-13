@@ -176,6 +176,19 @@ footer{margin:clamp(3rem,7vw,5rem) 0 4rem; border-top:1px solid var(--rule);
 footer p + p{margin-top:.7rem}
 footer b{color:var(--ink-2)}
 @media (prefers-reduced-motion:reduce){ *{transition:none!important; animation:none!important} }
+/*  Le bloc « ce que ça ne corrige pas » : un filet a gauche, pas une carte.
+    Quand tout est encadre, plus rien n'est mis en valeur. */
+.garde{margin-top:1rem; padding:.2rem 0 .2rem 1rem; border-left:3px solid var(--blocage);
+  max-width:76ch; color:var(--ink-2); font-size:.92rem}
+.garde h3{font-family:var(--f-titre); font-size:1.02rem; font-weight:600; margin:0 0 .4rem;
+  color:var(--ink)}
+.garde p{margin:.5rem 0}
+.garde b{color:var(--ink); font-weight:600}
+.t-k{font-family:"IBM Plex Mono",monospace; font-size:.64rem; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--ink-3)}
+.t-v{font-size:1.2rem; margin:.15rem 0 .2rem}
+.t-v.pos{color:var(--hausse-txt)} .t-v.neg{color:var(--baisse)}
+.t-n{font-size:.78rem; color:var(--ink-3); line-height:1.4}
 .avertissement-fenetre{max-width:78ch; margin:0 auto 22px; padding:12px 16px;
   border-left:3px solid var(--vente); background:var(--surface-2);
   border-radius:0 8px 8px 0; font-size:.86rem; color:var(--ink-2); line-height:1.55}
@@ -1237,6 +1250,252 @@ function plancheChutes() {
 }
 
 
+/* ------------------------------------------ 8 : ce que la paire change
+ *  LA SEULE PLANCHE QUI NE SUIT PAS LE SELECTEUR. Les sept autres montrent le
+ *  reglage choisi en haut de page ; celle-ci montre UNE configuration fixe —
+ *  celle qui tourne en paper trading sur dix paires depuis le 13 septembre
+ *  2026 — sur les dix marches de son panier. Elle le dit en toutes lettres,
+ *  sans quoi un lecteur croirait que le selecteur la commande.
+ *
+ *  SES DONNEES SONT DANS UN FICHIER A PART, charge quand on arrive dessus. La
+ *  page pese deja deux megaoctets et demi ; quatre-vingt-dix-huit kilooctets de
+ *  plus imposes a qui ne descend jamais jusqu'ici seraient payes pour rien.
+ */
+let PAIRES = null, paires_demande = false;
+
+function chargerPaires() {
+  if (paires_demande) return;
+  paires_demande = true;
+  fetch("data/paires.json")
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(d => { PAIRES = d; rendu(); })
+    .catch(e => {
+      PAIRES = { erreur: String(e) };
+      rendu();
+    });
+}
+
+function planchePaires() {
+  const titre = "Ce que la paire change";
+  const question = "Même échelle, même budget, dix marchés : de combien deux paires "
+    + "peuvent-elles différer quand rien d'autre ne varie ?";
+
+  if (!PAIRES || PAIRES.erreur) {
+    const c = cadre();
+    c.append(h("div", { style: "padding:2rem;color:var(--ink-3);text-align:center" },
+      PAIRES ? "Mesure indisponible (" + PAIRES.erreur + ")." : "Chargement de la mesure…"));
+    //  L'observateur est pose après l'insertion : le noeud n'existe pas encore
+    //  quand cette fonction rend.
+    /*  DEUX CHEMINS, ET LE SECOND EST UN FILET.
+     *
+     *  L'observateur charge la mesure quand le lecteur arrive dessus : c'est le
+     *  bon comportement, et il suffit dans un onglet regarde. Mais dans un
+     *  onglet cache, un IntersectionObserver ne rapporte RIEN — verifie : le
+     *  noeud etait en plein milieu de la fenetre, visibilityState valait
+     *  « hidden », et l'observateur n'a jamais rien dit. Sans filet, la planche
+     *  resterait sur « Chargement… » pour toujours.
+     *
+     *  Le filet est une periode d'inactivite : au pire, la mesure arrive quatre
+     *  secondes apres le reste, et paires_demande empeche de la demander deux
+     *  fois. Quatre-vingt-dix-huit kilooctets differes valent mieux qu'un
+     *  chargement qui ne finit jamais.  */
+    if (!PAIRES) setTimeout(() => {
+      if ("IntersectionObserver" in window) {
+        const io = new IntersectionObserver(e => {
+          if (e.some(x => x.isIntersecting)) { io.disconnect(); chargerPaires(); }
+        }, { rootMargin: "600px" });
+        io.observe(c);
+      }
+      if (window.requestIdleCallback) requestIdleCallback(chargerPaires, { timeout: 4000 });
+      else setTimeout(chargerPaires, 4000);
+    });
+    return planche(8, titre, question, c, null, null);
+  }
+
+  const P = PAIRES, M8 = P.meta;
+  const noms = M8.paires.slice();
+  const ligne = s => {
+    const p = P.paires[s];
+    return { s, court: s.split("/")[0], perf: p.perf, hold: p.hold,
+             ecart: p.perf - p.hold, r: p.resume, jours: p.jours };
+  };
+  const rangs = noms.map(ligne).sort((a, b) => b.ecart - a.ecart);
+  const wrap = h("div");
+
+  /*  L'AVERTISSEMENT VIENT AVANT LES CHIFFRES, jamais apres. Trois choses a
+   *  savoir avant de lire, et les trois sont mesurees, pas supposees.  */
+  wrap.append(h("div", { class: "avertissement-fenetre", html:
+    `<b>À lire avant le tableau.</b> Ces quatre cents jours ne sont pas une mesure neuve :
+     ils sont, à cinq minutes près, les quatre derniers blocs de l'étude à neuf cents jours
+     déjà publiée. Deux lectures de la même donnée ne se confirment pas l'une l'autre.
+     La fenêtre est de surcroît <b>baissière</b> — ne rien faire y perd
+     ${pct(rangs.reduce((a, x) => a + x.hold, 0) / rangs.length, 0)} en moyenne — et un
+     amortisseur y paraît mécaniquement bon. Enfin, le panier de dix paires est choisi sur
+     la <b>liquidité</b>, un critère connu d'avance, et il le reste quoi que dise ce
+     classement : trier des paires sur leurs résultats passés est exactement l'erreur que
+     la validation en avant a chiffrée à ${nb(Math.abs(M8.surajustement) * 100, 2)} points par
+     bloc de cent jours.` }));
+
+  /* ——— figure A : l'ecart, paire par paire ——— */
+  const boxA = cadre();
+  boxA.append(h("p", { class: "sous-t", style: "padding:.6rem .85rem 0" },
+    "chaque paire : où finit « ne rien faire », où finit le robot"));
+  cadreToile(boxA, () => 34 + rangs.length * 28, (svg, W, H) => {
+    //  Le couloir droit porte DEUX nombres, la performance et l'ecart : a
+    //  soixante-dix-huit pixels ils se chevauchaient et on lisait « +13, 3+67 % ».
+    const G = 62, D2 = 126, T = 10, B = 18;
+    const vals = rangs.flatMap(x => [x.perf, x.hold]);
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    const pad = (hi - lo) * 0.06 || 0.02; lo -= pad; hi += pad;
+    const iw = W - G - D2;
+    const X = v => G + (v - lo) / (hi - lo) * iw;
+    const pasY = (H - T - B) / rangs.length;
+    //  le zero : c'est lui qui separe gagner de perdre, il est trace en premier
+    if (lo < 0 && hi > 0) {
+      el("line", { x1: Math.round(X(0)) + .5, x2: Math.round(X(0)) + .5, y1: T,
+        y2: H - B, class: "axe-fort" }, svg);
+      el("text", { x: Math.round(X(0)) + 4, y: H - 6, class: "tick" }, svg).textContent = "0 %";
+    }
+    for (const [i, x] of rangs.entries()) {
+      const y = Math.round(T + (i + 0.5) * pasY) + .5;
+      el("text", { x: G - 8, y: y + 4, "text-anchor": "end", class: "etiq-f" }, svg)
+        .textContent = x.court;
+      el("line", { x1: X(x.hold), x2: X(x.perf), y1: y, y2: y,
+        stroke: "var(--rule-fort)", "stroke-width": 2, "stroke-linecap": "round" }, svg);
+      el("circle", { cx: X(x.hold), cy: y, r: 4, fill: "var(--ink-3)" }, svg);
+      el("circle", { cx: X(x.perf), cy: y, r: 5,
+        fill: x.perf >= 0 ? "var(--hausse)" : "var(--baisse)",
+        stroke: "var(--surface)", "stroke-width": 1 }, svg);
+      el("text", { x: W - D2 + 8, y: y + 4, class: "etiq" }, svg).textContent =
+        sgn(x.perf, 1);
+      el("text", { x: W - 6, y: y + 4, "text-anchor": "end", class: "etiq-f",
+        fill: x.ecart >= 0 ? "var(--hausse)" : "var(--baisse)" }, svg).textContent =
+        sgn(x.ecart, 0);
+    }
+    el("text", { x: W - 6, y: T + 2, "text-anchor": "end", class: "tick" }, svg)
+      .textContent = "écart";
+  });
+  boxA.append(h("p", { class: "aide" },
+    "Rangées par l'écart au repère, pas par la performance : les robots ne choisissent "
+    + "pas leur marché, et c'est l'écart qui dit ce que la méthode a apporté."));
+  wrap.append(boxA);
+
+  /* ——— figure B : dix courbes, une seule echelle ——— */
+  const boxB = cadre();
+  boxB.append(h("p", { class: "sous-t", style: "padding:.6rem .85rem 0" },
+    "les dix équités, jour par jour · même échelle verticale pour les dix"));
+  cadreToile(boxB, W => (W < 620 ? 5 : 2) * 118 + 16, (svg, W, H) => {
+    const cols = W < 620 ? 2 : 5, lignes = Math.ceil(rangs.length / cols);
+    const cw = W / cols, ch = (H - 8) / lignes;
+    //  UNE SEULE ECHELLE POUR LES DIX. Un cadrage par cellule rendrait toutes
+    //  les courbes egalement spectaculaires et effacerait justement ce que la
+    //  planche mesure : l'ecart entre les paires.
+    let lo = 0, hi = 0;
+    for (const x of rangs)
+      for (const v of x.jours.equity.map(e => e / M8.budget - 1).concat(x.jours.hold)) {
+        if (v < lo) lo = v; if (v > hi) hi = v;
+      }
+    const pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
+    for (const [i, x] of rangs.entries()) {
+      const cx = (i % cols) * cw, cy = 8 + Math.floor(i / cols) * ch;
+      const T = 20, B = 10, G = 6, D2 = 6;
+      const iw = cw - G - D2, ih = ch - T - B;
+      const X = k => cx + G + k / Math.max(1, x.jours.equity.length - 1) * iw;
+      const Y = v => cy + T + (1 - (v - lo) / (hi - lo)) * ih;
+      el("text", { x: cx + G, y: cy + 12, class: "etiq-f" }, svg).textContent = x.court;
+      el("text", { x: cx + cw - D2, y: cy + 12, "text-anchor": "end", class: "etiq",
+        fill: x.perf >= 0 ? "var(--hausse)" : "var(--baisse)" }, svg).textContent = sgn(x.perf, 0);
+      if (lo < 0 && hi > 0)
+        el("line", { x1: cx + G, x2: cx + cw - D2, y1: Math.round(Y(0)) + .5,
+          y2: Math.round(Y(0)) + .5, class: "axe" }, svg);
+      const trace = (serie, cls) => {
+        let d = "";
+        for (const [k, v] of serie.entries())
+          d += (k ? "L" : "M") + X(k).toFixed(1) + " " + Y(v).toFixed(1) + " ";
+        el("path", { d, fill: "none", ...cls }, svg);
+      };
+      trace(x.jours.hold, { stroke: "var(--ink-3)", "stroke-width": 1, opacity: .55 });
+      trace(x.jours.equity.map(e => e / M8.budget - 1),
+        { stroke: "var(--achat)", "stroke-width": 1.5, "stroke-linejoin": "round" });
+    }
+  });
+  wrap.append(boxB);
+
+  /* ——— les epreuves, resultat reel, echecs compris ——— */
+  const E = P.epreuves;
+  const boite = (t, v, ok, note) => h("div", { class: "tuile" },
+    h("div", { class: "t-k" }, t),
+    h("div", { class: "t-v num " + (ok === true ? "pos" : ok === false ? "neg" : "") }, v),
+    h("div", { class: "t-n" }, note));
+  const grille = h("div", { class: "tuiles" });
+  grille.append(
+    boite("Voisinage", E.passe.voisinage ? "tient" : "échoue", E.passe.voisinage,
+      `le pire voisin rend ${sgn(E.voisinage.pire, 1)} ; un voisin écarté, `
+      + `son premier barreau tombant sous le plancher de ${nb(M8.plancher, 0)} €`),
+    boite("Paires", E.passe.paires ? "tient" : "échoue", E.passe.paires,
+      `${E.paires.positives} positives sur ${E.paires.sur} · la pire est `
+      + `${E.paires.pire.split("/")[0]} à ${sgn(E.paires.pire_perf, 1)}`),
+    boite("Trimestres", E.passe.trimestres ? "tient" : "échoue", E.passe.trimestres,
+      `${E.trimestres.positifs} sur 4 positifs · mais ces quatre trimestres SONT les `
+      + `blocs b5 à b8 de l'étude à 900 jours : ce n'est pas un contrôle de plus`),
+    boite("Résolutions", "indisponible", null, E.resolutions_motif.replace(/^indisponible : /, "")));
+  const boxE = cadre();
+  boxE.append(h("p", { class: "sous-t", style: "padding:.6rem .85rem .4rem" },
+    `les épreuves de la page, appliquées à cette configuration · ${E.reussies} tenue`
+    + `${E.reussies > 1 ? "s" : ""} sur ${E.calculables} calculables`), grille);
+  wrap.append(boxE);
+
+  /* ——— ce que l'etude ne corrige pas ——— */
+  const ada = P.protocole["ADA/EUR"];
+  const liq = M8.liquidite.classement.slice().sort((a, b) => b.mediane - a.mediane);
+  const dixieme = liq[9], onzieme = liq[10];
+  wrap.append(h("div", { class: "garde", html:
+    `<h3>Ce que cette mesure ne corrige pas</h3>
+     <p><b>Le moteur ne regarde pas le volume échangé.</b> Il remplit un barreau dès que le plus
+     bas d'une bougie le touche. Sur TRX/EUR, 93,7 % des bougies de cinq minutes échangent moins
+     que le barreau de 384 €. Sept des dix paires ici sont précisément les paires fines du panier :
+     leurs résultats rejoués sont optimistes d'une quantité qui n'est pas encore bornée.</p>
+     <p><b>Le protocole n'est pas neutre, et il se mesure.</b> L'étude à neuf cents jours remet
+     l'échelle à neuf tous les cent jours ; ici elle court sans interruption, comme le vrai robot.
+     Sur neuf paires l'écart reste sous dix points — mais sur ADA il vaut
+     ${pct(Math.abs(ada.continu - ada.compose), 0)} : ${sgn(ada.compose, 1)} avec les remises à
+     neuf contre ${sgn(ada.continu, 1)} sans. Le mécanisme se lit dans le capital immobilisé :
+     ${pct(P.paires["ADA/EUR"].resume.engage_moyen, 0)} en continu contre
+     ${pct(ada.engage_blocs, 0)} en blocs. Une remise à neuf libère un capital qu'une échelle
+     pleine garde coincé — c'est une intervention, pas une convention d'affichage.</p>
+     <p><b>La frontière du panier est étroite.</b> ${dixieme.paire.split("/")[0]}, dixième, échange
+     ${nb(dixieme.mediane / 1000, 0)} k€ par jour ; ${onzieme.paire.split("/")[0]}, onzième et
+     exclue, ${nb(onzieme.mediane / 1000, 0)} k€ — un rapport de
+     ${nb(dixieme.mediane / onzieme.mediane, 2)}. La composition de ce panier dépend du choix de la
+     fenêtre de mesure (${M8.liquidite.fenetre.jours} jours, ${M8.liquidite.fenetre.debut_iso} au
+     ${M8.liquidite.fenetre.fin_iso}), et il faut le dire plutôt que de présenter l'exclusion
+     comme évidente.</p>
+     <p><b>Et ces épreuves découpent le même passé.</b> Par paire, par trimestre, par voisinage :
+     trois découpages des mêmes jours. Un réglage peut les passer tous et n'être qu'une bonne
+     adaptation à ce régime de marché précis. Seule une mesure en avant tranche, et c'est
+     exactement ce que le paper trading à dix paires est en train de faire.</p>` }));
+
+  //  Le classement est trie par l'ÉCART au repère ; l'amplitude annoncee ici est
+  //  celle des PERFORMANCES. Les deux extremes ne sont donc pas les memes paires,
+  //  et une premiere version nommait celles du mauvais tri.
+  const parPerf = rangs.slice().sort((a, b) => b.perf - a.perf);
+  const haut = parPerf[0], bas = parPerf[parPerf.length - 1];
+  return planche(8, titre, question, wrap,
+    `<b>Même échelle, ${nb((haut.perf - bas.perf) * 100, 0)} points d'écart</b> entre la paire qui a le mieux
+     rendu (${haut.court}, ${sgn(haut.perf, 1)}) et celle qui a le plus perdu
+     (${bas.court}, ${sgn(bas.perf, 1)}) sur ces quatre cents jours. C'est le chiffre que cette planche existe pour donner : la paire compte
+     au moins autant que le réglage. Le capital immobilisé en moyenne va de
+     ${pct(Math.min(...rangs.map(x => x.r.engage_moyen)), 0)} à
+     ${pct(Math.max(...rangs.map(x => x.r.engage_moyen)), 0)} selon le marché, et le nombre de
+     cycles de ${Math.min(...rangs.map(x => x.r.cycles))} à
+     ${Math.max(...rangs.map(x => x.r.cycles))} — même configuration, mêmes quatre cents jours.
+     <b>Cette planche ne suit pas le sélecteur de réglage</b> : elle montre la configuration
+     figée qui tourne en direct, profondeur ${pct(M8.reglage.profondeur, 0)},
+     ${M8.reglage.paliers} barreaux, progression x${nb(M8.reglage.ratio, 1)}, objectif
+     ${pct(M8.reglage.objectif_net, 0)} nets, ${nb(M8.budget, 0)} € par paire.`,
+    null);
+}
+
 /* ------------------------------------------------------------------ tuiles */
 function tuiles() {
   const st = stats(), s = S(), r = R();
@@ -1349,7 +1608,8 @@ function rendu() {
   for (const t of TOILES.splice(0)) t.detruire && t.detruire();
   const app = document.getElementById("app");
   app.replaceChildren(...[tuiles(), plancheCycle(), plancheArgent(), plancheEchelle(),
-    plancheDuree(), plancheCaptivites(), plancheChoisir(), plancheChutes()].filter(Boolean));
+    plancheDuree(), plancheCaptivites(), plancheChoisir(), plancheChutes(),
+    planchePaires()].filter(Boolean));
   for (const p of app.querySelectorAll(".pastille")) {
     const c = p.className;
     p.style.background = c.includes("a-ven") ? "var(--vente)"

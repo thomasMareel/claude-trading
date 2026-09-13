@@ -87,9 +87,9 @@ REGLAGES = [
     #  d'un cinquieme la fait passer de +11 % a -6,5 %. Elle est reglee juste
     #  au-dela du point ou la plupart des chutes s'arretent, ce qui est puissant
     #  sur CE marche et ne se transporte pas.
-    dict(cle="cadence-2", nom="Cadence, depart -2 %", profondeur=0.12, paliers=8, ratio=1.6,
+    dict(cle="cadence-2", nom="Cadence, départ -2 %", profondeur=0.12, paliers=8, ratio=1.6,
          objectif_net=0.01, depart_sous=0.02, suivre_hausse=True),
-    dict(cle="cadence-3", nom="Cadence, depart -3 %", profondeur=0.12, paliers=8, ratio=1.6,
+    dict(cle="cadence-3", nom="Cadence, départ -3 %", profondeur=0.12, paliers=8, ratio=1.6,
          objectif_net=0.01, depart_sous=0.03, suivre_hausse=True),
     dict(cle="cadence-10", nom="Cadence, 10 paliers", profondeur=0.12, paliers=10, ratio=1.4,
          objectif_net=0.01, depart_sous=0.03, suivre_hausse=True),
@@ -103,7 +103,7 @@ REGLAGES = [
          objectif_net=0.04, depart_sous=0.02, suivre_hausse=True),
     dict(cle="profonde-3", nom="Profonde, objectif 3 %", profondeur=0.50, paliers=3, ratio=2.8,
          objectif_net=0.03, depart_sous=0.02, suivre_hausse=True),
-    dict(cle="prudent-60-5", nom="Le moins risque", profondeur=0.60, paliers=5, ratio=2.4,
+    dict(cle="prudent-60-5", nom="Le moins risqué", profondeur=0.60, paliers=5, ratio=2.4,
          objectif_net=0.08, depart_sous=0.04, reancrage_min=0.02, suivre_hausse=True),
     dict(cle="p08-14-r18-o2", nom="Le tableau d'origine", profondeur=0.08, paliers=14,
          ratio=1.8, objectif_net=0.02, suivre_hausse=False),
@@ -504,14 +504,30 @@ def main() -> int:
     ap.add_argument("--budget", type=float, default=1000.0)
     ap.add_argument("--sortie", default="docs/simulations.json")
     ap.add_argument("--page", action="store_true", help="fabrique aussi la page autonome")
+    ap.add_argument("--page-seulement", action="store_true",
+                    help="rebatit la page depuis le JSON deja calcule, sans rien rejouer")
     args = ap.parse_args()
+
+    chemin = Path(args.sortie)
+
+    #  REBATIR LA PAGE SANS REJOUER QUATRE CENTS JOURS. Une ligne de JavaScript
+    #  changee dans le gabarit ne justifie pas de recalculer douze mille rejeux ;
+    #  et tant qu'il fallait tout relancer, la page construite et son gabarit
+    #  divergeaient a chaque correction posee a la main sur l'un des deux.
+    if args.page_seulement:
+        if not chemin.exists():
+            raise SystemExit(f"{chemin} absent : il n'y a rien a rebatir")
+        p = batir_page(chemin.read_text(encoding="utf-8"),
+                       chemin.parent / "simulations.template.html",
+                       chemin.parent / "simulations.html")
+        print(f"{p} : {p.stat().st_size / 1e6:.2f} Mo, rebatie depuis {chemin}")
+        return 0
 
     cfg = load_config()
     st = Storage(cfg.get("storage.db_path"), None)
     data = exporter(cfg, st, args.budget)
     st.close()
 
-    chemin = Path(args.sortie)
     chemin.parent.mkdir(parents=True, exist_ok=True)
     texte = json.dumps(data, separators=(",", ":"))
     chemin.write_text(texte, encoding="utf-8")

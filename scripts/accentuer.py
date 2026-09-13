@@ -39,9 +39,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from accents_mots import SUPPLEMENT  # noqa: E402
 
+#  docs/simulations.html N'EST PAS UNE CIBLE : elle est fabriquee a partir du
+#  gabarit et des donnees, et tout accent pose dessus disparait a la
+#  reconstruction suivante. Pire, l'outil proposait d'accentuer les noms de
+#  reglages recopies dans le JSON embarque — la page se serait alors mise a
+#  contredire son propre fichier de donnees. On corrige le gabarit et la source,
+#  puis on rebatit : python scripts/exporter_simulations.py --page-seulement
 CIBLES = ["docs/index.html", "docs/methode.html", "docs/paper.html",
           "docs/journal.html", "docs/validation.html",
-          "docs/simulations.template.html", "docs/simulations.html",
+          "docs/simulations.template.html",
           "docs/nav.js", "docs/marche.js"]
 
 #  Le vocabulaire du site. Seuls des mots dont l'accent ne fait aucun doute.
