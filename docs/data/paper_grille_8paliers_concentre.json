@@ -1,14 +1,14 @@
 {
- "maj": "2026-09-13T23:41:07+00:00",
+ "maj": "2026-09-14T17:01:58+00:00",
  "profil": "8paliers_concentre",
  "titre": "Huit barreaux, dix paires",
  "explication": "Dix experiences independantes menees en parallele sous la MEME echelle, mille euros chacune, pour isoler ce que la paire change. Ce n'est pas un portefeuille de dix mille euros : c'est un dispositif de mesure. L'echelle a huit barreaux avec une vraie progression des mises \u2014 14 a 384 EUR, les grosses tout en bas \u2014 que le plancher de 12 EUR par ordre interdit des qu'on repartit un budget plus petit. Les barreaux ne sont pas equidistants : resserres en haut (-2, -3, -6, -11 %) et etires en bas (-19, -28, -40, -53 %), parce qu'une echelle reguliere descendant a -53 % place la moitie de ses barreaux la ou le prix ne va jamais. Sur 900 jours de passe, la meme echelle va de +5,3 % par bloc de cent jours sur UNI a -1,1 % sur ADA : six points d'ecart pour une echelle identique, et c'est precisement ce que le direct doit confirmer ou non.",
  "depuis": 1789300200000,
- "jours": 0.49,
+ "jours": 1.22,
  "budget_total": 10000.0,
- "equity_total": 9999.88,
- "perf_total": -1.2e-05,
- "hold_moyen": -0.006725,
+ "equity_total": 10004.67,
+ "perf_total": 0.000467,
+ "hold_moyen": 0.02287,
  "reglage": {
   "profondeur": 0.51,
   "paliers": 8,
@@ -43,58 +43,58 @@
    "cycles": 0,
    "engage": 0.0,
    "barreaux": 0,
-   "reference": 66775.2,
-   "prix": 66278.4,
+   "reference": 68277.6,
+   "prix": 68150.4,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 142,
-   "hold": -0.00141,
+   "bougies": 350,
+   "hold": 0.026795,
    "echelle": [
     {
-     "prix": 65439.696,
+     "prix": 66912.048,
      "mise": 14.3,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 64744.688816,
+     "prix": 66201.403592,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 62659.667265,
+     "prix": 64069.470367,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 59184.631347,
+     "prix": 60516.248327,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 54319.581061,
+     "prix": 55541.737469,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 48064.516408,
+     "prix": 49145.937796,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 40419.437388,
+     "prix": 41328.849306,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 31384.344,
+     "prix": 32090.472,
      "mise": 383.94,
      "rempli": false,
      "mort": false
@@ -112,58 +112,58 @@
    "cycles": 0,
    "engage": 0.0,
    "barreaux": 0,
-   "reference": 2168.69,
-   "prix": 2139.53,
+   "reference": 2193.5,
+   "prix": 2187.61,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 142,
-   "hold": -0.002749,
+   "bougies": 350,
+   "hold": 0.019661,
    "echelle": [
     {
-     "prix": 2125.3162,
+     "prix": 2149.63,
      "mise": 14.3,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 2102.74412,
+     "prix": 2126.799694,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 2035.027882,
+     "prix": 2058.308776,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 1922.167484,
+     "prix": 1944.157245,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 1764.162927,
+     "prix": 1784.345102,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 1561.01421,
+     "prix": 1578.872347,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 1312.721335,
+     "prix": 1327.73898,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 1019.2843,
+     "prix": 1030.945,
      "mise": 383.94,
      "rempli": false,
      "mort": false
@@ -176,71 +176,71 @@
   },
   {
    "paire": "XRP/EUR",
-   "equity": 1000.06,
-   "perf": 6.2e-05,
-   "cycles": 0,
-   "engage": 14.3,
-   "barreaux": 1,
-   "reference": 1.1746,
-   "prix": 1.1584,
-   "revient": 1.15226,
-   "sortie": 1.176482,
+   "equity": 1000.29,
+   "perf": 0.000286,
+   "cycles": 1,
+   "engage": 0.0,
+   "barreaux": 0,
+   "reference": 1.2302,
+   "prix": 1.2278,
+   "revient": 0.0,
+   "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 142,
-   "hold": -0.003118,
+   "bougies": 350,
+   "hold": 0.056606,
    "echelle": [
     {
-     "prix": 1.151108,
+     "prix": 1.205596,
      "mise": 14.3,
-     "rempli": true,
+     "rempli": false,
      "mort": false
     },
     {
-     "prix": 1.138883,
+     "prix": 1.192792,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 1.102206,
+     "prix": 1.15438,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 1.041079,
+     "prix": 1.090359,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.955501,
+     "prix": 1.00073,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.845472,
+     "prix": 0.885493,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.710993,
+     "prix": 0.744648,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.552062,
+     "prix": 0.578194,
      "mise": 383.94,
      "rempli": false,
      "mort": false
     }
    ],
-   "part_engage": 0.00151,
-   "duree_moyenne_h": 0.0,
-   "gain_realise": 0,
+   "part_engage": 0.00192,
+   "duree_moyenne_h": 3.9,
+   "gain_realise": 0.29,
    "journal": [
     {
      "ts": 1789338300000,
@@ -248,76 +248,83 @@
      "prix": 1.151108,
      "euros": 14.3,
      "gain": null
+    },
+    {
+     "ts": 1789352400000,
+     "genre": "vente",
+     "prix": 1.176482,
+     "euros": 14.59,
+     "gain": 0.29
     }
    ]
   },
   {
    "paire": "SOL/EUR",
-   "equity": 999.99,
-   "perf": -7e-06,
-   "cycles": 0,
-   "engage": 14.3,
-   "barreaux": 1,
-   "reference": 87.51,
-   "prix": 85.89,
-   "revient": 85.845646,
-   "sortie": 87.650209,
+   "equity": 1000.29,
+   "perf": 0.000286,
+   "cycles": 1,
+   "engage": 0.0,
+   "barreaux": 0,
+   "reference": 88.99,
+   "prix": 88.76,
+   "revient": 0.0,
+   "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 142,
-   "hold": -0.004433,
+   "bougies": 350,
+   "hold": 0.028834,
    "echelle": [
     {
-     "prix": 85.7598,
+     "prix": 87.2102,
      "mise": 14.3,
-     "rempli": true,
+     "rempli": false,
      "mort": false
     },
     {
-     "prix": 84.848982,
+     "prix": 86.283978,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 82.116527,
+     "prix": 83.50531,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 77.562435,
+     "prix": 78.874198,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 71.186706,
+     "prix": 72.390641,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 62.989341,
+     "prix": 64.054639,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 52.970339,
+     "prix": 53.866192,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 41.1297,
+     "prix": 41.8253,
      "mise": 383.94,
      "rempli": false,
      "mort": false
     }
    ],
-   "part_engage": 0.00151,
-   "duree_moyenne_h": 0.0,
-   "gain_realise": 0,
+   "part_engage": 0.00376,
+   "duree_moyenne_h": 7.7,
+   "gain_realise": 0.29,
    "journal": [
     {
      "ts": 1789338300000,
@@ -325,76 +332,83 @@
      "prix": 85.7598,
      "euros": 14.3,
      "gain": null
+    },
+    {
+     "ts": 1789365900000,
+     "genre": "vente",
+     "prix": 87.650209,
+     "euros": 14.59,
+     "gain": 0.29
     }
    ]
   },
   {
    "paire": "DOGE/EUR",
-   "equity": 999.93,
-   "perf": -7.4e-05,
-   "cycles": 0,
-   "engage": 14.3,
-   "barreaux": 1,
-   "reference": 0.07303,
-   "prix": 0.07134,
-   "revient": 0.071641,
-   "sortie": 0.073147,
+   "equity": 1000.74,
+   "perf": 0.000744,
+   "cycles": 1,
+   "engage": 0.0,
+   "barreaux": 0,
+   "reference": 0.07344,
+   "prix": 0.07307,
+   "revient": 0.0,
+   "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 142,
-   "hold": -0.011559,
+   "bougies": 350,
+   "hold": 0.012411,
    "echelle": [
     {
-     "prix": 0.071569,
+     "prix": 0.071971,
      "mise": 14.3,
-     "rempli": true,
+     "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.070809,
+     "prix": 0.071207,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.068529,
+     "prix": 0.068914,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.064728,
+     "prix": 0.065092,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.059408,
+     "prix": 0.059741,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.052567,
+     "prix": 0.052862,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.044206,
+     "prix": 0.044454,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.034324,
+     "prix": 0.034517,
      "mise": 383.94,
      "rempli": false,
      "mort": false
     }
    ],
-   "part_engage": 0.00171,
-   "duree_moyenne_h": 0.0,
-   "gain_realise": 0,
+   "part_engage": 0.00446,
+   "duree_moyenne_h": 4.8,
+   "gain_realise": 0.74,
    "journal": [
     {
      "ts": 1789337700000,
@@ -402,6 +416,20 @@
      "prix": 0.071569,
      "euros": 14.3,
      "gain": null
+    },
+    {
+     "ts": 1789345500000,
+     "genre": "achat",
+     "prix": 0.070809,
+     "euros": 22.88,
+     "gain": null
+    },
+    {
+     "ts": 1789355100000,
+     "genre": "vente",
+     "prix": 0.072667,
+     "euros": 37.93,
+     "gain": 0.74
     }
    ]
   },
@@ -412,58 +440,58 @@
    "cycles": 0,
    "engage": 0.0,
    "barreaux": 0,
-   "reference": 0.29474,
-   "prix": 0.2921,
+   "reference": 0.29586,
+   "prix": 0.29586,
    "revient": 0.0,
    "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 142,
-   "hold": -0.008179,
+   "bougies": 350,
+   "hold": 0.004588,
    "echelle": [
     {
-     "prix": 0.288845,
+     "prix": 0.289943,
      "mise": 14.3,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.285777,
+     "prix": 0.286863,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.276574,
+     "prix": 0.277625,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.261236,
+     "prix": 0.262229,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.239762,
+     "prix": 0.240673,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.212153,
+     "prix": 0.212959,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.178408,
+     "prix": 0.179086,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.138528,
+     "prix": 0.139054,
      "mise": 383.94,
      "rempli": false,
      "mort": false
@@ -476,71 +504,71 @@
   },
   {
    "paire": "UNI/EUR",
-   "equity": 1000.02,
-   "perf": 1.7e-05,
-   "cycles": 1,
-   "engage": 37.19,
-   "barreaux": 2,
-   "reference": 5.487,
-   "prix": 5.314,
-   "revient": 5.347319,
-   "sortie": 5.459725,
+   "equity": 1001.77,
+   "perf": 0.001774,
+   "cycles": 3,
+   "engage": 0.0,
+   "barreaux": 0,
+   "reference": 5.569,
+   "prix": 5.534,
+   "revient": 0.0,
+   "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 142,
-   "hold": -0.019708,
+   "bougies": 350,
+   "hold": 0.020876,
    "echelle": [
     {
-     "prix": 5.37726,
+     "prix": 5.45762,
      "mise": 14.3,
-     "rempli": true,
+     "rempli": false,
      "mort": false
     },
     {
-     "prix": 5.32015,
+     "prix": 5.399657,
      "mise": 22.88,
-     "rempli": true,
+     "rempli": false,
      "mort": false
     },
     {
-     "prix": 5.148822,
+     "prix": 5.225768,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 4.863274,
+     "prix": 4.935952,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 4.463507,
+     "prix": 4.530211,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 3.94952,
+     "prix": 4.008543,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 3.321315,
+     "prix": 3.37095,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 2.57889,
+     "prix": 2.61743,
      "mise": 383.94,
      "rempli": false,
      "mort": false
     }
    ],
-   "part_engage": 0.00679,
-   "duree_moyenne_h": 1.4,
-   "gain_realise": 0.29,
+   "part_engage": 0.01002,
+   "duree_moyenne_h": 4.3,
+   "gain_realise": 1.77,
    "journal": [
     {
      "ts": 1789314900000,
@@ -569,76 +597,104 @@
      "prix": 5.32015,
      "euros": 22.88,
      "gain": null
+    },
+    {
+     "ts": 1789352700000,
+     "genre": "vente",
+     "prix": 5.459725,
+     "euros": 37.93,
+     "gain": 0.74
+    },
+    {
+     "ts": 1789367400000,
+     "genre": "achat",
+     "prix": 5.4488,
+     "euros": 14.3,
+     "gain": null
+    },
+    {
+     "ts": 1789391100000,
+     "genre": "achat",
+     "prix": 5.390931,
+     "euros": 22.88,
+     "gain": null
+    },
+    {
+     "ts": 1789392600000,
+     "genre": "vente",
+     "prix": 5.532362,
+     "euros": 37.93,
+     "gain": 0.74
     }
    ]
   },
   {
    "paire": "LINK/EUR",
-   "equity": 999.96,
-   "perf": -3.9e-05,
-   "cycles": 0,
-   "engage": 14.3,
-   "barreaux": 1,
-   "reference": 9.89,
-   "prix": 9.685,
-   "revient": 9.701902,
-   "sortie": 9.905846,
+   "equity": 1000.29,
+   "perf": 0.000286,
+   "cycles": 1,
+   "engage": 0.0,
+   "barreaux": 0,
+   "reference": 9.991,
+   "prix": 9.957,
+   "revient": 0.0,
+   "sortie": 0.0,
    "abandonnee": false,
-   "bougies": 142,
-   "hold": -0.009059,
+   "bougies": 350,
+   "hold": 0.018771,
    "echelle": [
     {
-     "prix": 9.6922,
+     "prix": 9.79118,
      "mise": 14.3,
-     "rempli": true,
+     "rempli": false,
      "mort": false
     },
     {
-     "prix": 9.589263,
+     "prix": 9.687192,
      "mise": 22.88,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 9.280453,
+     "prix": 9.375228,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 8.765769,
+     "prix": 8.855288,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 8.045212,
+     "prix": 8.127373,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 7.118782,
+     "prix": 7.191481,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 5.986478,
+     "prix": 6.047613,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 4.6483,
+     "prix": 4.69577,
      "mise": 383.94,
      "rempli": false,
      "mort": false
     }
    ],
-   "part_engage": 0.00171,
-   "duree_moyenne_h": 0.0,
-   "gain_realise": 0,
+   "part_engage": 0.00384,
+   "duree_moyenne_h": 7.8,
+   "gain_realise": 0.29,
    "journal": [
     {
      "ts": 1789337700000,
@@ -646,76 +702,83 @@
      "prix": 9.6922,
      "euros": 14.3,
      "gain": null
+    },
+    {
+     "ts": 1789365900000,
+     "genre": "vente",
+     "prix": 9.905846,
+     "euros": 14.59,
+     "gain": 0.29
     }
    ]
   },
   {
    "paire": "ADA/EUR",
-   "equity": 999.98,
-   "perf": -1.6e-05,
-   "cycles": 0,
-   "engage": 37.19,
-   "barreaux": 2,
-   "reference": 0.1808,
-   "prix": 0.1763,
-   "revient": 0.176197,
-   "sortie": 0.179901,
+   "equity": 1000.86,
+   "perf": 0.000864,
+   "cycles": 1,
+   "engage": 14.3,
+   "barreaux": 1,
+   "reference": 0.1841,
+   "prix": 0.1823,
+   "revient": 0.180599,
+   "sortie": 0.184395,
    "abandonnee": false,
-   "bougies": 142,
-   "hold": -0.004821,
+   "bougies": 350,
+   "hold": 0.029047,
    "echelle": [
     {
-     "prix": 0.177184,
+     "prix": 0.180418,
      "mise": 14.3,
      "rempli": true,
      "mort": false
     },
     {
-     "prix": 0.175302,
+     "prix": 0.178502,
      "mise": 22.88,
-     "rempli": true,
+     "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.169657,
+     "prix": 0.172753,
      "mise": 36.62,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.160248,
+     "prix": 0.163173,
      "mise": 58.58,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.147075,
+     "prix": 0.14976,
      "mise": 93.74,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.130139,
+     "prix": 0.132514,
      "mise": 149.98,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.109439,
+     "prix": 0.111437,
      "mise": 239.96,
      "rempli": false,
      "mort": false
     },
     {
-     "prix": 0.084976,
+     "prix": 0.086527,
      "mise": 383.94,
      "rempli": false,
      "mort": false
     }
    ],
-   "part_engage": 0.00465,
-   "duree_moyenne_h": 0.0,
-   "gain_realise": 0,
+   "part_engage": 0.00842,
+   "duree_moyenne_h": 5.2,
+   "gain_realise": 0.74,
    "journal": [
     {
      "ts": 1789337100000,
@@ -730,23 +793,37 @@
      "prix": 0.175302,
      "euros": 22.88,
      "gain": null
+    },
+    {
+     "ts": 1789355700000,
+     "genre": "vente",
+     "prix": 0.179901,
+     "euros": 37.93,
+     "gain": 0.74
+    },
+    {
+     "ts": 1789390800000,
+     "genre": "achat",
+     "prix": 0.180418,
+     "euros": 14.3,
+     "gain": null
     }
    ]
   },
   {
    "paire": "LTC/EUR",
-   "equity": 999.93,
-   "perf": -6.7e-05,
+   "equity": 1000.43,
+   "perf": 0.000429,
    "cycles": 0,
    "engage": 37.19,
    "barreaux": 2,
    "reference": 47.66,
-   "prix": 46.41,
+   "prix": 47.03,
    "revient": 46.446731,
    "sortie": 47.423089,
    "abandonnee": false,
-   "bougies": 142,
-   "hold": -0.002214,
+   "bougies": 350,
+   "hold": 0.011116,
    "echelle": [
     {
      "prix": 46.7068,
@@ -797,7 +874,7 @@
      "mort": false
     }
    ],
-   "part_engage": 0.00465,
+   "part_engage": 0.02399,
    "duree_moyenne_h": 0.0,
    "gain_realise": 0,
    "journal": [
