@@ -40,6 +40,11 @@ h1 em{font-style:italic; color:var(--achat)}
   margin-top:1.6rem; overflow:hidden}
 .paires{display:flex; gap:0; border-bottom:1px solid var(--rule); overflow-x:auto;
   scrollbar-width:thin}
+/*  Pendant qu'une paire se charge, la rangee d'onglets s'attenue et le curseur
+    dit qu'on attend. Deux dixiemes de seconde sur une bonne ligne, plus sur une
+    mauvaise : sans signal, un clic sans effet passe pour un clic perdu. */
+.paires.attend{opacity:.55; cursor:progress}
+.paires.attend .paire-onglet{pointer-events:none}
 .paire-onglet{flex:0 0 auto; padding:.6rem .9rem; background:none; border:none;
   border-bottom:2px solid transparent; cursor:pointer; text-align:left; min-width:8.5rem}
 .paire-onglet[aria-selected="true"]{border-bottom-color:var(--achat); background:var(--surface-2)}
@@ -218,9 +223,9 @@ footer b{color:var(--ink-2)}
 <script src="reglages.js" defer></script>
 <header class="tete">
   <div class="texte">
-    <div class="eyebrow">Banc d'essai · 400 jours rejoués sur 345 600 bougies de cinq minutes</div>
+    <div class="eyebrow" id="eyebrow">Banc d'essai</div>
     <h1>Anatomie d'une <em>descente</em></h1>
-    <p class="chapo">Une stratégie de grille rejouée sur BTC, ETH et SOL, du 2 août 2025 au 6 septembre 2026.
+    <p class="chapo">Une stratégie de grille rejouée sur <b id="chapo-paires">dix paires</b>, du 2 août 2025 au 6 septembre 2026.
       Chaque ordre réellement exécutable est posé sur le chandelier. Les réglages sont rangés
       <strong>rangés par gain sur cette fenêtre</strong>, avec à côté le nombre d'épreuves de robustesse
       qu'ils passent — car le plus rentable n'est pas toujours le plus fiable. Sur cette fenêtre,
@@ -1553,7 +1558,7 @@ function tuiles() {
   const st = stats(), s = S(), r = R();
   const T = [
     ["Performance", sgn(st.perf, 2), st.perf >= 0 ? "pos" : "neg",
-      `sur ${M.paire} · rang ${r.rang}/${D.reglages.length}, ${sgn(r.gain_moyen, 1)} sur les 3 paires`],
+      `sur ${M.paire} · rang ${r.rang}/${D.reglages.length}, ${sgn(r.gain_moyen, 1)} sur les ${D.meta.paires.length} paires`],
     ["Épreuves passées", `${r.epreuves.reussies}/4`,
       r.epreuves.reussies === 4 ? "pos" : r.epreuves.reussies <= 2 ? "neg" : "",
       Object.entries(r.epreuves.passe).filter(([, v]) => !v).map(([k]) => "échoue : " + epr(k)).join(", ")
@@ -1576,14 +1581,61 @@ function tuiles() {
 }
 
 /* ================================================================== CABLAGE */
+/*  Les chiffres d'un onglet. Une paire non encore chargée n'a pas ses series :
+ *  le resume calcule a l'export prend le relais, avec exactement les memes
+ *  nombres. Sans lui, neuf onglets sur dix s'afficheraient vides en attendant
+ *  un clic.  */
 function chiffresPaire(sym) {
-  const P = D.paires[sym], n = NH - 1;
+  const P = D.paires[sym];
+  if (!P) {
+    const r = D.meta.resume_paires[sym];
+    return r ? { der: r.der, var24: r.var24, hi: r.hi, lo: r.lo, vol: r.vol,
+                 hold: r.hold_pct }
+             : { der: 0, var24: 0, hi: 0, lo: 0, vol: 0, hold: 0 };
+  }
+  const n = NH - 1;
   const der = P.close[n], veille = P.close[Math.max(0, n - 24)];
   let hi = -Infinity, lo = Infinity, vol = 0;
   for (let i = Math.max(0, n - 23); i <= n; i++) {
     hi = Math.max(hi, P.haut[i]); lo = Math.min(lo, P.bas[i]); vol += P.vol[i];
   }
   return { der, var24: der / veille - 1, hi, lo, vol, hold: P.hold_pct };
+}
+
+/*  ————————————————— LE CHARGEMENT D'UNE PAIRE, A LA DEMANDE —————————————————
+ *
+ *  Dix paires entieres pesaient huit megaoctets ; la page en embarque une et va
+ *  chercher les autres au clic. Le fichier recu porte exactement ce que la page
+ *  rangeait deja sous D.paires[sym] et D.reglages[i].sims[sym] : on l'y remet,
+ *  et tout le reste du code continue de l'y trouver sans rien savoir du
+ *  decoupage.
+ */
+const enCours = new Map();
+function chargerPaire(sym) {
+  if (D.paires[sym]) return Promise.resolve(true);
+  if (enCours.has(sym)) return enCours.get(sym);
+  const p = fetch("data/sim/" + sym.replace("/", "-") + ".json")
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(j => {
+      D.paires[sym] = j.paire;
+      for (const r of D.reglages) r.sims[sym] = j.sims[r.id];
+      return true;
+    })
+    .catch(e => { console.error("paire " + sym + " indisponible", e); return false; });
+  enCours.set(sym, p);
+  return p;
+}
+
+function choisirPaire(sym) {
+  if (sym === M.paire && D.paires[sym]) return;
+  const box = document.getElementById("paires");
+  if (!D.paires[sym]) box.classList.add("attend");
+  chargerPaire(sym).then(ok => {
+    box.classList.remove("attend");
+    if (!ok) return;
+    M.paire = sym;
+    majPaires(); majStats(); M.toile.rendre(true); rendu(); ecrireUrl();
+  });
 }
 
 function majPaires() {
@@ -1593,8 +1645,7 @@ function majPaires() {
     const c = chiffresPaire(sym);
     const b = h("button", { class: "paire-onglet", type: "button", role: "tab",
       "aria-selected": String(sym === M.paire),
-      onclick: () => { M.paire = sym; majPaires(); majStats(); M.toile.rendre(true);
-        rendu(); ecrireUrl(); } },
+      onclick: () => choisirPaire(sym) },
       h("span", { class: "p" }, sym),
       h("span", { class: "v" }, nb(c.der, dec(c.der))),
       h("span", { class: "d " + (c.var24 >= 0 ? "haut" : "bas") }, sgn(c.var24, 2)));
@@ -1641,8 +1692,9 @@ function majOutils() {
 
 function detailReglage() {
   const r = R();
-  const cad = D.meta.paires.reduce((a, s) => a + r.sims[s].cycles_par_semaine, 0)
-    / D.meta.paires.length;
+  //  La cadence est calculee a l'export, sur les dix paires. La page n'en garde
+  //  plus qu'une en memoire : elle ne pourrait plus faire cette moyenne.
+  const cad = r.cadence;
   const rate = Object.entries(r.epreuves.passe).filter(([, v]) => !v).map(([k]) => epr(k));
   document.getElementById("detail-reglage").textContent =
     `profondeur ${pct(r.profondeur, 0)} · ${r.paliers} paliers · progression ×${r.ratio}`
@@ -1716,7 +1768,11 @@ function lireUrl() {
   const p = q.get("paire");
   if (p) {
     const s = D.meta.paires.find(x => x.split("/")[0] === p.toUpperCase());
-    if (s) M.paire = s;
+    //  Une paire nommee par l'adresse n'est pas forcement chargee : on ne la
+    //  prend que si elle l'est, et le lancement s'occupe d'aller la chercher.
+    //  Sans cette garde, le premier dessin lirait des series inexistantes.
+    if (s && D.paires[s]) M.paire = s;
+    else if (s) attendue = s;
   }
   const v = (q.get("vue") || "").split("-").map(Number);
   if (v.length === 2 && v.every(Number.isFinite) && v[1] > v[0]) {
@@ -1728,6 +1784,29 @@ function lireUrl() {
   for (const k of Object.keys(M.calques)) M.calques[k] = !sans.includes(k);
 }
 
+//  La paire demandee par l'adresse, quand elle n'est pas celle qui voyage avec
+//  la page. Elle est chargee APRES le premier dessin : mieux vaut afficher
+//  quelque chose tout de suite puis basculer, qu'une page blanche le temps d'un
+//  aller-retour reseau.
+let attendue = null;
+
+//  L'EN-TETE SE CALCULE. « rejouee sur BTC, ETH et SOL » et « 345 600 bougies »
+//  etaient ecrits en dur : vrais a trois paires, faux a dix, et rien ne l'aurait
+//  dit. Un chiffre recopie dans la prose finit toujours par mentir.
+(function () {
+  //  Le pas d'AFFICHAGE est l'heure, le pas de SIMULATION cinq minutes : c'est
+  //  le second qui compte les bougies rejouees. La premiere version divisait
+  //  par le premier et annoncait 96 000 bougies au lieu de 1 152 000.
+  const parHeure = D.meta.pas / (5 * 60000);
+  const n = D.meta.paires.length, b = n * NH * parHeure;
+  document.getElementById("eyebrow").textContent =
+    `Banc d'essai · ${D.meta.jours} jours rejoués sur ${nb(b, 0)} bougies de cinq minutes`;
+  document.getElementById("chapo-paires").textContent =
+    n <= 3 ? D.meta.paires.map(x => x.split("/")[0]).join(", ")
+           : `${n} paires, de ${D.meta.paires[0].split("/")[0]} à `
+             + D.meta.paires[n - 1].split("/")[0];
+})();
+
 M.unite = uniteAuto(NH);
 lireUrl();
 if (!M.uniteManuelle) M.unite = uniteAuto(M.h1 - M.h0);
@@ -1738,6 +1817,7 @@ brancherGestes(M.toile);
 majOutils();
 rendu();
 ecrireUrl();
+if (attendue) { choisirPaire(attendue); attendue = null; }
 //  Un reglage d'affichage change la forme des marques, le fuseau et le nombre
 //  de decimales : il faut refaire le graphique ET les planches, qui portent
 //  leurs propres dessins.
@@ -1746,5 +1826,6 @@ if (window.Prefs) Prefs.sur(() => { if (M.toile) M.toile.rendre(true); rendu(); 
 addEventListener("hashchange", () => {
   lireUrl(); bornerVue(); majPaires(); majStats();
   M.toile.rendre(true); majOutils(); rendu();
+  if (attendue) { const s = attendue; attendue = null; choisirPaire(s); }
 });
 </script>

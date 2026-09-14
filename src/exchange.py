@@ -102,19 +102,35 @@ class Exchange:
         return self._retry(self._x.fetch_ohlcv, symbol, timeframe, since, limit)
 
     def fetch_ohlcv_full(
-        self, symbol: str, timeframe: str, since: int, page: int = 1000
+        self, symbol: str, timeframe: str, since: int, page: int = 300
     ) -> list[list[float]]:
-        """Pagination complete depuis `since` jusqu'a maintenant."""
+        """Pagination complete depuis `since` jusqu'a maintenant.
+
+        NE JAMAIS S'ARRETER SUR « le lot recu est plus petit que le lot demande ».
+        C'etait la regle d'avant, avec page=1000 alors qu'OKX plafonne a 300 : le
+        premier lot revenait toujours plus court que demande, et la pagination
+        s'arretait donc TOUJOURS apres une page. Demander quatre cents jours en
+        rendait trois cents bougies — un peu plus d'un jour — sans une erreur, et
+        c'est l'appelant qui devait s'apercevoir du trou.
+
+        Les trois conditions d'arret sont : le lot est vide, il n'avance pas, ou
+        il a rejoint le present. Aucune ne suppose de connaitre la taille de page
+        de la plateforme.
+        """
         out: list[list[float]] = []
         cursor = since
         tf_ms = self._x.parse_timeframe(timeframe) * 1000
         while True:
             batch = self.fetch_ohlcv(symbol, timeframe, limit=page, since=cursor)
-            if not batch:
+            neuf = [r for r in batch if int(r[0]) >= cursor] if batch else []
+            if not neuf:
                 break
-            out.extend(batch)
-            last = int(batch[-1][0])
-            if len(batch) < page or last + tf_ms >= int(time.time() * 1000):
+            out.extend(neuf)
+            last = int(neuf[-1][0])
+            if last + tf_ms >= int(time.time() * 1000):
+                break
+            if last < cursor:
+                #  la plateforme renvoie du passe : on arrete plutot que de tourner
                 break
             cursor = last + tf_ms
         return out

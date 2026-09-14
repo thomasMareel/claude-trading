@@ -203,7 +203,7 @@ def journalier(dep: list[tuple], eq: list[tuple], budget: float, par_jour: int) 
 #  avant d'avoir vu les resultats, ce qui est la seule chose qui compte.
 SEUILS = {
     "voisinage": "le pire voisin immediat reste positif",
-    "paires": "les trois paires sont positives",
+    "paires": "toutes les paires sont positives",
     "trimestres": "au moins 3 trimestres sur 4 positifs",
     "resolutions": "moins de 2 points d'ecart entre bougies de 1 h, 5 min et 1 min",
 }
@@ -258,6 +258,10 @@ def epreuves(spec: dict, brut: dict, autres: dict, frais: float, budget: float) 
         "trimestres_positifs": sum(1 for x in tri if x > 0),
         "resolutions": {k: arrondi(v, 6) for k, v in res.items()},
         "ecart_resolutions": arrondi(ecart, 6),
+        #  Sur combien de paires l'epreuve des resolutions a porte. Sept des dix
+        #  n'ont pas de bougies a la minute : le dire vaut mieux que laisser
+        #  croire qu'elle a jugé les dix.
+        "resolutions_paires": sorted(next(iter(autres.values()), {})),
         "passe": passe,
         "reussies": sum(passe.values()),
     }
@@ -297,14 +301,30 @@ def chutes_mesurees() -> dict:
     }
 
 
-def exporter(cfg, st: Storage, budget: float) -> dict:
+def liste_paires(cfg, demandees: str | None) -> list[str]:
+    """Les paires de la page.
+
+    Le panier de LIQUIDITE fait foi, pas config.yaml : le mandat courant n'y
+    declare que BTC, ETH et SOL, alors que le banc mesure les dix paires que le
+    paper trading suit. Une page qui n'en montrerait que trois laisserait sept
+    marches mesures et non regardables.
+    """
+    if demandees:
+        return [p.strip() for p in demandees.split(",") if p.strip()]
+    f = Path(__file__).resolve().parent.parent / "docs/archives/liquidite.json"
+    if f.exists():
+        return list(json.loads(f.read_text(encoding="utf-8"))["retenues"])
+    return list(cfg.symbols)
+
+
+def exporter(cfg, st: Storage, budget: float, symboles: list[str]) -> dict:
     frais = float(cfg.get("exchange.fee_rate", 0.001))
     par_heure = {"1m": 60, "5m": 12, "15m": 4, "1h": 1}[PAS_SIM]
     paires: dict[str, dict] = {}
     brut: dict[str, list[tuple]] = {}
     t0 = n = None
 
-    for s in cfg.symbols:
+    for s in symboles:
         vue = bougies(st, s, PAS_VUE)
         sim = bougies(st, s, PAS_SIM)
         if len(vue) < 100 or len(sim) < 100:
@@ -364,16 +384,29 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
     #  chargement de mille jours en cinq minutes, alors que l'horaire et la
     #  minute s'arretaient a quatre cents, comparait +45 % a +13 % et faisait
     #  echouer l'epreuve pour tous les reglages sans que rien ne le signale.
+    #
+    #  ET SUR LES MEMES PAIRES. Depuis le passage a dix paires, seules BTC, ETH
+    #  et SOL ont des bougies a la minute : exiger les dix aurait fait SAUTER
+    #  l'epreuve pour tout le monde, et l'accepter paire par paire aurait compare
+    #  une moyenne sur dix paires a une moyenne sur trois — la meme faute que
+    #  ci-dessus, deplacee d'un axe. On retient donc l'INTERSECTION, et on dit
+    #  sur combien de paires l'epreuve a porte.
     fin_fenetre = t0 + n * HEURE
     autres = {}
     for tf in ("1h", PAS_SIM, "1m"):
         d = {s: [x for x in bougies(st, s, tf) if t0 <= x[0] < fin_fenetre]
-             for s in cfg.symbols}
+             for s in symboles}
         d = {s: b for s, b in d.items() if len(b) > 500 and b[0][0] == t0}
-        if len(d) == len(paires):
+        if len(d) >= 2:
             autres[tf] = d
+    communes = set(paires)
+    for d in autres.values():
+        communes &= set(d)
+    autres = {tf: {s: b for s, b in d.items() if s in communes} for tf, d in autres.items()}
+    if len(autres) < 2 or not communes:
+        autres = {}
     print(f"  epreuves de stabilite sur : {', '.join(autres) or 'aucune (donnees absentes)'}"
-          f" — meme fenetre pour les trois")
+          f" — memes jours et memes paires ({len(communes)} sur {len(paires)})")
 
     sorties = []
     semaines = n / 24 / 7
@@ -462,13 +495,34 @@ def exporter(cfg, st: Storage, budget: float) -> dict:
     for rang, bloc in enumerate(sorties, 1):
         bloc["rang"] = rang
         bloc["gain_moyen"] = arrondi(gain_moyen(bloc), 6)
+        #  La cadence moyenne est calculee ici et non dans la page : celle-ci ne
+        #  garde en memoire qu'une paire a la fois depuis le decoupage, et elle
+        #  ne peut plus faire la moyenne sur les dix.
+        bloc["cadence"] = arrondi(
+            sum(s["cycles_par_semaine"] for s in bloc["sims"].values()) / len(bloc["sims"]), 3)
+
+    #  CE QUE LES ONGLETS AFFICHENT AVANT D'AVOIR CHARGE LA PAIRE. Un onglet
+    #  montre le dernier prix et la variation du jour : sans ce resume, les neuf
+    #  paires non chargees s'afficheraient vides en attendant un clic.
+    resume_paires = {}
+    for s, P in paires.items():
+        j = len(P["close"]) - 1
+        veille = P["close"][max(0, j - 24)]
+        deb = max(0, j - 23)
+        resume_paires[s] = {
+            "der": P["close"][j],
+            "var24": arrondi(P["close"][j] / veille - 1, 6) if veille else 0.0,
+            "hi": max(P["haut"][deb:j + 1]), "lo": min(P["bas"][deb:j + 1]),
+            "vol": arrondi(sum(P["vol"][deb:j + 1]), 3),
+            "hold_pct": P["hold_pct"],
+        }
 
     return {
         "meta": {
             "budget": budget, "frais": frais, "t0": t0, "pas": HEURE, "heures": n,
             "jours": n // 24, "paires": list(paires), "genres": ["achat", "vente", "abandon", "cliquet"],
             "pas_simulation": PAS_SIM, "pas_affichage": PAS_VUE, "plancher": PLANCHER,
-            "seuils_epreuves": SEUILS,
+            "seuils_epreuves": SEUILS, "resume_paires": resume_paires,
         },
         "paires": paires,
         "reglages": sorties,
@@ -506,6 +560,8 @@ def main() -> int:
     ap.add_argument("--page", action="store_true", help="fabrique aussi la page autonome")
     ap.add_argument("--page-seulement", action="store_true",
                     help="rebatit la page depuis le JSON deja calcule, sans rien rejouer")
+    ap.add_argument("--paires", default=None,
+                    help="par defaut, le panier de liquidite archive")
     args = ap.parse_args()
 
     chemin = Path(args.sortie)
@@ -525,16 +581,47 @@ def main() -> int:
 
     cfg = load_config()
     st = Storage(cfg.get("storage.db_path"), None)
-    data = exporter(cfg, st, args.budget)
+    symboles = liste_paires(cfg, args.paires)
+    print(f"  {len(symboles)} paires : {', '.join(s.split('/')[0] for s in symboles)}")
+    data = exporter(cfg, st, args.budget, symboles)
     st.close()
 
     chemin.parent.mkdir(parents=True, exist_ok=True)
+    ev = sum(len(sim["journal"]) for r in data["reglages"] for sim in r["sims"].values())
+    n_p = len(data["paires"])
+
+    #  ————————————————— UNE PAIRE DANS LA PAGE, LES AUTRES A LA DEMANDE —————————
+    #
+    #  A trois paires la page entiere tenait dans deux megaoctets et demi. A dix,
+    #  elle en ferait huit : les prix d'affichage et les journaux d'evenements
+    #  croissent tous les deux avec le nombre de paires. Personne ne telecharge
+    #  huit megaoctets pour regarder une paire.
+    #
+    #  Le decoupage ne change RIEN a la forme des donnees : chaque fichier porte
+    #  exactement ce que la page rangeait deja sous D.paires[sym] et
+    #  D.reglages[i].sims[sym]. La page les remet a ces deux endroits et tout le
+    #  reste du code continue de les y trouver — c'est ce qui rend le changement
+    #  sur.
+    premiere = data["meta"]["paires"][0]
+    dossier = chemin.parent / "data/sim"
+    dossier.mkdir(parents=True, exist_ok=True)
+    poids_part = 0
+    for s in data["meta"]["paires"]:
+        if s == premiere:
+            continue
+        part = {"paire": data["paires"].pop(s),
+                "sims": {r["id"]: r["sims"].pop(s) for r in data["reglages"]}}
+        f = dossier / (s.replace("/", "-") + ".json")
+        f.write_text(json.dumps(part, separators=(",", ":")), encoding="utf-8")
+        poids_part += f.stat().st_size
+
     texte = json.dumps(data, separators=(",", ":"))
     chemin.write_text(texte, encoding="utf-8")
     poids = chemin.stat().st_size / 1e6
-    ev = sum(len(sim["journal"]) for r in data["reglages"] for sim in r["sims"].values())
     print(f"{chemin} : {poids:.2f} Mo, {len(data['reglages'])} reglages x "
-          f"{len(data['paires'])} paires, {ev} evenements, {data['meta']['jours']} jours")
+          f"{n_p} paires, {ev} evenements, {data['meta']['jours']} jours")
+    print(f"  dont {premiere} dans la page ; {n_p - 1} paires a part, "
+          f"{poids_part / 1e6:.2f} Mo au total, chargees au clic")
 
     if args.page:
         p = batir_page(texte, chemin.parent / "simulations.template.html",
