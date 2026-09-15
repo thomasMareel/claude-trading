@@ -126,6 +126,66 @@ tr.faible td{color:var(--ink-3)}
   font-weight:600}
 @media print{.sommaire{display:none}}
 
+/*  ————————————————— LES COMMANDES DU GRAPHIQUE —————————————————
+    Reprises du simulateur, parce qu'une page du meme banc ne doit pas se
+    piloter de deux facons differentes : une barre collante pour le BOT, une
+    rangee d'onglets pour la MONNAIE, un bandeau de chiffres, puis la courbe.
+    La barre se colle sous la navigation, dont nav.js publie la hauteur reelle
+    dans --h-nav — sans quoi deux elements a top:0 se recouvrent.  */
+/*  .commandes ET NON .barre : la figure d'exécutabilité, plus haut, habille ses
+    dix barres avec « .exec .barre ». Une règle « .barre » nue ne les écrase pas
+    — la spécificité du sélecteur descendant gagne — mais elle leur AJOUTE tout
+    ce que celui-ci ne déclare pas : un filet au-dessus et au-dessous, une marge
+    haute et un flou d'arrière-plan sur chacune des dix barres. Un nom réutilisé
+    n'entre pas toujours en conflit ; parfois il se contente d'ajouter.  */
+.commandes{position:sticky; top:var(--h-nav); z-index:30;
+  background:color-mix(in srgb,var(--ground) 90%,transparent);
+  backdrop-filter:blur(10px); border-block:1px solid var(--rule);
+  margin-top:var(--e-5)}
+.commandes-in{display:flex; flex-wrap:wrap; gap:.35rem .9rem; align-items:center;
+  padding:.6rem 0; min-width:0}
+.lab-o{font-family:var(--f-mono); font-size:.64rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-3); white-space:nowrap}
+/*  Le menu est désigné par son IDENTIFIANT et non par « select » : une règle
+    d'élément habillerait aussi tout menu qu'un script partagé viendrait poser
+    sur cette page. reglages.js n'en pose aucun aujourd'hui — son sélecteur de
+    thème est un groupe de boutons radio, par choix documenté — mais une règle
+    qui ne tient que tant qu'un autre fichier ne change pas n'est pas une règle. */
+#sel-bot{font-family:var(--f-mono); font-size:.8rem; color:var(--ink);
+  background:var(--surface); border:1px solid var(--rule-fort); border-radius:3px;
+  padding:.35rem 1.9rem .35rem .55rem; min-width:0; flex:1 1 22rem;
+  text-overflow:ellipsis; appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),
+                   linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:calc(100% - 15px) 52%,calc(100% - 10px) 52%;
+  background-size:5px 5px,5px 5px; background-repeat:no-repeat}
+.detail-bot{font-size:.84rem; color:var(--ink-2); margin:.7rem 0 0; max-width:64ch}
+
+.paires{display:flex; overflow-x:auto; border-bottom:1px solid var(--rule);
+  margin-top:var(--e-4); -webkit-overflow-scrolling:touch}
+.paires.attend{opacity:.5; pointer-events:none}
+.paire-onglet{flex:0 0 auto; padding:.6rem .9rem; background:none; border:none;
+  border-bottom:2px solid transparent; cursor:pointer; text-align:left;
+  min-width:8.5rem; color:var(--ink)}
+.paire-onglet[aria-selected="true"]{border-bottom-color:var(--achat);
+  background:var(--surface-2)}
+.paire-onglet:hover{background:var(--surface-survol)}
+.paire-onglet .p{display:block; font-family:var(--f-mono); font-size:.72rem;
+  color:var(--ink-3); letter-spacing:.04em}
+.paire-onglet .v{display:block; font-family:var(--f-mono); font-size:.94rem;
+  font-weight:500; font-variant-numeric:tabular-nums; margin-top:.1rem}
+.paire-onglet .d{display:block; font-family:var(--f-mono); font-size:.72rem;
+  font-variant-numeric:tabular-nums}
+
+.stats{display:flex; flex-wrap:wrap; gap:.1rem 1.6rem; padding:.7rem .9rem;
+  border-bottom:1px solid var(--rule); background:var(--surface-2)}
+.stat{display:flex; flex-direction:column; min-width:5.5rem}
+.stat .k{font-family:var(--f-mono); font-size:.62rem; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3)}
+.stat .v{font-family:var(--f-mono); font-size:.86rem; font-weight:500;
+  font-variant-numeric:tabular-nums; margin-top:.1rem}
+.carte-graphe{margin-top:0; border-top-left-radius:0; border-top-right-radius:0}
+
 .bar{display:grid; gap:3px; margin-bottom:12px}
 .bar .lab{display:flex; justify-content:space-between; gap:12px; align-items:baseline;
   font-size:.88rem}
@@ -248,11 +308,26 @@ question du rendement vient après celle de l'exécution.</p>
 <div id="fiches" class="grille-fiches"></div>
 
 <h2>Le marché, et les ordres posés dessus</h2>
-<p>Le graphique partagé du banc : molette pour zoomer, glisser pour déplacer, double-clic
-pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du haut.</p>
-<div class="onglets" id="onglets-paire"></div>
-<div class="carte">
-  <div id="graphe" class="attend">choisissez une paire</div>
+<p>Neuf bots, dix monnaies, quatre-vingt-dix rejeux tracés. Choisissez un bot dans la barre,
+une monnaie dans les onglets, et le graphique suit : molette pour zoomer, glisser pour
+déplacer, double-clic pour tout revoir. Les réglages d'affichage sont dans l'engrenage.</p>
+
+<div class="commandes">
+  <div class="commandes-in">
+    <!--  Un vrai <label for>, et non un <span> : le simulateur emploie un span,
+          et un lecteur d'écran y annonce « liste, 1 sur 8 » sans dire de quoi.
+          On reprend le modèle d'interaction, pas ses lacunes.  -->
+    <label class="lab-o" for="sel-bot">Le bot posé sur la courbe</label>
+    <select id="sel-bot"></select>
+  </div>
+</div>
+<p class="detail-bot" id="detail-bot"></p>
+
+<div class="paires" id="onglets-paire" role="tablist"
+     aria-label="Choisir la monnaie"></div>
+<div class="stats" id="stats-paire"></div>
+<div class="carte carte-graphe">
+  <div id="graphe" class="attend">chargement…</div>
   <p id="cycle-info" class="bandeau-cycle"></p>
 </div>
 
@@ -271,9 +346,14 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
       else if (k === "html") n.innerHTML = a[k]; else n.setAttribute(k, a[k]); }
     if (p) p.appendChild(n); return n; };
   const court = (s) => String(s).split("/")[0];
-  const pct = (x, n) => (x == null ? "—" : (x * 100).toFixed(n === undefined ? 2 : n) + " %");
+  /*  La virgule décimale, parce que la page est en français. toFixed rend un
+   *  point ; le laisser passer donnait « +2.22 % » au milieu d'un texte qui
+   *  écrit « 1 000 € » et « quarante-huit heures ».  */
+  const vir = (s) => String(s).replace(".", ",");
+  const pct = (x, n) => (x == null ? "—"
+    : vir((x * 100).toFixed(n === undefined ? 2 : n)) + " %");
   const signe = (x, n) => (x == null ? "—"
-    : (x >= 0 ? "+" : "") + (x * 100).toFixed(n === undefined ? 2 : n) + " %");
+    : (x >= 0 ? "+" : "") + vir((x * 100).toFixed(n === undefined ? 2 : n)) + " %");
   /*  Les montants s'écrivent comme en français : espace fine insécable pour les
    *  milliers, abrégé réservé aux millions. « 1 000 € » se lit, « 1 k € » se
    *  décode. La figure de l'exécutabilité garde l'abrégé sur son axe, où la
@@ -285,7 +365,7 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
   };
   const cl = (x) => x == null ? "" : (x > 0 ? "h" : x < 0 ? "b" : "g");
 
-  let D = null, ETAPE = 1, BUDGET = null, PAIRE = null, GRAPHE = null;
+  let D = null, ETAPE = 1, BUDGET = null, PAIRE = null, BOT = null, GRAPHE = null;
   const VUES = {};
 
   /* ————————————————————————————— l'exécutabilité ————————————————————————————
@@ -387,18 +467,18 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
       c0.innerHTML = court(s)
         + (d.partielle ? ' <span class="etiq">partielle</span>' : "");
       el("td", { class: "n", t: d.tranches + " / " + D.n_blocs }, r);
-      el("td", { class: "n", t: (d.moy5 * 100).toFixed(4) + " %" }, r);
-      el("td", { class: "n", t: (d.med1h * 100).toFixed(4) + " %" }, r);
-      el("td", { class: "n", t: (d.plat5 * 100).toFixed(1) + " %" }, r);
+      el("td", { class: "n", t: vir((d.moy5 * 100).toFixed(4)) + " %" }, r);
+      el("td", { class: "n", t: vir((d.med1h * 100).toFixed(4)) + " %" }, r);
+      el("td", { class: "n", t: vir((d.plat5 * 100).toFixed(1)) + " %" }, r);
       el("td", { class: "n " + cl(d.derive), t: signe(d.derive, 1) }, r);
       el("td", { class: "n", t: d.baissieres + " / " + d.tranches }, r);
     }
     const s = D.stabilite || {};
     const box = el("div", { class: "glose" }, null);
     box.innerHTML = "Le classement des paires par volatilité tient d'une tranche à la "
-      + "suivante à <b class=\"mono\">" + (s.moy5 ? s.moy5.moyenne.toFixed(2) : "?")
+      + "suivante à <b class=\"mono\">" + (s.moy5 ? vir(s.moy5.moyenne.toFixed(2)) : "?")
       + "</b> (moyenne à cinq minutes) et <b class=\"mono\">"
-      + (s.med1h ? s.med1h.moyenne.toFixed(2) : "?") + "</b> (médiane à l'heure). "
+      + (s.med1h ? vir(s.med1h.moyenne.toFixed(2)) : "?") + "</b> (médiane à l'heure). "
       + "Le classement par <em>rendement</em>, lui, tient à −0,10. C'est cet écart, et lui "
       + "seul, qui autorise à classer les paires d'avance.";
     $("#stabilite").appendChild(box);
@@ -621,7 +701,7 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
       el("div", { class: "val", style: "left:" + (l.moyenne >= 0 ? 50 : 50 - w) + "%;width:"
         + w + "%;background:var(--" + (l.moyenne >= 0 ? "hausse" : "baisse") + "-plein)" }, pi);
       el("div", { class: "quoi", t: "médiane " + signe(l.mediane) + " · "
-        + (l.part_positive * 100).toFixed(0) + " % de tranches positives" }, d);
+        + vir((l.part_positive * 100).toFixed(0)) + " % de tranches positives" }, d);
     }
     //  Les deux écarts qui SONT le résultat, dits une fois, en toutes lettres.
     const par = {};
@@ -629,13 +709,13 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
     const dits = [];
     if (par.choix != null && par.hasard != null)
       dits.push("Choisir contre tirer au sort : <b class=\"mono " + cl(par.choix - par.hasard)
-        + "\">" + ((par.choix - par.hasard) * 100).toFixed(2) + " point</b> par tranche.");
+        + "\">" + vir(((par.choix - par.hasard) * 100).toFixed(2)) + " point</b> par tranche.");
     for (const k of ["classe0", "classe1"]) {
       if (par[k] != null && par.choix != null) {
         const nom = (lignes.find(l => l.cle === k) || {}).nom || k;
         dits.push(nom.replace("choix par classe", "Choisir par classe") + " contre choisir "
           + "globalement : <b class=\"mono " + cl(par[k] - par.choix) + "\">"
-          + ((par[k] - par.choix) * 100).toFixed(2) + " point</b>.");
+          + vir(((par[k] - par.choix) * 100).toFixed(2)) + " point</b>.");
       }
     }
     if (dits.length) el("p", { class: "glose", html: dits.join("<br>")
@@ -664,7 +744,7 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
       const st = x.stabilite;
       el("p", { class: "glose", html:
         "Le classement des " + (b.nuage ? b.nuage.length : "") + " réglages tient à "
-        + "<b class=\"mono h\">" + st.correlation.toFixed(2) + "</b> d'une moitié de "
+        + "<b class=\"mono h\">" + vir(st.correlation.toFixed(2)) + "</b> d'une moitié de "
         + "période à l'autre. Le meilleur de la première rend <b class=\"mono "
         + cl(st.meilleur_sur_2e) + "\">" + signe(st.meilleur_sur_2e) + "</b> sur la "
         + "seconde, quand la médiane des réglages y rend <b class=\"mono "
@@ -674,9 +754,9 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
       const ex = x.exposition;
       el("p", { class: "glose", style: "border-left-color:var(--baisse)", html:
         "<b>Et voici pourquoi ce chiffre ne vaut pas ce qu'il semble valoir.</b> Ce "
-        + "classement est corrélé à <b class=\"mono b\">" + ex.corr_engagement.toFixed(2)
+        + "classement est corrélé à <b class=\"mono b\">" + vir(ex.corr_engagement.toFixed(2))
         + "</b> avec l'engagement moyen et à <b class=\"mono b\">"
-        + ex.corr_bloque.toFixed(2) + "</b> avec le capital bloqué. Le mieux classé "
+        + vir(ex.corr_bloque.toFixed(2)) + "</b> avec le capital bloqué. Le mieux classé "
         + "engage <b class=\"mono\">" + pct(ex.engage_meilleur, 1) + "</b> du budget ; "
         + "la médiane en engage <b class=\"mono\">" + pct(ex.engage_median, 1)
         + "</b>.<br><br>Ce n'est pas un classement par savoir-faire, c'est un classement "
@@ -700,8 +780,8 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
         const li = el("tr", {}, tb);
         el("td", { class: "mono", style: "font-size:.78rem", t: r.spec }, li);
         el("td", { class: "n " + cl(r.rendement), t: signe(r.rendement) }, li);
-        el("td", { class: "n", t: r.duree != null ? r.duree.toFixed(1) + " h" : "—" }, li);
-        el("td", { class: "n", t: (r.gagnantes * 100).toFixed(0) + " %" }, li);
+        el("td", { class: "n", t: r.duree != null ? vir(r.duree.toFixed(1)) + " h" : "—" }, li);
+        el("td", { class: "n", t: vir((r.gagnantes * 100).toFixed(0)) + " %" }, li);
       }
     }
   }
@@ -748,40 +828,161 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
   }
 
   /* ——————————————————————————————— le graphique ——————————————————————————— */
+  /* ——————————————————— LE BOT, LA MONNAIE, LA COURBE ———————————————————
+   *
+   *  Le même modèle d'interaction que le simulateur : un SELECT pour le bot dans
+   *  une barre collante, une rangée d'ONGLETS pour la monnaie, un bandeau de
+   *  chiffres, puis la courbe. Une page du même banc ne doit pas se piloter de
+   *  deux façons différentes.
+   *
+   *  La différence est sous le capot : le simulateur dessine avec une classe
+   *  Toile qui lui est propre et qui précède marche.js ; ici on pose le même
+   *  modèle au-dessus de Marche, le graphique PARTAGÉ. On reproduit les
+   *  commandes, pas le vieux code.                                            */
+
+  const nb = (x, d) => x == null ? "—"
+    : x.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d })
+       .replace(/ /g, " ");
+  //  Le nombre de décimales suit l'ordre de grandeur du prix : deux sur un
+  //  bitcoin à soixante mille euros, six sur un jeton à quelques millièmes.
+  const dec = (x) => x >= 1000 ? 2 : x >= 10 ? 3 : x >= 0.1 ? 4 : 6;
+  const compact = (x) => x >= 1e6 ? (x / 1e6).toFixed(1).replace(".", ",") + " M"
+    : x >= 1e3 ? (x / 1e3).toFixed(1).replace(".", ",") + " k" : Math.round(x);
+
+  function bot() {
+    return (D.reglages || []).find(r => r.id === BOT) || (D.reglages || [])[0] || null;
+  }
+
+  function poserSelecteurBot() {
+    const sel = $("#sel-bot");
+    if (!sel || !D.reglages || !D.reglages.length) return;
+    sel.textContent = "";
+    for (const r of D.reglages) {
+      //  Le libellé porte le rendement et la durée AVANT le nom : ce sont les
+      //  deux nombres qu'on compare d'une ligne à l'autre, et un nom de dix-huit
+      //  à quarante caractères les repousserait hors du menu.
+      el("option", { value: r.id,
+        t: signe(r.rendement) + " · " + r.duree.toFixed(0) + " h — " + r.nom }, sel);
+    }
+    sel.value = BOT;
+    sel.addEventListener("change", () => {
+      BOT = sel.value;
+      majDetailBot();
+      redessiner();
+      ecrireUrl();
+    });
+    majDetailBot();
+  }
+
+  function majDetailBot() {
+    const r = bot();
+    const h = $("#detail-bot");
+    if (!r || !h) return;
+    const s = r.spec;
+    const forme = s.espacement === "puissance" ? "puissance " + s.courbure : s.espacement;
+    const geo = s.paliers + " barreaux · progression ×" + s.ratio + " · profondeur "
+      + pct(s.profondeur, 0) + " · objectif " + pct(s.objectif_net, 1)
+      + " · " + forme + " · budget " + eur(r.budget) + " €";
+    h.innerHTML = r.pourquoi + '<br><span class="mono g">' + geo + "</span>"
+      + '<br><span class="g">Étape ' + r.etape + (r.variante ? " · " + r.variante : "")
+      + " · rendement moyen " + signe(r.rendement) + " par tranche de "
+      + D.bloc_jours + " jours, sur les " + D.n_blocs + " tranches et les paires "
+      + "à historique complet.</span>";
+  }
+
+  /*  Les onglets portent leurs chiffres AVANT tout chargement, grâce au résumé
+   *  calculé à l'export : sans lui, neuf onglets sur dix resteraient vides en
+   *  attendant un clic — le simulateur avait ce défaut et l'a corrigé ainsi.  */
   function poserOngletsPaire() {
     const o = $("#onglets-paire");
     o.textContent = "";
     for (const s of D.paires) {
-      const b = el("button", { type: "button", "aria-pressed": String(s === PAIRE) }, o);
-      b.appendChild(document.createTextNode(court(s)));
+      const c = (D.resume_paires || {})[s];
+      const b = el("button", { class: "paire-onglet", type: "button", role: "tab",
+        "aria-selected": String(s === PAIRE) }, o);
+      el("span", { class: "p", t: s }, b);
+      el("span", { class: "v", t: c ? nb(c.dernier, dec(c.dernier)) : "—" }, b);
+      el("span", { class: "d " + (c ? cl(c.var24) : ""),
+        t: c ? signe(c.var24) : "" }, b);
       b.addEventListener("click", () => choisirPaire(s));
     }
   }
 
-  async function choisirPaire(s) {
-    PAIRE = s;
-    for (const b of $("#onglets-paire").children)
-      b.setAttribute("aria-pressed", String(b.textContent === court(s)));
-    const hote = $("#graphe");
-    if (!VUES[s]) {
-      hote.className = "attend";
-      hote.textContent = "chargement de " + court(s) + "…";
-      try {
-        const r = await fetch("data/etude-vue/" + s.replace("/", "-") + ".json");
-        if (!r.ok) throw new Error(r.status);
-        VUES[s] = await r.json();
-      } catch (e) {
-        hote.textContent = "bougies d'affichage indisponibles pour " + court(s);
-        return;
-      }
+  function majStatsPaire() {
+    const h = $("#stats-paire");
+    const c = (D.resume_paires || {})[PAIRE];
+    const m = (D.marche || {})[PAIRE];
+    const x = D.execution && D.execution.paires[PAIRE];
+    if (!h) return;
+    const st = [];
+    if (c) {
+      st.push(["Dernier", nb(c.dernier, dec(c.dernier)) + " €", ""]);
+      st.push(["24 h", signe(c.var24), cl(c.var24)]);
+      st.push(["Sur la fenêtre", signe(c.fenetre), cl(c.fenetre)]);
     }
-    const v = VUES[s];
+    if (m) {
+      st.push(["Tranches", m.tranches + " / " + D.n_blocs, ""]);
+      st.push(["En baisse", m.baissieres + " / " + m.tranches, ""]);
+      st.push(["Bougies plates", (m.plat5 * 100).toFixed(0) + " %", ""]);
+    }
+    if (x) st.push(["Ordre servable", eur(x.servable) + " €", ""]);
+    const v = VUES[PAIRE] && VUES[PAIRE].sims && VUES[PAIRE].sims[BOT];
+    if (v && v.cycles) {
+      const g = v.cycles.filter(y => y.gain > 0).length;
+      st.push(["Cycles du bot", String(v.cycles.length), ""]);
+      st.push(["Dont > 48 h", String(v.cycles.filter(y => y.heures > 48).length),
+        v.cycles.some(y => y.heures > 48) ? "b" : ""]);
+      void g;
+    }
+    h.replaceChildren(...st.map(([k, val, klass]) => {
+      const d = el("div", { class: "stat" });
+      el("span", { class: "k", t: k }, d);
+      el("span", { class: "v " + klass, t: val }, d);
+      return d;
+    }));
+  }
+
+  const enCours = new Map();
+  function chargerPaire(s) {
+    if (VUES[s]) return Promise.resolve(true);
+    if (enCours.has(s)) return enCours.get(s);
+    const p = fetch("data/etude-vue/" + s.replace("/", "-") + ".json")
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(j => { VUES[s] = j; return true; })
+      .catch(e => { console.error("paire " + s + " indisponible", e); return false; });
+    enCours.set(s, p);
+    return p;
+  }
+
+  function choisirPaire(s) {
+    if (s === PAIRE && VUES[s]) return;
+    const box = $("#onglets-paire");
+    if (!VUES[s]) box.classList.add("attend");
+    chargerPaire(s).then(ok => {
+      box.classList.remove("attend");
+      if (!ok) { $("#graphe").className = "attend";
+        $("#graphe").textContent = "données indisponibles pour " + court(s); return; }
+      PAIRE = s;
+      for (const b of box.children)
+        b.setAttribute("aria-selected", String(b.querySelector(".p").textContent === s));
+      redessiner();
+      ecrireUrl();
+    });
+  }
+
+  /*  Un seul endroit redessine, et il redessine TOUT ce qui dépend du couple
+   *  (bot, monnaie) : la courbe, le bandeau de cycle et les chiffres. Deux
+   *  chemins de redessin finissent toujours par diverger.                     */
+  function redessiner() {
+    const hote = $("#graphe");
+    const v = VUES[PAIRE];
+    if (!v) { hote.className = "attend"; hote.textContent = "chargement…"; return; }
     //  Marche.agreger() lit les bougies comme des TABLEAUX [ts,o,h,l,c,v] et non
     //  comme des objets : les convertir laissait chaque chandelier sans haut ni
     //  bas, l'échelle de prix partait à l'infini et le graphique sortait vide
     //  avec une erreur SVG par bougie. Le fichier exporté est déjà dans la bonne
     //  forme — il n'y avait rien à convertir.
-    const bougies = v.bougies;
+    const sim = (v.sims && v.sims[BOT]) || {};
     hote.className = "";
     hote.textContent = "";
     if (GRAPHE) { GRAPHE.detruire(); GRAPHE = null; }
@@ -790,63 +991,97 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
     //  marché, et la cible de vente le suit à distance fixe. Les bandes disent
     //  le coût que le tableau cache — le temps où le capital ne travaille pas.
     GRAPHE = new Marche(hote, {
-      bougies: bougies, pas: v.pas, unite: 6, hauteur: 380, volume: true, nom: s,
-      ordres: v.ordres || [], cycles: v.cycles || [], bandes: v.bandes || [],
+      bougies: v.bougies, pas: v.pas, unite: 6, hauteur: 380, volume: true, nom: PAIRE,
+      ordres: sim.ordres || [], cycles: sim.cycles || [], bandes: sim.bandes || [],
       courbes: [
-        { points: v.revient || [], couleur: "var(--prix)", epais: 1.4,
+        { points: sim.revient || [], couleur: "var(--prix)", epais: 1.4,
           texte: "prix de revient" },
-        { points: v.sortie || [], couleur: "var(--vente)", epais: 1.2,
+        { points: sim.sortie || [], couleur: "var(--vente)", epais: 1.2,
           pointille: "4 3", opacite: 0.8, texte: "cible de vente" },
       ],
-      surCycle: (c) => majCycle(s, c),
-      aria: "prix de " + s + " sur la fenêtre d'étude, avec les ordres posés",
+      surCycle: (c) => majCycle(c),
+      aria: "prix de " + PAIRE + " sur la fenêtre d'étude, avec les ordres de "
+        + (bot() ? bot().nom : "ce bot"),
     });
-    majCycle(s, null);
+    majCycle(null);
+    majStatsPaire();
   }
 
   /*  Le bandeau sous le graphique : ce que dit le cycle qu'on vient de choisir,
-   *  ou, au repos, ce que le réglage a fait sur toute la fenêtre.  */
-  function majCycle(s, c) {
-    const v = VUES[s];
+   *  ou, au repos, ce que ce bot a fait sur cette monnaie.  */
+  function majCycle(c) {
     const hote = $("#cycle-info");
+    const v = VUES[PAIRE];
     if (!hote || !v) return;
+    //  Une paire à l'historique partiel montre 880 jours de prix mais n'a
+    //  d'ordres que sur la portion mesurée : sans le dire, la moitié muette de
+    //  la courbe passerait pour un robot qui n'a rien fait.
+    const part = (D.partielles || []).includes(PAIRE)
+      ? '<b class="b">Historique partiel</b> — les prix couvrent toute la fenêtre, '
+        + 'les ordres seulement la portion mesurée. '
+      : "";
     if (c) {
       const j = (c.t1 - c.t0) / 86400000;
       hote.innerHTML = '<b class="mono ' + cl(c.gain) + '">' + signe(c.gain)
         + '</b> · ' + c.paliers + ' palier' + (c.paliers > 1 ? "s" : "")
-        + ' · ' + (j < 2 ? (c.heures || 0).toFixed(1) + " h" : j.toFixed(1) + " jours")
+        + ' · ' + (j < 2 ? vir((c.heures || 0).toFixed(1)) + " h" : vir(j.toFixed(1)) + " jours")
         + ' <span class="g">— cliquez ailleurs pour revenir à la vue entière</span>';
       return;
     }
-    //  Une paire à l'historique partiel montre 880 jours de prix mais n'a
-    //  d'ordres que sur la portion mesurée : sans le dire, la moitié muette de
-    //  la courbe passerait pour un robot qui n'a rien fait.
-    const part = (D.partielles || []).includes(s)
-      ? '<b class="b">Historique partiel</b> — les prix couvrent toute la fenêtre, '
-        + 'les ordres seulement la portion mesurée. '
-      : "";
-    const cy = v.cycles || [];
+    const sim = (v.sims && v.sims[BOT]) || {};
+    const cy = sim.cycles || [];
     if (!cy.length) {
-      hote.innerHTML = part + '<span class="g">aucun cycle sur cette paire</span>';
+      hote.innerHTML = part + '<span class="g">ce bot n\'a ouvert aucun cycle sur '
+        + court(PAIRE) + '</span>';
       return;
     }
-    hote.innerHTML = part;
     const g = cy.filter(x => x.gain > 0).length;
     const h = cy.map(x => x.heures).sort((a, b) => a - b);
     const long = cy.filter(x => x.heures > 48).length;
+    const achats = (sim.ordres || []).filter(o => o.genre === "achat").length;
     //  LE TAUX DE CYCLES GAGNANTS NE VEUT PRESQUE RIEN DIRE ICI, et le taire
     //  serait pire que l'afficher : cette stratégie ne vend jamais à perte, donc
     //  tout cycle qui se ferme se ferme en gain. Ce qui coûte, c'est ce qui NE
-    //  se ferme pas — le capital immobilisé. On affiche donc les deux ensemble,
-    //  et on dit lequel regarder.
+    //  se ferme pas — le capital immobilisé.
     hote.innerHTML = part + cy.length + " cycles · durée médiane <b class=\"mono\">"
-      + h[h.length >> 1].toFixed(1) + " h</b> · <b class=\"mono"
+      + vir(h[h.length >> 1].toFixed(1)) + " h</b> · <b class=\"mono"
       + (long ? " b" : "") + "\">" + long + "</b> au-delà de 48 h · "
-      + (v.ordres || []).filter(o => o.genre === "achat").length + " achats"
+      + achats + " achats"
       + ' <span class="g">— ' + Math.round(g / cy.length * 100) + ' % des cycles sont '
       + 'gagnants, ce qui ne prouve rien : la stratégie ne vend jamais à perte. '
       + 'Ce qui coûte est le capital qui dort, en bandes sombres sur la courbe. '
       + 'Cliquez un cycle pour l\'étudier.</span>';
+  }
+
+  /*  L'ÉTAT DANS L'ADRESSE. Ce que le lecteur REGARDE se partage, donc va dans
+   *  l'URL ; ce qu'il PRÉFÈRE (thème, densité) reste dans localStorage via
+   *  prefs.js. replaceState et non pushState : le bouton Retour ne doit pas
+   *  remonter un à un les neuf bots essayés.                                  */
+  function ecrireUrl() {
+    const q = new URLSearchParams();
+    if (ETAPE !== etapesDispo()[0]) q.set("etape", String(ETAPE));
+    const bl = blocEtape();
+    if (bl && BUDGET !== String(Math.round(bl.budgets[0]))) q.set("budget", BUDGET);
+    if (D.reglages && D.reglages.length && BOT !== D.reglages[0].id) q.set("bot", BOT);
+    if (PAIRE !== D.paires[0]) q.set("paire", PAIRE.split("/")[0]);
+    const t = q.toString();
+    history.replaceState(null, "", t ? "?" + t : location.pathname);
+  }
+
+  function lireUrl() {
+    const q = new URLSearchParams(location.search);
+    const e = +q.get("etape");
+    if (e && D["etape" + e]) ETAPE = e;
+    const b = q.get("budget");
+    const bl = blocEtape();
+    if (b && bl && bl.budget[b]) BUDGET = b;
+    const bot_ = q.get("bot");
+    if (bot_ && (D.reglages || []).some(r => r.id === bot_)) BOT = bot_;
+    const p = q.get("paire");
+    if (p) {
+      const s = D.paires.find(x => x.split("/")[0].toLowerCase() === p.toLowerCase());
+      if (s) PAIRE = s;
+    }
   }
 
   /* ——————————————————————————————— l'assemblage ——————————————————————————— */
@@ -882,7 +1117,7 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
         ETAPE = n;
         const b = blocEtape();
         if (b && !b.budget[BUDGET]) BUDGET = Object.keys(b.budget)[0];
-        toutPoser();
+        toutPoser(); ecrireUrl();
       });
     }
   }
@@ -917,13 +1152,13 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
       el("td", { class: "mono", t: v.nom }, li);
       el("td", { class: "n " + cl(v.ecart),
         t: (v.ecart >= 0 ? "+" : "") + (v.ecart * 100).toFixed(2) + " pt" }, li);
-      el("td", { class: "n", t: (v.gagne * 100).toFixed(0) + " %" }, li);
+      el("td", { class: "n", t: vir((v.gagne * 100).toFixed(0)) + " %" }, li);
       //  Une dispersion SOUS 1 est la bonne nouvelle : les paires se ressemblent
       //  davantage. C'est l'inverse de la lecture spontanée d'un grand nombre.
       el("td", { class: "n " + (v.dispersion == null ? ""
         : v.dispersion < 1 ? "h" : "b"),
-        t: v.dispersion == null ? "—" : "×" + v.dispersion.toFixed(2) }, li);
-      el("td", { class: "n", t: v.duree == null ? "—" : v.duree.toFixed(1) + " h" }, li);
+        t: v.dispersion == null ? "—" : "×" + vir(v.dispersion.toFixed(2)) }, li);
+      el("td", { class: "n", t: v.duree == null ? "—" : vir(v.duree.toFixed(1)) + " h" }, li);
     }
     const mieux = ap.variantes.filter(v => v.dispersion != null && v.dispersion < 1).length;
     const n = ap.variantes.filter(v => v.dispersion != null).length;
@@ -947,7 +1182,7 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
     for (const b of bl.budgets.map(x => String(Math.round(x)))) {
       const bt = el("button", { type: "button", "aria-pressed": String(b === BUDGET),
         t: eur(+b) + " € par paire" }, o);
-      bt.addEventListener("click", () => { BUDGET = b; toutPoser(); });
+      bt.addEventListener("click", () => { BUDGET = b; toutPoser(); ecrireUrl(); });
     }
   }
 
@@ -1000,13 +1235,16 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
       return;
     }
     ETAPE = etapesDispo()[0] || 1;
-    const bl = blocEtape();
-    BUDGET = bl ? String(Math.round(bl.budgets[0])) : null;
+    BUDGET = blocEtape() ? String(Math.round(blocEtape().budgets[0])) : null;
     PAIRE = D.paires[0];
+    BOT = (D.reglages && D.reglages[0]) ? D.reglages[0].id : null;
+    lireUrl();
     poserExecution();
     poserMarche();
     toutPoser();
+    poserSelecteurBot();
     poserOngletsPaire();
+    choisirPaire(PAIRE);
     poserSommaire();
     //  Le thème peut changer sous nos pieds : l'encre des cases se relit alors
     //  sur la clarté nouvelle, sinon la moitié du tableau devient illisible
@@ -1017,8 +1255,6 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
                          : mo.addListener.bind(mo))(encrer);
     new MutationObserver(encrer).observe(document.documentElement,
       { attributes: true, attributeFilter: ["data-theme"] });
-    if (window.Marche) choisirPaire(PAIRE);
-    else addEventListener("load", () => { if (window.Marche) choisirPaire(PAIRE); });
   }
 
   if (document.readyState === "loading")

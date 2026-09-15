@@ -27,6 +27,8 @@ import json
 import sqlite3
 import statistics as stt
 import sys
+import time
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 RACINE = Path(__file__).resolve().parent.parent
@@ -250,7 +252,8 @@ def bloc_baisse(e: Etude) -> dict:
 
 
 def bloc_ordres(cx, sym: str, spec: dict, budget: float, frais: float,
-                t0: int, n_blocs: int, bloc_j: int, pas_vue: int) -> dict:
+                t0: int, n_blocs: int, bloc_j: int, pas_vue: int,
+                serie: list | None = None) -> dict:
     """Rejoue UN reglage sur toute la fenetre et rend de quoi le poser sur la courbe.
 
     C'est ce qui separe une page de resultats d'une page d'ETUDE : un tableau dit
@@ -266,11 +269,14 @@ def bloc_ordres(cx, sym: str, spec: dict, budget: float, frais: float,
     """
     from src.grille import Reglages, rejouer     # importe ici : inutile au socle
 
-    fin = t0 + n_blocs * bloc_j * MS_JOUR
-    b = [(int(r[0]), float(r[1]), float(r[2]), float(r[3]), float(r[4]))
-         for r in cx.execute(
-             "SELECT ts,open,high,low,close FROM candles WHERE symbol=? "
-             "AND timeframe='5m' AND ts>=? AND ts<? ORDER BY ts", (sym, t0, fin))]
+    if serie is not None:
+        b = serie
+    else:
+        fin = t0 + n_blocs * bloc_j * MS_JOUR
+        b = [(int(r[0]), float(r[1]), float(r[2]), float(r[3]), float(r[4]))
+             for r in cx.execute(
+                 "SELECT ts,open,high,low,close FROM candles WHERE symbol=? "
+                 "AND timeframe='5m' AND ts>=? AND ts<? ORDER BY ts", (sym, t0, fin))]
     if not b:
         return {}
     rg = Reglages(frais=frais, **{k: v for k, v in spec.items()
@@ -327,6 +333,35 @@ def bloc_ordres(cx, sym: str, spec: dict, budget: float, frais: float,
             "budget": budget}
 
 
+def resume_paires(cx, paires: list[str], t0: int, n_blocs: int, bloc_j: int) -> dict:
+    """Le prix et la variation de chaque paire, AVANT tout chargement.
+
+    Les onglets doivent porter leurs chiffres des l'ouverture de la page. Sans
+    ce resume, neuf onglets sur dix resteraient vides en attendant un clic — le
+    simulateur avait exactement ce defaut, et l'a corrige de la meme facon.
+    """
+    fin = t0 + n_blocs * bloc_j * MS_JOUR
+    out = {}
+    for s in paires:
+        r = [(float(a), float(b)) for a, b in cx.execute(
+            "SELECT close,volume FROM candles WHERE symbol=? AND timeframe='1h' "
+            "AND ts>=? AND ts<? ORDER BY ts", (s, t0, fin))]
+        if not r:
+            continue
+        cl = [x[0] for x in r]
+        n = len(cl)
+        veille = cl[max(0, n - 25)]
+        out[s] = {
+            "dernier": round(cl[-1], 8),
+            "var24": round(cl[-1] / veille - 1, 5) if veille else 0.0,
+            "fenetre": round(cl[-1] / cl[0] - 1, 5) if cl[0] else 0.0,
+            "haut24": round(max(cl[max(0, n - 24):]), 8),
+            "bas24": round(min(cl[max(0, n - 24):]), 8),
+            "vol24": round(sum(x[1] for x in r[max(0, n - 24):]), 4),
+        }
+    return out
+
+
 def bloc_graphique(cx, sym: str, t0: int, n_blocs: int, bloc_j: int) -> dict:
     """Les bougies d'AFFICHAGE d'une paire : horaires, sur toute la fenetre."""
     fin = t0 + n_blocs * bloc_j * MS_JOUR
@@ -339,11 +374,45 @@ def bloc_graphique(cx, sym: str, t0: int, n_blocs: int, bloc_j: int) -> dict:
                          round(x[4], 8), round(x[5], 4)] for x in r]}
 
 
+#  ———————————————————— le rejeu trace, en parallele ————————————————————
+#  Charges une fois par processus. La paire est mise en cache parce que les
+#  taches arrivent triees par paire : un processus relit la base une fois par
+#  paire et non une fois par couple.
+_VUE: dict = {}
+_SERIE: tuple = ("", [])
+
+
+def _init_vue(chemin_db, t0, n_blocs, bloc_j, frais, pas_vue):
+    global _VUE
+    _VUE = {"db": chemin_db, "t0": t0, "n_blocs": n_blocs, "bloc_j": bloc_j,
+            "frais": frais, "pas_vue": pas_vue}
+
+
+def _tache_vue(arg):
+    global _SERIE
+    sym, rid, spec, budget = arg
+    cx = sqlite3.connect(f"file:{_VUE['db']}?mode=ro", uri=True)
+    try:
+        if _SERIE[0] != sym:
+            fin = _VUE["t0"] + _VUE["n_blocs"] * _VUE["bloc_j"] * MS_JOUR
+            _SERIE = (sym, [(int(r[0]), float(r[1]), float(r[2]), float(r[3]), float(r[4]))
+                            for r in cx.execute(
+                                "SELECT ts,open,high,low,close FROM candles WHERE symbol=? "
+                                "AND timeframe='5m' AND ts>=? AND ts<? ORDER BY ts",
+                                (sym, _VUE["t0"], fin))])
+        return sym, rid, bloc_ordres(None, sym, spec, budget, _VUE["frais"],
+                                     _VUE["t0"], _VUE["n_blocs"], _VUE["bloc_j"],
+                                     _VUE["pas_vue"], serie=_SERIE[1])
+    finally:
+        cx.close()
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--db", default="data/trading.db")
     ap.add_argument("--etapes", default="1")
     ap.add_argument("--sortie", default="docs/data")
+    ap.add_argument("--procs", type=int, default=6)
     ap.add_argument("--sans-vues", action="store_true",
                     help="ne pas refaire les fichiers de graphique : ils demandent "
                          "un rejeu trace de cinq minutes et ne changent pas quand "
@@ -414,52 +483,74 @@ def main() -> int:
                   f"points, {av['n_decisions']} decisions en avant")
         socle[f"etape{n}"] = bloc
 
-    chemin = dossier / "etude.json"
-    chemin.write_text(json.dumps(socle, separators=(",", ":")), encoding="utf-8")
-    print(f"  ecrit dans {chemin.relative_to(RACINE)} "
-          f"({chemin.stat().st_size / 1e6:.2f} Mo)")
-
     #  Les bougies d'affichage, un fichier par paire : la page ne les charge
     #  qu'au clic, comme le simulateur. Sans ce decoupage, la page pese huit
     #  megaoctets et personne ne l'ouvre.
     cx = sqlite3.connect(f"file:{args.db}?mode=ro", uri=True)
     vues = dossier / "etude-vue"
     vues.mkdir(exist_ok=True)
-    #  LE REGLAGE POSE SUR LA COURBE EST LE TEMOIN — le reglage du direct, celui
-    #  qui tourne en paper trading. Ce n'est pas un choix par defaut : c'est la
-    #  conclusion de l'etape 1. Sur 171 decisions en avant, il rend +0,21 % par
-    #  tranche quand le choix global rend -3,32 % et le tirage au sort -2,15 %.
-    #  Montrer le « meilleur apres coup » illustrerait un robot qui n'a jamais
-    #  tourne ; montrer le choix en avant illustrerait une regle que la mesure
-    #  vient de rejeter. On montre celui qu'il faut garder.
-    pose = None
-    for n in sorted(etapes):
-        b = socle.get(f"etape{n}")
-        if not b:
-            continue
-        cle = sorted(b["budget"], key=float)[0]
-        i = b["budget"][cle].get("i_temoin")
-        if i is not None:
-            pose = (b["combinaisons"][i], float(cle), n)
-            break
-    if pose:
-        print(f"  reglage pose sur la courbe — le TEMOIN (budget {pose[1]:.0f}) : "
-              f"{resume_spec(pose[0])}")
+    #  ————————————————— LES REGLAGES POSES SUR LA COURBE —————————————————
+    #  Neuf bots, un par lecon, choisis par la regle ecrite dans
+    #  scripts/tracer_reglages.py. La page en offre le choix comme le simulateur
+    #  offre le sien : on passe d'un bot a l'autre et d'une paire a l'autre, et
+    #  le graphique suit.
+    socle["resume_paires"] = resume_paires(cx, socle["paires"], m["t0"],
+                                          m["n_blocs"], m["bloc_jours"])
+    from tracer_reglages import choisir as choisir_reglages
 
-    for s in ([] if args.sans_vues else socle.get("paires", [])):
-        g = bloc_graphique(cx, s, m["t0"], m["n_blocs"], m["bloc_jours"])
-        if not g["bougies"]:
-            print(f"    {s} : aucune bougie horaire, graphique indisponible")
-            continue
-        if pose:
-            g.update(bloc_ordres(cx, s, pose[0], pose[1], socle.get("frais", 0.001),
-                                 m["t0"], m["n_blocs"], m["bloc_jours"], PAS_VUE))
-        p = vues / (s.replace("/", "-") + ".json")
-        p.write_text(json.dumps(g, separators=(",", ":")), encoding="utf-8")
-        print(f"    {s:<10} {len(g['bougies']):>6} bougies, "
-              f"{len(g.get('ordres', [])):>5} ordres, {len(g.get('cycles', [])):>4} cycles "
-              f"({p.stat().st_size / 1e6:.2f} Mo)")
+    reglages = choisir_reglages(socle, etapes)
+    socle["reglages"] = [{k: v for k, v in r.items()} for r in reglages]
+    if reglages:
+        print(f"  {len(reglages)} reglages poses sur la courbe :")
+        for r in reglages:
+            print(f"    {r['id']:<12} etape {r['etape']}  "
+                  f"{r['rendement'] * 100:+6.2f}%  {r['duree']:>6.1f} h   {r['nom']}")
+
+    if not args.sans_vues and reglages:
+        #  UN REJEU TRACE PAR COUPLE (reglage, paire) : quatre-vingt-dix rejeux
+        #  de 253 440 bougies. En serie il faudrait trois quarts d'heure ; on les
+        #  repartit. Chaque processus garde en cache la derniere paire qu'il a
+        #  chargee, et les taches sont triees PAR PAIRE — un processus traverse
+        #  donc les neuf reglages d'une paire avant d'en changer, et ne relit la
+        #  base qu'une dizaine de fois au lieu de quatre-vingt-dix.
+        taches = [(s, r["id"], r["spec"], r["budget"]) for s in socle["paires"]
+                  for r in reglages]
+        faits: dict[str, dict] = {s: {} for s in socle["paires"]}
+        t0h = time.perf_counter()
+        with ProcessPoolExecutor(max_workers=args.procs, initializer=_init_vue,
+                                 initargs=(args.db, m["t0"], m["n_blocs"],
+                                           m["bloc_jours"], socle.get("frais", 0.001),
+                                           PAS_VUE)) as ex:
+            for sym, rid, res in ex.map(_tache_vue, taches, chunksize=1):
+                faits[sym][rid] = res
+                n = sum(len(x) for x in faits.values())
+                if n % 10 == 0 or n == len(taches):
+                    d = time.perf_counter() - t0h
+                    print(f"    {n}/{len(taches)} rejeux traces, {d:.0f} s "
+                          f"(reste ~{d / n * (len(taches) - n):.0f} s)", flush=True)
+
+        for s in socle["paires"]:
+            g = bloc_graphique(cx, s, m["t0"], m["n_blocs"], m["bloc_jours"])
+            if not g["bougies"]:
+                print(f"    {s} : aucune bougie horaire, graphique indisponible")
+                continue
+            g["sims"] = faits[s]
+            p = vues / (s.replace("/", "-") + ".json")
+            p.write_text(json.dumps(g, separators=(",", ":")), encoding="utf-8")
+            ordres = sum(len(v.get("ordres", [])) for v in faits[s].values())
+            print(f"    {s:<10} {len(g['bougies']):>6} bougies, {len(faits[s])} bots, "
+                  f"{ordres:>5} ordres ({p.stat().st_size / 1e6:.2f} Mo)")
+
     cx.close()
+
+    #  LE SOCLE EST ECRIT EN DERNIER, quand tout y est. Il l'etait avant le choix
+    #  des reglages et le resume des paires : les deux champs manquaient donc du
+    #  fichier publie, silencieusement, et la page n'avait ni selecteur de bot ni
+    #  chiffres dans ses onglets. Un fichier ecrit trop tot ne leve aucune erreur.
+    chemin = dossier / "etude.json"
+    chemin.write_text(json.dumps(socle, separators=(",", ":")), encoding="utf-8")
+    print(f"  ecrit dans {chemin.relative_to(RACINE)} "
+          f"({chemin.stat().st_size / 1e6:.2f} Mo)")
     return 0
 
 
