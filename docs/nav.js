@@ -21,6 +21,7 @@
     { f: "paper.html",       nom: "Grilles en direct", court: "En direct" },
     { f: "simulations.html", nom: "Simulations",       court: "Simulations" },
     { f: "validation.html",  nom: "La validation",     court: "Validation" },
+    { f: "recherche.html",   nom: "La recherche",      court: "Recherche" },
     { f: "journal.html",     nom: "Journal de bord",   court: "Journal" },
   ];
 

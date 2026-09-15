@@ -144,6 +144,14 @@ footer{margin-top:34px; padding-top:18px; border-top:1px solid var(--rule);
     <div class="etat" id="etat-validation"><span>chargement…</span></div>
   </a>
 
+  <a class="porte" href="recherche.html">
+    <div class="haut"><h3>La recherche d'un réglage</h3><span class="fleche">→</span></div>
+    <p>Des centaines de réglages rejoués sur vingt-deux tranches de quarante jours, dix
+       paires et deux budgets. Et, avant tout rendement, la question qui décide du reste :
+       le carnet d'ordres pouvait-il seulement servir ce que le moteur prétend acheter ?</p>
+    <div class="etat" id="etat-recherche"><span>chargement…</span></div>
+  </a>
+
   <a class="porte" href="journal.html">
     <div class="haut"><h3>Journal de bord</h3><span class="fleche">→</span></div>
     <p>Tout ce qui a changé, daté, y compris les erreurs trouvées dans nos propres
@@ -244,6 +252,33 @@ async function lire(f){
       + `<span>${val.n_blocs} blocs de ${val.bloc_jours} jours</span>`
       + `<span>${val.n_reglages} réglages</span>`;
   } else nv.innerHTML = "<span>indisponible</span>";
+
+  /*  La pastille de la recherche lit le même fichier que la page elle-même :
+   *  elle ne peut donc pas annoncer un nombre de réglages que la page dément.
+   *  Le fichier est petit (quelques dizaines de kilo-octets) et vit à côté des
+   *  autres jeux de l'accueil.  */
+  const nr = document.getElementById("etat-recherche");
+  try {
+    const rch = await fetch("data/etude.json").then(r => r.ok ? r.json() : null);
+    if (rch) {
+      const n = rch.etape1 ? rch.etape1.combinaisons.length : 0;
+      const ex = rch.execution ? rch.execution.paires : null;
+      let dur = "";
+      if (ex) {
+        //  Les clés viennent de Python et valent « 10000.0 », pas « 10000 » :
+        //  on retient la CLÉ du plus gros budget, jamais sa valeur reformatée.
+        const cle = Object.keys(rch.execution.mises)
+          .sort((p, q) => Number(p) - Number(q)).pop();
+        const b = Number(cle);
+        const bas = rch.execution.mises[cle].slice(-1)[0];
+        const ok = Object.values(ex).filter(p => p.servable >= bas).length;
+        dur = `<span><b class="b">${ok}/${Object.keys(ex).length}</b> paires exécutables `
+            + `à ${Math.round(b / 1000)} k€</span>`;
+      }
+      nr.innerHTML = (n ? `<span><b>${n}</b> réglages</span>` : "<span>balayage en cours</span>")
+        + `<span>${rch.n_blocs} × ${rch.bloc_jours} jours</span>` + dur;
+    } else nr.innerHTML = "<span>indisponible</span>";
+  } catch (e) { nr.innerHTML = "<span>indisponible</span>"; }
 
   const majs = jeux.map(d => d.maj).sort();
   document.getElementById("maj").textContent = majs.length

@@ -1,0 +1,1015 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La recherche d'un réglage</title>
+<meta name="description" content="Des milliers de réglages rejoués sur vingt-deux tranches de quarante jours : ce que le marché permettait, ce que la durée autorise, et sur quelles monnaies la méthode est seulement exécutable.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="jetons.css">
+<link rel="stylesheet" href="gabarit.css">
+<script src="prefs.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:var(--corps); line-height:1.65; -webkit-text-size-adjust:100%}
+.enveloppe{max-width:880px; margin:0 auto; padding:clamp(22px,5vw,44px) 18px 90px}
+h1,h2,h3{font-family:var(--f-titre); font-weight:500; margin:0;
+  text-wrap:balance; font-optical-sizing:auto}
+h1{font-size:var(--t-affiche); line-height:1.03; letter-spacing:-.022em}
+h1 em,h2 em{font-style:italic; color:var(--achat)}
+h2{font-size:var(--t-section); line-height:1.15; letter-spacing:-.012em;
+  margin:var(--e-8) 0 var(--e-2); position:relative;
+  padding-top:var(--e-5); border-top:1px solid var(--rule)}
+h2::before{content:""; position:absolute; top:-1px; left:0;
+  width:40px; height:2px; background:var(--achat)}
+h2:first-of-type{margin-top:var(--e-6)}
+h3{font-size:var(--t-sous); font-weight:600; line-height:1.3; margin:var(--e-5) 0 2px}
+p{margin:.75em 0; max-width:68ch}
+a{color:var(--achat)}
+.num,.mono{font-family:var(--f-mono); font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--f-mono); font-size:.66rem; letter-spacing:.17em;
+  text-transform:uppercase; color:var(--ink-3); margin:0 0 .5em}
+.h{color:var(--hausse)} .b{color:var(--baisse)} .g{color:var(--ink-3)}
+:focus-visible{outline:2px solid var(--focus); outline-offset:3px; border-radius:6px}
+header.tete .chapo{max-width:64ch; color:var(--ink-2); font-size:var(--t-chapo);
+  margin-top:.8em}
+
+.carte{background:var(--surface); border:1px solid var(--rule); border-radius:var(--r-3);
+  box-shadow:var(--ombre); padding:18px 20px; margin:20px 0}
+.carte .titre{font-family:var(--f-mono); font-size:.66rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-3); margin:0 0 14px}
+.dit{border-left:2px solid var(--achat); padding:2px 0 2px 14px; margin:18px 0;
+  color:var(--ink-2); max-width:64ch}
+
+/*  Les tableaux larges défilent DANS leur boîte : le corps de page ne part
+    jamais de côté, ce qui casse la lecture sur téléphone.  */
+.tab{overflow-x:auto; margin:16px 0; -webkit-overflow-scrolling:touch}
+table{border-collapse:collapse; width:100%; min-width:560px; font-size:.86rem}
+th,td{padding:7px 10px; text-align:right; border-bottom:1px solid var(--rule);
+  white-space:nowrap}
+th{font-family:var(--f-mono); font-size:.64rem; font-weight:500; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--ink-3); text-align:right;
+  border-bottom:1px solid var(--rule-fort)}
+th:first-child,td:first-child{text-align:left}
+td.n{font-family:var(--f-mono); font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--surface-survol)}
+tr.faible td{color:var(--ink-3)}
+.puce{display:inline-block; width:7px; height:7px; border-radius:50%;
+  margin-right:7px; vertical-align:baseline}
+
+/*  La figure de l'exécutabilité : une échelle LOGARITHMIQUE, parce que les
+    volumes vont de cinquante mille à quatorze millions d'euros par jour et
+    qu'une échelle linéaire écraserait huit paires sur dix contre l'axe.  */
+.exec{display:flex; flex-direction:column; gap:10px; margin:18px 0}
+.exec .ligne{display:grid; grid-template-columns:62px 1fr; gap:12px; align-items:center}
+.exec .nom{font-family:var(--f-mono); font-size:.8rem; color:var(--ink-2)}
+.exec .piste{position:relative; height:26px; background:var(--surface-2);
+  border:1px solid var(--rule); border-radius:var(--r-1)}
+.exec .barre{position:absolute; top:3px; bottom:3px; left:0; border-radius:2px;
+  background:color-mix(in oklab, var(--achat) 52%, var(--surface-2))}
+.exec .mise{position:absolute; top:-2px; bottom:-2px; width:2px}
+/*  L'étiquette du budget n'est portée QUE par la première ligne : répétée sur
+    les dix, elle transformait une figure lisible en grille de texte. Le repère
+    vertical, lui, reste sur chaque ligne — c'est lui qui porte la comparaison. */
+.exec .ligne:first-child .mise::after{content:attr(data-l); position:absolute;
+  top:-15px; left:50%; transform:translateX(-50%); font-family:var(--f-mono);
+  font-size:.6rem; color:var(--ink-3); white-space:nowrap}
+.exec .ligne:first-child{margin-top:15px}
+.exec .val{position:absolute; right:7px; top:50%; transform:translateY(-50%);
+  font-family:var(--f-mono); font-size:.72rem; color:var(--ink-2)}
+.exec .ech{display:grid; grid-template-columns:62px 1fr; gap:12px;
+  font-family:var(--f-mono); font-size:.6rem; color:var(--ink-3)}
+.exec .ech .g2{position:relative; height:14px}
+.exec .ech span{position:absolute; transform:translateX(-50%)}
+
+.legende{display:flex; flex-wrap:wrap; gap:14px; font-size:.76rem; color:var(--ink-3);
+  margin:10px 0 0}
+.legende i{display:inline-block; width:10px; height:10px; border-radius:2px;
+  margin-right:5px; vertical-align:-1px}
+
+/*  La carte de chaleur des surfaces : une ligne par nombre de barreaux, une
+    case par valeur de l'autre axe.  */
+.chaleur table{border-collapse:separate; border-spacing:2px; min-width:520px;
+  font-size:.74rem}
+.chaleur th{border:0; padding:2px 4px; text-align:center}
+.chaleur th.g{text-align:left; min-width:70px}
+.chaleur td{text-align:center; padding:8px 4px; border:0; border-radius:var(--r-1);
+  font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-weight:500}
+.chaleur td.nom{background:none; color:var(--ink-2); text-align:left;
+  font-family:var(--f-mono)}
+.chaleur td.vide{background:var(--surface-2); color:var(--ink-3)}
+
+/*  Le sommaire : sept sections font une page longue, et sans lui on ne sait pas
+    ce qu'il y a plus bas. Même forme que celui du simulateur — une page du même
+    banc ne doit pas se naviguer de deux façons différentes.  */
+.sommaire{display:flex; flex-wrap:wrap; align-items:center; gap:.35rem .5rem;
+  margin:var(--e-6) 0 0; padding:.7rem .85rem; border:1px solid var(--rule);
+  border-radius:var(--r-3); background:var(--surface)}
+.sommaire .lab-o{font-family:var(--f-mono); font-size:.64rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-3); margin-right:.3rem}
+.sommaire a{display:inline-flex; align-items:baseline; gap:.4rem; text-decoration:none;
+  font-size:.82rem; color:var(--ink-2); padding:.25rem .5rem; border-radius:var(--r-2);
+  border:1px solid transparent; transition:background-color var(--c-std),
+  border-color var(--c-std), color var(--c-std)}
+.sommaire a:hover,.sommaire a:focus-visible{background:var(--surface-survol);
+  border-color:var(--rule-survol); color:var(--ink)}
+.sommaire a b{font-family:var(--f-mono); font-size:.7rem; color:var(--achat);
+  font-weight:600}
+@media print{.sommaire{display:none}}
+
+.bar{display:grid; gap:3px; margin-bottom:12px}
+.bar .lab{display:flex; justify-content:space-between; gap:12px; align-items:baseline;
+  font-size:.88rem}
+.bar .lab b{font-family:var(--f-mono); font-size:1.02rem}
+.bar .piste{position:relative; height:13px; background:var(--surface-2);
+  border:1px solid var(--rule); border-radius:var(--r-1); overflow:hidden}
+.bar .zero{position:absolute; top:0; bottom:0; width:1px; background:var(--rule-fort)}
+.bar .val{position:absolute; top:0; bottom:0; border-radius:2px}
+.bar .quoi{font-size:.78rem; color:var(--ink-3); max-width:64ch}
+.bar.vedette .lab b{font-size:1.22rem}
+
+.onglets{display:flex; flex-wrap:wrap; gap:6px; margin:16px 0 8px}
+.onglets button{font:inherit; font-size:.8rem; font-family:var(--f-mono);
+  padding:5px 11px; border-radius:999px; border:1px solid var(--rule);
+  background:var(--surface); color:var(--ink-2); cursor:pointer;
+  transition:background var(--c-std),border-color var(--c-std)}
+.onglets button:hover{background:var(--surface-survol); border-color:var(--rule-survol)}
+.onglets button[aria-pressed="true"]{background:var(--achat); color:var(--sur-vif);
+  border-color:var(--achat)}
+.onglets button .sous{font-size:.66rem; opacity:.72; margin-left:5px}
+
+.grille-fiches{display:grid; gap:14px;
+  grid-template-columns:repeat(auto-fill,minmax(248px,1fr))}
+.fiche{background:var(--surface); border:1px solid var(--rule); border-radius:var(--r-2);
+  padding:14px 15px}
+.fiche h3{margin:0 0 8px; font-family:var(--f-mono); font-size:.86rem; font-weight:600}
+.fiche dl{display:grid; grid-template-columns:auto 1fr; gap:3px 10px; margin:0;
+  font-size:.78rem}
+.fiche dt{color:var(--ink-3)}
+.fiche dd{margin:0; text-align:right; font-family:var(--f-mono);
+  font-variant-numeric:tabular-nums}
+.fiche .avert{margin-top:9px; padding-top:8px; border-top:1px solid var(--rule);
+  font-size:.72rem; color:var(--baisse)}
+.etiq{display:inline-block; font-family:var(--f-mono); font-size:.6rem;
+  letter-spacing:.06em; text-transform:uppercase; padding:1px 6px; border-radius:999px;
+  border:1px solid var(--rule); color:var(--ink-3)}
+.etiq.ko{border-color:var(--baisse); color:var(--baisse)}
+.etiq.ok{border-color:var(--hausse); color:var(--hausse-txt)}
+
+.attend{color:var(--ink-3); font-size:.86rem; font-family:var(--f-mono);
+  padding:22px; text-align:center; border:1px dashed var(--rule);
+  border-radius:var(--r-2)}
+.nuage{width:100%; height:auto; display:block}
+.nuage text{font-family:var(--f-mono); font-size:9px; fill:var(--ink-3)}
+svg text{font-feature-settings:"tnum" 1}
+@media print{
+  .barre-nav,.onglets{display:none}
+  body{background:#fff}
+  h2{break-after:avoid} .carte,.fiche{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="enveloppe">
+
+<header class="tete">
+  <p class="eyebrow" id="chapeau">La recherche</p>
+  <h1>Ce que des milliers de réglages <em>ont réellement rendu</em></h1>
+  <p class="chapo" id="chapo">Chargement des mesures…</p>
+</header>
+
+<h2>Ce que le marché pouvait servir</h2>
+<p>Le moteur sert un ordre limite <strong>entier, instantanément, au prix exact</strong>, dès
+que le bas d'une bougie touche son prix. Il ne regarde jamais s'il s'est échangé quoi que
+ce soit. Cette section mesure ce qu'il aurait fallu regarder — et elle ne dépend d'aucun
+rejeu, donc d'aucun réglage.</p>
+
+<div class="carte">
+  <p class="titre">Taille d'ordre servable, contre taille réellement posée</p>
+  <div id="exec" class="attend">en attente de la mesure d'exécution</div>
+  <p class="legende" id="exec-leg"></p>
+</div>
+<div id="exec-verdict"></div>
+
+<h2>Ce que les tranches étaient</h2>
+<p>Vingt-deux tranches de quarante jours, mesurées sans aucune stratégie. La
+<strong>volatilité</strong> sert de critère de classe parce qu'elle persiste dans le temps ;
+le <strong>rendement</strong>, lui, ne persiste pas, et classer dessus serait se choisir un
+résultat. Deux critères sont publiés, car ils ne rangent pas les paires dans le même ordre.</p>
+<div class="tab"><table id="t-marche"><tbody><tr><td class="attend">en attente</td></tr></tbody></table></div>
+<div id="stabilite"></div>
+
+<h2>La forme de l'échelle</h2>
+<p>Deux surfaces complètes, chacune balayée en entier pendant que tout le reste garde la
+valeur du réglage en direct. C'est <em>descriptif</em> : une surface dit la forme du terrain,
+elle ne dit pas ce qu'il faut choisir.</p>
+<div class="onglets" id="onglets-etape"></div>
+<div class="onglets" id="onglets-budget"></div>
+<div id="surfaces"><p class="attend">en attente du balayage</p></div>
+
+<h2>La durée, seule condition posée</h2>
+<p>Un point par combinaison : sa durée de cycle médiane contre son rendement. La ligne
+verticale marque les quarante-huit heures. Rien n'a été écarté pour sa durée — on mesure,
+puis on choisit en le sachant.</p>
+<div id="nuage"><p class="attend">en attente du balayage</p></div>
+
+<h2>Choisir à l'avance</h2>
+<p>À chaque tranche, on retient la combinaison qui a le mieux rendu sur les trois tranches
+<em>précédentes</em>, et on l'applique à la suivante. Quatre repères l'encadrent, parce qu'un
+rendement seul ne dit rien.</p>
+<div id="avant"><p class="attend">en attente du balayage</p></div>
+
+<h2>La même géométrie, avec et sans</h2>
+<p>Les étapes 2 et 3 ne classent rien : elles comparent chaque réglage <strong>à
+lui-même</strong>, sur les mêmes paires et les mêmes tranches, avec et sans la variante.
+C'est la seule mesure de ce banc qui échappe au piège du choix — et donc la seule dont le
+verdict de l'étape 1 ne dispense pas.</p>
+<div id="appariee"><p class="attend">disponible à partir de l'étape 2</p></div>
+
+<h2>Les marchés en baisse</h2>
+<p>C'est le terrain visé : un bot qui profiterait des petites résistances à la baisse.
+On ne garde ici que les couples (paire, tranche) où le prix a fini plus bas qu'il n'a
+commencé — et on demande si les réglages qui s'y comportent bien s'y comportent
+<em>encore</em> bien la période suivante.</p>
+<div id="baisse"><p class="attend">en attente du balayage</p></div>
+
+<h2>Monnaie par monnaie</h2>
+<p>Ce que chaque paire vaut pour cette méthode — et, pour six d'entre elles, pourquoi la
+question du rendement vient après celle de l'exécution.</p>
+<div id="fiches" class="grille-fiches"></div>
+
+<h2>Le marché, et les ordres posés dessus</h2>
+<p>Le graphique partagé du banc : molette pour zoomer, glisser pour déplacer, double-clic
+pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du haut.</p>
+<div class="onglets" id="onglets-paire"></div>
+<div class="carte">
+  <div id="graphe" class="attend">choisissez une paire</div>
+  <p id="cycle-info" class="bandeau-cycle"></p>
+</div>
+
+</div>
+
+<link rel="stylesheet" href="nav.css">
+<script src="nav.js" defer></script>
+<script src="marche.js" defer></script>
+<script src="reglages.js" defer></script>
+<script>
+(function () {
+  "use strict";
+  const $ = (s) => document.querySelector(s);
+  const el = (t, a, p) => { const n = document.createElement(t);
+    for (const k in (a || {})) { if (k === "t") n.textContent = a[k];
+      else if (k === "html") n.innerHTML = a[k]; else n.setAttribute(k, a[k]); }
+    if (p) p.appendChild(n); return n; };
+  const court = (s) => String(s).split("/")[0];
+  const pct = (x, n) => (x == null ? "—" : (x * 100).toFixed(n === undefined ? 2 : n) + " %");
+  const signe = (x, n) => (x == null ? "—"
+    : (x >= 0 ? "+" : "") + (x * 100).toFixed(n === undefined ? 2 : n) + " %");
+  /*  Les montants s'écrivent comme en français : espace fine insécable pour les
+   *  milliers, abrégé réservé aux millions. « 1 000 € » se lit, « 1 k € » se
+   *  décode. La figure de l'exécutabilité garde l'abrégé sur son axe, où la
+   *  place manque : elle passe `court` à vrai.  */
+  const eur = (x, court) => {
+    if (x >= 1e6) return (x / 1e6).toFixed(1).replace(".", ",") + " M";
+    if (court && x >= 1e3) return Math.round(x / 1e3) + " k";
+    return Math.round(x).toLocaleString("fr-FR").replace(/ /g, " ");
+  };
+  const cl = (x) => x == null ? "" : (x > 0 ? "h" : x < 0 ? "b" : "g");
+
+  let D = null, ETAPE = 1, BUDGET = null, PAIRE = null, GRAPHE = null;
+  const VUES = {};
+
+  /* ————————————————————————————— l'exécutabilité ————————————————————————————
+     La figure la plus importante de la page, donc la première. Échelle
+     logarithmique : les volumes vont de cinquante mille à quatorze millions
+     d'euros par jour, et une échelle linéaire collerait huit paires sur dix
+     contre l'axe, ce qui effacerait exactement ce qu'on veut montrer.        */
+  function poserExecution() {
+    const boite = $("#exec");
+    const x = D.execution;
+    if (!x) { boite.textContent = "mesure d'exécution absente"; return; }
+    boite.className = "exec";
+    boite.textContent = "";
+
+    const paires = Object.keys(x.paires)
+      .sort((a, b) => x.paires[b].eur_par_jour - x.paires[a].eur_par_jour);
+    const budgets = Object.keys(x.mises).sort((a, b) => a - b);
+    //  La mise du barreau du BAS : c'est elle qui est énorme, puisque les mises
+    //  croissent géométriquement et que le bas porte la plus grosse.
+    const bas = {};
+    for (const b of budgets) bas[b] = x.mises[b][x.mises[b].length - 1];
+
+    const vals = paires.map(s => servable(x.paires[s]));
+    const lo = Math.log10(Math.max(5, Math.min(...vals, ...Object.values(bas))) / 3);
+    const hi = Math.log10(Math.max(...vals, ...Object.values(bas)) * 2.2);
+    const P = (v) => Math.max(0, Math.min(100, (Math.log10(Math.max(v, 1)) - lo) / (hi - lo) * 100));
+
+    for (const s of paires) {
+      const d = x.paires[s];
+      const v = servable(d);
+      const li = el("div", { class: "ligne" }, boite);
+      el("div", { class: "nom", t: court(s) }, li);
+      const pi = el("div", { class: "piste" }, li);
+      el("div", { class: "barre", style: "width:" + P(v) + "%" }, pi);
+      for (const b of budgets) {
+        el("div", { class: "mise", "data-l": Math.round(b / 1000) + " k€",
+          style: "left:" + P(bas[b]) + "%; background:"
+            + (bas[b] <= v ? "var(--hausse)" : "var(--baisse)") }, pi);
+      }
+      el("div", { class: "val", t: eur(v, true) + " €" }, pi);
+    }
+    //  Les graduations de l'échelle, sans quoi « une barre deux fois plus
+    //  longue » ne voudrait rien dire sur un axe logarithmique.
+    const e = el("div", { class: "ech" }, boite);
+    el("div", {}, e);
+    const g2 = el("div", { class: "g2" }, e);
+    for (const t of [10, 100, 1000, 10000]) {
+      if (Math.log10(t) < lo || Math.log10(t) > hi) continue;
+      el("span", { style: "left:" + P(t) + "%", t: eur(t, true) + " €" }, g2);
+    }
+    $("#exec-leg").innerHTML =
+      '<span><i style="background:color-mix(in oklab, var(--achat) 52%, var(--surface-2))">'
+      + '</i>mise maximale servie dans au moins '
+      + '5 % des bougies de cinq minutes</span>'
+      + '<span><i style="background:var(--hausse)"></i>barreau du bas servable</span>'
+      + '<span><i style="background:var(--baisse)"></i>barreau du bas hors de portée</span>';
+
+    //  Le verdict, formulé comme le script le formule : au seuil de 5 %.
+    const v = el("div", { class: "dit" }, null);
+    const lignes = budgets.map(b => {
+      const ok = paires.filter(s => bas[b] <= servable(x.paires[s]));
+      const ko = paires.filter(s => bas[b] > servable(x.paires[s]));
+      return "<strong>À " + eur(+b) + " € par paire</strong> — crédible sur "
+        + (ok.map(court).join(", ") || "aucune paire")
+        + " ; fictif sur " + (ko.map(court).join(", ") || "aucune") + ".";
+    });
+    v.innerHTML = lignes.join("<br>") + "<br><span class=\"g\">Le barreau du bas d'une "
+      + "échelle à " + x.paliers + " paliers de raison " + x.ratio + " porte "
+      + Math.round(bas[budgets[budgets.length - 1]] / +budgets[budgets.length - 1] * 100)
+      + " % du budget : c'est lui qui bute, et c'est la RAISON de la progression, "
+      + "pas le budget seul, qui le rend énorme.</span>";
+    $("#exec-verdict").appendChild(v);
+  }
+
+  /*  La mise maximale qu'au moins 5 % des bougies de cinq minutes pouvaient
+   *  absorber. Mesurée par scripts/mesurer_execution.py et transportée telle
+   *  quelle : la page n'approche rien, sans quoi la figure la plus lourde de
+   *  conséquence de tout le banc reposerait sur une estimation faite en
+   *  JavaScript.                                                            */
+  const servable = (d) => d.servable;
+
+  /* ————————————————————————————————— le marché ———————————————————————————— */
+  function poserMarche() {
+    const t = $("#t-marche");
+    t.innerHTML = "";
+    const th = el("thead", {}, t), tr = el("tr", {}, th);
+    for (const c of ["paire", "tranches", "moy. 5 min", "méd. 1 h", "bougies plates",
+                     "dérive moy.", "tranches en baisse"]) el("th", { t: c }, tr);
+    const tb = el("tbody", {}, t);
+    const paires = Object.keys(D.marche).sort((a, b) => D.marche[b].med1h - D.marche[a].med1h);
+    for (const s of paires) {
+      const d = D.marche[s];
+      const r = el("tr", d.partielle ? { class: "faible" } : {}, tb);
+      const c0 = el("td", {}, r);
+      c0.innerHTML = '<span class="puce" style="background:var(--o'
+        + (1 + paires.indexOf(s) % 3) + ')"></span>' + court(s)
+        + (d.partielle ? ' <span class="etiq">partielle</span>' : "");
+      el("td", { class: "n", t: d.tranches + " / " + D.n_blocs }, r);
+      el("td", { class: "n", t: (d.moy5 * 100).toFixed(4) + " %" }, r);
+      el("td", { class: "n", t: (d.med1h * 100).toFixed(4) + " %" }, r);
+      el("td", { class: "n", t: (d.plat5 * 100).toFixed(1) + " %" }, r);
+      el("td", { class: "n " + cl(d.derive), t: signe(d.derive, 1) }, r);
+      el("td", { class: "n", t: d.baissieres + " / " + d.tranches }, r);
+    }
+    const s = D.stabilite || {};
+    const box = el("div", { class: "dit" }, null);
+    box.innerHTML = "Le classement des paires par volatilité tient d'une tranche à la "
+      + "suivante à <b class=\"mono\">" + (s.moy5 ? s.moy5.moyenne.toFixed(2) : "?")
+      + "</b> (moyenne à cinq minutes) et <b class=\"mono\">"
+      + (s.med1h ? s.med1h.moyenne.toFixed(2) : "?") + "</b> (médiane à l'heure). "
+      + "Le classement par <em>rendement</em>, lui, tient à −0,10. C'est cet écart, et lui "
+      + "seul, qui autorise à classer les paires d'avance.";
+    $("#stabilite").appendChild(box);
+  }
+
+  /* ——————————————————————————————— les surfaces ——————————————————————————— */
+  /*  Deux teintes et un gris au milieu : jamais d'arc-en-ciel, et le point
+   *  neutre n'est pas une couleur mais l'absence de couleur.
+   *
+   *  L'ENCRE EST CHOISIE SUR LA CLARTÉ RÉELLE DU FOND, case par case et à
+   *  chaque changement de thème. Une première version montait à 90 % de teinte
+   *  et posait var(--sur-vif) partout : mesuré sur les 140 cases en thème
+   *  clair, 127 tombaient sous le rapport 4,5:1 exigé par l'accessibilité, 50
+   *  sous 3:1, et la pire à 1,8:1 — un chiffre qu'on ne lit pas. Choisir
+   *  l'encre d'après le POURCENTAGE de mélange ramenait la pire à 2,5:1 : le
+   *  pourcentage n'est pas la clarté, et le seuil tombait au mauvais endroit.
+   *  Brider la teinte à 58 % réglait le contraste mais écrasait l'étendue des
+   *  fonds à 0,12 en thème sombre — la carte devenait uniforme et n'encodait
+   *  plus rien.
+   *
+   *  Mesure faite sur cinq plages : 15-90 % donne la plus large étendue de
+   *  couleur (0,59 en clair, 0,31 en sombre) pour un pire contraste de 4,2,
+   *  À CONDITION de prendre pour chaque case celle des deux encres qui s'écarte
+   *  le plus de son fond. C'est ce que fait encrer() : il lit la clarté que le
+   *  navigateur a vraiment calculée, sans rien supposer des jetons ni du thème. */
+  const PLAGE = [15, 90];
+
+  function couleur(v, lo, hi) {
+    if (v == null) return "var(--surface-2)";
+    const t = Math.max(0, Math.min(1, (v - lo) / (hi - lo || 1)));
+    const part = Math.round(PLAGE[0] + (PLAGE[1] - PLAGE[0]) * (v >= 0 ? t : 1 - t));
+    return "color-mix(in oklab, var(--" + (v >= 0 ? "hausse" : "baisse")
+      + "-plein) " + part + "%, var(--surface-2))";
+  }
+
+  /*  La clarté d'une couleur calculée, quelle que soit la forme rendue :
+   *  oklab() porte sa clarté en première composante, rgb() demande la luminance
+   *  perceptuelle usuelle. Les deux rendent un nombre dans [0,1] comparable.  */
+  function clarte(c) {
+    const o = c.match(/^oklab\(\s*([\d.]+)/);
+    if (o) return parseFloat(o[1]);
+    const m = c.match(/[\d.]+/g);
+    if (!m) return 0.5;
+    const f = m.slice(0, 3).map(x => {
+      const v = x / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return Math.pow(0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2], 1 / 3);
+  }
+
+  function encrer() {
+    const cases = document.querySelectorAll(".chaleur td.v");
+    if (!cases.length) return;
+    const sonde = el("span", { style: "position:absolute;left:-3000px" }, document.body);
+    const clarteDe = (jeton) => {
+      sonde.style.color = jeton;
+      return clarte(getComputedStyle(sonde).color);
+    };
+    const cInk = clarteDe("var(--ink)"), cVif = clarteDe("var(--sur-vif)");
+    sonde.remove();
+    for (const td of cases) {
+      const cf = clarte(getComputedStyle(td).backgroundColor);
+      td.style.color = Math.abs(cf - cInk) >= Math.abs(cf - cVif)
+        ? "var(--ink)" : "var(--sur-vif)";
+    }
+  }
+
+  function poserSurfaces() {
+    const b = etape1();
+    const hote = $("#surfaces");
+    hote.textContent = "";
+    if (!b) { el("p", { class: "attend", t: "en attente du balayage" }, hote); return; }
+    if (!b.surfaces || !Object.keys(b.surfaces).length) {
+      //  Seule l'étape 1 balaye une grille de valeurs : les suivantes comparent
+      //  des variantes appariées, où une surface n'aurait rien à montrer. Le
+      //  dire vaut mieux que laisser une section vide.
+      el("p", { class: "attend", t: "cette étape ne balaye pas de grille : elle "
+        + "compare des variantes appariées — voir « la même géométrie, avec et sans »" },
+        hote);
+      return;
+    }
+    for (const cle in b.surfaces) {
+      const s = b.surfaces[cle];
+      const vals = Object.values(s.cases).map(x => x[0]);
+      const lo = Math.min(...vals), hi = Math.max(...vals);
+      const xs = [...new Set(Object.keys(s.cases).map(k => +k.split("|")[0]))].sort((p, q) => p - q);
+      const ys = [...new Set(Object.keys(s.cases).map(k => +k.split("|")[1]))].sort((p, q) => p - q);
+      const carte = el("div", { class: "carte" }, hote);
+      el("p", { class: "titre", t: nomAxe(s.axes[0]) + " × " + nomAxe(s.axes[1])
+        + " — rendement moyen par tranche" }, carte);
+      const tab = el("div", { class: "tab chaleur" }, carte);
+      const t = el("table", {}, tab), th = el("thead", {}, t), tr = el("tr", {}, th);
+      el("th", { class: "g", t: nomAxe(s.axes[0]) }, tr);
+      for (const y of ys) el("th", { t: fmtAxe(s.axes[1], y) }, tr);
+      const tb = el("tbody", {}, t);
+      for (const x of xs) {
+        const r = el("tr", {}, tb);
+        el("td", { class: "nom", t: x }, r);
+        for (const y of ys) {
+          const c = s.cases[x + "|" + y];
+          if (!c) { el("td", { class: "vide", t: "—" }, r); continue; }
+          const td = el("td", { class: "v", t: signe(c[0], 1),
+            style: "background:" + couleur(c[0], lo, hi) }, r);
+          td.title = nomAxe(s.axes[0]) + " " + x + ", " + nomAxe(s.axes[1])
+            + " " + fmtAxe(s.axes[1], y)
+            + " — " + signe(c[0]) + (c[1] != null ? ", durée médiane " + c[1] + " h" : "");
+        }
+      }
+      el("p", { class: "quoi bar", style: "font-size:.78rem;color:var(--ink-3)",
+        t: "Survolez une case pour la durée médiane de ses cycles. La couleur porte "
+         + "le signe et l'intensité ; le chiffre reste la lecture exacte." }, carte);
+    }
+    encrer();
+  }
+  const fmtAxe = (nom, v) => (nom === "paliers" ? String(v)
+    : (v * 100).toFixed(v < 0.01 ? 1 : 0) + " %");
+  //  Les axes portent leur nom de code dans les données ; la page doit dire
+  //  ce que c'est, pas comment le champ s'appelle.
+  const NOM_AXE = { paliers: "barreaux", profondeur: "profondeur de l'échelle",
+    objectif_net: "objectif net", ratio: "progression des mises",
+    depart_sous: "entrée sous la référence" };
+  const nomAxe = (a) => NOM_AXE[a] || a;
+
+  /* ————————————————————————————— durée × rendement ———————————————————————— */
+  function poserNuage() {
+    const b = etape1();
+    const hote = $("#nuage");
+    hote.textContent = "";
+    if (!b) { el("p", { class: "attend", t: "en attente du balayage" }, hote); return; }
+    const carte = el("div", { class: "carte" }, hote);
+    el("p", { class: "titre", t: "une combinaison, un point — "
+      + b.nuage.length + " combinaisons" }, carte);
+    const W = 820, H = 380, ML = 54, MR = 16, MT = 14, MB = 34;
+    const NS = "http://www.w3.org/2000/svg";
+    const sv = document.createElementNS(NS, "svg");
+    sv.setAttribute("viewBox", "0 0 " + W + " " + H);
+    sv.setAttribute("class", "nuage");
+    carte.appendChild(sv);
+    const S = (t, a) => { const n = document.createElementNS(NS, t);
+      for (const k in a) n.setAttribute(k, a[k]); sv.appendChild(n); return n; };
+    //  Durée en logarithmique : elle va de quelques heures à plusieurs mois, et
+    //  en linéaire les trois quarts des points s'empileraient sur l'axe.
+    const ds = b.nuage.map(p => Math.max(0.5, p[1]));
+    const rs = b.nuage.map(p => p[2]);
+    const x0 = Math.log10(Math.min(...ds)), x1 = Math.log10(Math.max(...ds));
+    const y0 = Math.min(...rs, 0), y1 = Math.max(...rs);
+    const X = (v) => ML + (Math.log10(Math.max(v, 0.5)) - x0) / (x1 - x0 || 1) * (W - ML - MR);
+    const Y = (v) => MT + (y1 - v) / (y1 - y0 || 1) * (H - MT - MB);
+    for (const g of [1, 6, 24, 48, 24 * 7, 24 * 30, 24 * 120]) {
+      if (Math.log10(g) < x0 || Math.log10(g) > x1) continue;
+      S("line", { x1: X(g), x2: X(g), y1: MT, y2: H - MB, stroke: "var(--grille)" });
+      S("text", { x: X(g), y: H - MB + 14, "text-anchor": "middle" })
+        .textContent = g < 48 ? g + " h" : Math.round(g / 24) + " j";
+    }
+    S("line", { x1: ML, x2: W - MR, y1: Y(0), y2: Y(0), stroke: "var(--rule-fort)" });
+    S("text", { x: ML - 7, y: Y(0) + 3, "text-anchor": "end" }).textContent = "0 %";
+    S("text", { x: ML - 7, y: Y(y1) + 3, "text-anchor": "end" }).textContent = signe(y1, 0);
+    if (y0 < 0) S("text", { x: ML - 7, y: Y(y0) + 3, "text-anchor": "end" })
+      .textContent = signe(y0, 0);
+    //  La seule condition posée par l'utilisateur, tracée : quarante-huit heures.
+    S("line", { x1: X(48), x2: X(48), y1: MT, y2: H - MB, stroke: "var(--achat)",
+      "stroke-width": 1.5, "stroke-dasharray": "4 3" });
+    S("text", { x: X(48) + 5, y: MT + 11, fill: "var(--achat)" }).textContent = "48 h";
+    const pmax = Math.max(...b.nuage.map(p => p[3]));
+    for (const p of b.nuage) {
+      const c = S("circle", { cx: X(p[1]).toFixed(1), cy: Y(p[2]).toFixed(1),
+        r: 3.2, fill: "var(--o" + (1 + Math.floor(p[3] / pmax * 2.99)) + ")",
+        opacity: p[1] < 48 ? 0.92 : 0.34 });
+      const t = document.createElementNS(NS, "title");
+      t.textContent = p[3] + " paliers, r=" + p[4] + ", objectif " + pct(p[5], 1)
+        + ", profondeur " + pct(p[6], 0) + " — " + signe(p[2])
+        + ", durée médiane " + p[1] + " h";
+      c.appendChild(t);
+    }
+    const sous48 = b.nuage.filter(p => p[1] < 48);
+    const gagnantes = sous48.filter(p => p[2] > 0);
+    el("p", { class: "legende", html:
+      '<span><i style="background:var(--o1)"></i>peu de paliers</span>'
+      + '<span><i style="background:var(--o3)"></i>beaucoup de paliers</span>'
+      + '<span>les points pâles dépassent 48 h</span>' }, carte);
+    el("p", { style: "font-size:.82rem;color:var(--ink-2);margin:.6em 0 0", t:
+      sous48.length + " combinaisons sur " + b.nuage.length
+      + " tiennent une durée médiane sous 48 h, dont " + gagnantes.length
+      + " rendent positif." }, carte);
+  }
+
+  /* ————————————————————————————— le choix en avant ———————————————————————— */
+  function poserAvant() {
+    const b = etape1();
+    const hote = $("#avant");
+    hote.textContent = "";
+    if (!b) { el("p", { class: "attend", t: "en attente du balayage" }, hote); return; }
+    const carte = el("div", { class: "carte" }, hote);
+    el("p", { class: "titre", t: b.avant.n_decisions
+      + " décisions en avant — budget " + eur(+BUDGET) + " € par paire" }, carte);
+    //  Les repères viennent de la MÊME fonction de décision que le compte rendu,
+    //  sous forme de nombres : la page ne peut pas afficher un verdict différent
+    //  du sien, et aucune expression régulière ne s'interpose.
+    const lignes = b.avant.reperes || [];
+    if (!lignes.length) { el("p", { class: "attend", t: "verdict indisponible" }, carte);
+      return; }
+    const amp = Math.max(...lignes.map(l => Math.abs(l.moyenne))) || 0.01;
+    for (const l of lignes) {
+      const vedette = l.cle === "choix" || l.cle.startsWith("classe");
+      const d = el("div", { class: "bar" + (vedette ? " vedette" : "") }, carte);
+      const lab = el("div", { class: "lab" }, d);
+      el("span", { t: l.nom }, lab);
+      el("b", { class: cl(l.moyenne), t: signe(l.moyenne) }, lab);
+      const pi = el("div", { class: "piste" }, d);
+      el("div", { class: "zero", style: "left:50%" }, pi);
+      const w = Math.abs(l.moyenne) / amp * 50;
+      el("div", { class: "val", style: "left:" + (l.moyenne >= 0 ? 50 : 50 - w) + "%;width:"
+        + w + "%;background:var(--" + (l.moyenne >= 0 ? "hausse" : "baisse") + "-plein)" }, pi);
+      el("div", { class: "quoi", t: "médiane " + signe(l.mediane) + " · "
+        + (l.part_positive * 100).toFixed(0) + " % de tranches positives" }, d);
+    }
+    //  Les deux écarts qui SONT le résultat, dits une fois, en toutes lettres.
+    const par = {};
+    for (const l of lignes) par[l.cle] = l.moyenne;
+    const dits = [];
+    if (par.choix != null && par.hasard != null)
+      dits.push("Choisir contre tirer au sort : <b class=\"mono " + cl(par.choix - par.hasard)
+        + "\">" + ((par.choix - par.hasard) * 100).toFixed(2) + " point</b> par tranche.");
+    for (const k of ["classe0", "classe1"]) {
+      if (par[k] != null && par.choix != null) {
+        const nom = (lignes.find(l => l.cle === k) || {}).nom || k;
+        dits.push(nom.replace("choix par classe", "Choisir par classe") + " contre choisir "
+          + "globalement : <b class=\"mono " + cl(par[k] - par.choix) + "\">"
+          + ((par[k] - par.choix) * 100).toFixed(2) + " point</b>.");
+      }
+    }
+    if (dits.length) el("p", { class: "dit", html: dits.join("<br>")
+      + "<br><span class=\"g\">Ce sont ces écarts qui sont le résultat. Le reste n'est "
+      + "que description.</span>" }, carte);
+  }
+
+  /* ————————————————————————————— les marchés en baisse ————————————————————
+     La figure la plus importante après l'exécutabilité, et la plus piégeuse :
+     la stabilité du classement y est presque parfaite, ce qui se lit comme une
+     bonne nouvelle jusqu'à ce qu'on demande CONTRE QUOI ce classement est
+     corrélé. Les deux chiffres sont donc posés ensemble, dans cet ordre.      */
+  function poserBaisse() {
+    const b = etape1();
+    const hote = $("#baisse");
+    hote.textContent = "";
+    if (!b || !b.baisse || !b.baisse.couples) {
+      el("p", { class: "attend", t: "en attente du balayage" }, hote); return;
+    }
+    const x = b.baisse;
+    const carte = el("div", { class: "carte" }, hote);
+    el("p", { class: "titre", t: x.couples + " couples (paire, tranche) où le prix a "
+      + "fini plus bas qu'il n'a commencé" }, carte);
+
+    if (x.stabilite) {
+      const st = x.stabilite;
+      el("p", { class: "dit", html:
+        "Le classement des " + (b.nuage ? b.nuage.length : "") + " réglages tient à "
+        + "<b class=\"mono h\">" + st.correlation.toFixed(2) + "</b> d'une moitié de "
+        + "période à l'autre. Le meilleur de la première rend <b class=\"mono "
+        + cl(st.meilleur_sur_2e) + "\">" + signe(st.meilleur_sur_2e) + "</b> sur la "
+        + "seconde, quand la médiane des réglages y rend <b class=\"mono "
+        + cl(st.mediane_2e) + "\">" + signe(st.mediane_2e) + "</b>." }, carte);
+    }
+    if (x.exposition) {
+      const ex = x.exposition;
+      el("p", { class: "dit", style: "border-left-color:var(--baisse)", html:
+        "<b>Et voici pourquoi ce chiffre ne vaut pas ce qu'il semble valoir.</b> Ce "
+        + "classement est corrélé à <b class=\"mono b\">" + ex.corr_engagement.toFixed(2)
+        + "</b> avec l'engagement moyen et à <b class=\"mono b\">"
+        + ex.corr_bloque.toFixed(2) + "</b> avec le capital bloqué. Le mieux classé "
+        + "engage <b class=\"mono\">" + pct(ex.engage_meilleur, 1) + "</b> du budget ; "
+        + "la médiane en engage <b class=\"mono\">" + pct(ex.engage_median, 1)
+        + "</b>.<br><br>Ce n'est pas un classement par savoir-faire, c'est un classement "
+        + "par <b>exposition</b> : le mieux placé est celui qui n'achète presque pas, et "
+        + "il perd moins parce qu'il risque moins. On obtiendrait le même effet en "
+        + "divisant la mise par vingt. <b>La grille n'a pas d'avantage en marché "
+        + "baissier ; elle n'a que de l'exposition.</b>" }, carte);
+    }
+    if (x.temoin != null) {
+      el("p", { style: "font-size:.84rem;color:var(--ink-2);margin:.8em 0 0", html:
+        "Le témoin y rend <b class=\"mono " + cl(x.temoin) + "\">" + signe(x.temoin)
+        + "</b> et se classe " + x.temoin_rang + "<sup>e</sup>." }, carte);
+    }
+    if (x.classement && x.classement.length) {
+      const tab = el("div", { class: "tab" }, carte);
+      const t = el("table", {}, tab), th = el("thead", {}, t), tr = el("tr", {}, th);
+      for (const c of ["réglage", "rendement", "durée méd.", "cycles gagnants"])
+        el("th", { t: c }, tr);
+      const tb = el("tbody", {}, t);
+      for (const r of x.classement) {
+        const li = el("tr", {}, tb);
+        el("td", { class: "mono", style: "font-size:.78rem", t: r.spec }, li);
+        el("td", { class: "n " + cl(r.rendement), t: signe(r.rendement) }, li);
+        el("td", { class: "n", t: r.duree != null ? r.duree.toFixed(1) + " h" : "—" }, li);
+        el("td", { class: "n", t: (r.gagnantes * 100).toFixed(0) + " %" }, li);
+      }
+    }
+  }
+
+  /* ——————————————————————————————— les fiches ————————————————————————————— */
+  function poserFiches() {
+    const hote = $("#fiches");
+    hote.textContent = "";
+    const b = etape1();
+    const x = D.execution;
+    const budgets = x ? Object.keys(x.mises).sort((p, q) => p - q) : [];
+    for (const s of D.paires) {
+      const m = D.marche[s];
+      if (!m) continue;
+      const f = b && b.fiches ? b.fiches[s] : null;
+      const c = el("div", { class: "fiche" }, hote);
+      el("h3", { t: s }, c);
+      const dl = el("dl", {}, c);
+      const met = (k, v, klass) => { el("dt", { t: k }, dl);
+        el("dd", { class: klass || "", t: v }, dl); };
+      met("tranches", m.tranches + " / " + D.n_blocs);
+      met("classe (5 min)", f ? (f.classe_moy5 || "—") : "—");
+      met("classe (1 h)", f ? (f.classe_med1h || "—") : "—");
+      met("bougies plates", (m.plat5 * 100).toFixed(1) + " %");
+      met("tranches en baisse", m.baissieres + " / " + m.tranches);
+      if (f) {
+        met("choix en avant", signe(f.avant), cl(f.avant));
+        met("témoin", signe(f.temoin), cl(f.temoin));
+        met("meilleur après coup", signe(f.meilleur_apres_coup), cl(f.meilleur_apres_coup));
+      }
+      if (x && x.paires[s]) {
+        const v = servable(x.paires[s]);
+        const ko = budgets.filter(bu => x.mises[bu][x.mises[bu].length - 1] > v);
+        if (ko.length) {
+          el("div", { class: "avert", html: "Ordre du bas hors de portée à "
+            + ko.map(bu => eur(+bu) + " €").join(" et ") + " : le rejeu y achète des lots "
+            + "que le marché n'aurait pas pu servir." }, c);
+        }
+      }
+      if (m.partielle) el("div", { class: "avert", t:
+        "Historique partiel : mesurée comme les autres, mais exclue de toutes les moyennes "
+        + "et de tous les choix." }, c);
+    }
+  }
+
+  /* ——————————————————————————————— le graphique ——————————————————————————— */
+  function poserOngletsPaire() {
+    const o = $("#onglets-paire");
+    o.textContent = "";
+    for (const s of D.paires) {
+      const b = el("button", { type: "button", "aria-pressed": String(s === PAIRE) }, o);
+      b.appendChild(document.createTextNode(court(s)));
+      b.addEventListener("click", () => choisirPaire(s));
+    }
+  }
+
+  async function choisirPaire(s) {
+    PAIRE = s;
+    for (const b of $("#onglets-paire").children)
+      b.setAttribute("aria-pressed", String(b.textContent === court(s)));
+    const hote = $("#graphe");
+    if (!VUES[s]) {
+      hote.className = "attend";
+      hote.textContent = "chargement de " + court(s) + "…";
+      try {
+        const r = await fetch("data/etude-vue/" + s.replace("/", "-") + ".json");
+        if (!r.ok) throw new Error(r.status);
+        VUES[s] = await r.json();
+      } catch (e) {
+        hote.textContent = "bougies d'affichage indisponibles pour " + court(s);
+        return;
+      }
+    }
+    const v = VUES[s];
+    //  Marche.agreger() lit les bougies comme des TABLEAUX [ts,o,h,l,c,v] et non
+    //  comme des objets : les convertir laissait chaque chandelier sans haut ni
+    //  bas, l'échelle de prix partait à l'infini et le graphique sortait vide
+    //  avec une erreur SVG par bougie. Le fichier exporté est déjà dans la bonne
+    //  forme — il n'y avait rien à convertir.
+    const bougies = v.bougies;
+    hote.className = "";
+    hote.textContent = "";
+    if (GRAPHE) { GRAPHE.detruire(); GRAPHE = null; }
+    //  Les deux courbes disent le mécanisme central de la stratégie mieux que
+    //  n'importe quel tableau : le prix de revient descend plus vite que le
+    //  marché, et la cible de vente le suit à distance fixe. Les bandes disent
+    //  le coût que le tableau cache — le temps où le capital ne travaille pas.
+    GRAPHE = new Marche(hote, {
+      bougies: bougies, pas: v.pas, unite: 6, hauteur: 380, volume: true, nom: s,
+      ordres: v.ordres || [], cycles: v.cycles || [], bandes: v.bandes || [],
+      courbes: [
+        { points: v.revient || [], couleur: "var(--prix)", epais: 1.4,
+          texte: "prix de revient" },
+        { points: v.sortie || [], couleur: "var(--vente)", epais: 1.2,
+          pointille: "4 3", opacite: 0.8, texte: "cible de vente" },
+      ],
+      surCycle: (c) => majCycle(s, c),
+      aria: "prix de " + s + " sur la fenêtre d'étude, avec les ordres posés",
+    });
+    majCycle(s, null);
+  }
+
+  /*  Le bandeau sous le graphique : ce que dit le cycle qu'on vient de choisir,
+   *  ou, au repos, ce que le réglage a fait sur toute la fenêtre.  */
+  function majCycle(s, c) {
+    const v = VUES[s];
+    const hote = $("#cycle-info");
+    if (!hote || !v) return;
+    if (c) {
+      const j = (c.t1 - c.t0) / 86400000;
+      hote.innerHTML = '<b class="mono ' + cl(c.gain) + '">' + signe(c.gain)
+        + '</b> · ' + c.paliers + ' palier' + (c.paliers > 1 ? "s" : "")
+        + ' · ' + (j < 2 ? (c.heures || 0).toFixed(1) + " h" : j.toFixed(1) + " jours")
+        + ' <span class="g">— cliquez ailleurs pour revenir à la vue entière</span>';
+      return;
+    }
+    //  Une paire à l'historique partiel montre 880 jours de prix mais n'a
+    //  d'ordres que sur la portion mesurée : sans le dire, la moitié muette de
+    //  la courbe passerait pour un robot qui n'a rien fait.
+    const part = (D.partielles || []).includes(s)
+      ? '<b class="b">Historique partiel</b> — les prix couvrent toute la fenêtre, '
+        + 'les ordres seulement la portion mesurée. '
+      : "";
+    const cy = v.cycles || [];
+    if (!cy.length) {
+      hote.innerHTML = part + '<span class="g">aucun cycle sur cette paire</span>';
+      return;
+    }
+    hote.innerHTML = part;
+    const g = cy.filter(x => x.gain > 0).length;
+    const h = cy.map(x => x.heures).sort((a, b) => a - b);
+    const long = cy.filter(x => x.heures > 48).length;
+    //  LE TAUX DE CYCLES GAGNANTS NE VEUT PRESQUE RIEN DIRE ICI, et le taire
+    //  serait pire que l'afficher : cette stratégie ne vend jamais à perte, donc
+    //  tout cycle qui se ferme se ferme en gain. Ce qui coûte, c'est ce qui NE
+    //  se ferme pas — le capital immobilisé. On affiche donc les deux ensemble,
+    //  et on dit lequel regarder.
+    hote.innerHTML = part + cy.length + " cycles · durée médiane <b class=\"mono\">"
+      + h[h.length >> 1].toFixed(1) + " h</b> · <b class=\"mono"
+      + (long ? " b" : "") + "\">" + long + "</b> au-delà de 48 h · "
+      + (v.ordres || []).filter(o => o.genre === "achat").length + " achats"
+      + ' <span class="g">— ' + Math.round(g / cy.length * 100) + ' % des cycles sont '
+      + 'gagnants, ce qui ne prouve rien : la stratégie ne vend jamais à perte. '
+      + 'Ce qui coûte est le capital qui dort, en bandes sombres sur la courbe. '
+      + 'Cliquez un cycle pour l\'étudier.</span>';
+  }
+
+  /* ——————————————————————————————— l'assemblage ——————————————————————————— */
+  /*  Toutes les sections lisent l'étape COURANTE. Une page qui n'afficherait
+   *  que la première laisserait croire que les suivantes n'ont rien mesuré ;
+   *  une page qui les mélangerait comparerait des lots différents. Un seul
+   *  sélecteur, et chaque section dit sur quoi elle porte.  */
+  const etape1 = () => {
+    const b = D["etape" + ETAPE];
+    return (b && b.budget[BUDGET]) || null;
+  };
+  const blocEtape = () => D["etape" + ETAPE] || null;
+  const etapesDispo = () => [1, 2, 3, 4].filter(n => D["etape" + n]);
+  const TITRE_ETAPE = {
+    1: "la géométrie en % fixe",
+    2: "en unités de volatilité",
+    3: "les mécanismes",
+    4: "l'encadrement par le volume",
+  };
+
+  function poserOngletsEtape() {
+    const o = $("#onglets-etape");
+    o.textContent = "";
+    const dispo = etapesDispo();
+    if (dispo.length < 2) { o.hidden = true; return; }
+    o.hidden = false;
+    for (const n of dispo) {
+      const bt = el("button", { type: "button",
+        "aria-pressed": String(n === ETAPE) }, o);
+      bt.appendChild(document.createTextNode("Étape " + n));
+      el("span", { class: "sous", t: TITRE_ETAPE[n] || "" }, bt);
+      bt.addEventListener("click", () => {
+        ETAPE = n;
+        const b = blocEtape();
+        if (b && !b.budget[BUDGET]) BUDGET = Object.keys(b.budget)[0];
+        toutPoser();
+      });
+    }
+  }
+
+  function toutPoser() {
+    poserOngletsEtape(); poserOngletsBudget(); poserSurfaces(); poserNuage();
+    poserAppariee(); poserAvant(); poserBaisse(); poserFiches(); chapo();
+  }
+
+  /* ——————————————————————— la comparaison appariée ——————————————————————— */
+  function poserAppariee() {
+    const b = etape1();
+    const hote = $("#appariee");
+    hote.textContent = "";
+    const ap = b && b.appariee;
+    if (!ap || !ap.variantes || !ap.variantes.length) {
+      el("p", { class: "attend", t: ETAPE === 1
+        ? "l'étape 1 ne compare pas de variantes : elle balaye une grille"
+        : "aucune paire de bras à comparer dans cette étape" }, hote);
+      return;
+    }
+    const carte = el("div", { class: "carte" }, hote);
+    el("p", { class: "titre", t: ap.geometries + " géométries, chacune comparée à "
+      + "elle-même sous chaque variante" }, carte);
+    const tab = el("div", { class: "tab" }, carte);
+    const t = el("table", {}, tab), th = el("thead", {}, t), tr = el("tr", {}, th);
+    for (const c of ["variante", "écart apparié", "gagne", "dispersion", "durée méd."])
+      el("th", { t: c }, tr);
+    const tb = el("tbody", {}, t);
+    for (const v of ap.variantes) {
+      const li = el("tr", {}, tb);
+      el("td", { class: "mono", t: v.nom }, li);
+      el("td", { class: "n " + cl(v.ecart),
+        t: (v.ecart >= 0 ? "+" : "") + (v.ecart * 100).toFixed(2) + " pt" }, li);
+      el("td", { class: "n", t: (v.gagne * 100).toFixed(0) + " %" }, li);
+      //  Une dispersion SOUS 1 est la bonne nouvelle : les paires se ressemblent
+      //  davantage. C'est l'inverse de la lecture spontanée d'un grand nombre.
+      el("td", { class: "n " + (v.dispersion == null ? ""
+        : v.dispersion < 1 ? "h" : "b"),
+        t: v.dispersion == null ? "—" : "×" + v.dispersion.toFixed(2) }, li);
+      el("td", { class: "n", t: v.duree == null ? "—" : v.duree.toFixed(1) + " h" }, li);
+    }
+    const mieux = ap.variantes.filter(v => v.dispersion != null && v.dispersion < 1).length;
+    const n = ap.variantes.filter(v => v.dispersion != null).length;
+    el("p", { class: "dit", html:
+      "<b>« Écart apparié »</b> : la même géométrie, la même paire, la même tranche, "
+      + "avec et sans la variante. C'est une différence, jamais deux moyennes mises côte "
+      + "à côte.<br><b>« Dispersion »</b> : l'écart-type des rendements d'une paire à "
+      + "l'autre, rapporté à celui du bras de base. <b>Sous 1,00 les paires se "
+      + "ressemblent davantage</b> — c'est la mesure qui devait trancher."
+      + (n ? "<br><br><b>" + mieux + " variante" + (mieux > 1 ? "s" : "") + " sur " + n
+           + "</b> resserre" + (mieux > 1 ? "nt" : "") + " la dispersion."
+           + (mieux === 0 ? " Aucune : l'hypothèse est réfutée." : "") : "") }, carte);
+  }
+
+  function poserOngletsBudget() {
+    const o = $("#onglets-budget");
+    o.textContent = "";
+    const bl = blocEtape();
+    if (!bl) { o.hidden = true; return; }
+    o.hidden = false;
+    for (const b of bl.budgets.map(x => String(Math.round(x)))) {
+      const bt = el("button", { type: "button", "aria-pressed": String(b === BUDGET),
+        t: eur(+b) + " € par paire" }, o);
+      bt.addEventListener("click", () => { BUDGET = b; toutPoser(); });
+    }
+  }
+
+  function chapo() {
+    const bl = blocEtape();
+    const n = bl ? bl.combinaisons.length : 0;
+    const j = D.n_blocs * D.bloc_jours;
+    $("#chapeau").textContent = n ? n + " réglages · " + j + " jours · "
+      + D.paires.length + " paires" : "mesures du marché";
+    $("#chapo").textContent = n
+      ? n + " combinaisons rejouées sur " + D.n_blocs + " tranches de " + D.bloc_jours
+        + " jours et " + D.paires.length + " paires, à deux budgets. Choisir à l'avance, "
+        + "jamais après coup — et ne rien annoncer qu'un carnet d'ordres réel aurait refusé."
+      : "Le marché et l'exécutabilité sont mesurés ; le balayage des réglages est en cours.";
+  }
+
+  /*  Le sommaire est construit DEPUIS LES TITRES POSÉS, jamais depuis une liste
+   *  écrite à côté : une liste recopiée finit toujours par annoncer une section
+   *  qui n'existe plus, ou taire celle qu'on vient d'ajouter.  */
+  function poserSommaire() {
+    const titres = [...document.querySelectorAll(".enveloppe h2")];
+    if (titres.length < 3) return;
+    const nav = el("nav", { class: "sommaire",
+      "aria-label": "Les sections de cette page" });
+    el("span", { class: "lab-o", t: "Sur cette page" }, nav);
+    titres.forEach((h, i) => {
+      if (!h.id) h.id = "s" + (i + 1);
+      const a = el("a", { href: "#" + h.id, title: h.textContent }, nav);
+      el("b", { t: String(i + 1) }, a);
+      a.appendChild(document.createTextNode(h.textContent));
+      a.addEventListener("click", (e) => {
+        //  replaceState et non un saut : le bouton Retour ne doit pas remonter
+        //  une à une les sept sections visitées.
+        e.preventDefault();
+        h.scrollIntoView({ behavior: "smooth", block: "start" });
+        history.replaceState(null, "", "#" + h.id);
+      });
+    });
+    const tete = document.querySelector("header.tete");
+    tete.parentNode.insertBefore(nav, tete.nextSibling);
+  }
+
+  async function demarrer() {
+    try {
+      const r = await fetch("data/etude.json");
+      if (!r.ok) throw new Error(r.status);
+      D = await r.json();
+    } catch (e) {
+      $("#chapo").textContent = "données introuvables : lance scripts/exporter_recherche.py";
+      return;
+    }
+    ETAPE = etapesDispo()[0] || 1;
+    const bl = blocEtape();
+    BUDGET = bl ? String(Math.round(bl.budgets[0])) : null;
+    PAIRE = D.paires[0];
+    poserExecution();
+    poserMarche();
+    toutPoser();
+    poserOngletsPaire();
+    poserSommaire();
+    //  Le thème peut changer sous nos pieds : l'encre des cases se relit alors
+    //  sur la clarté nouvelle, sinon la moitié du tableau devient illisible
+    //  au premier clic sur le sélecteur de thème.
+    if (window.Prefs && Prefs.sur) Prefs.sur(encrer);
+    const mo = matchMedia("(prefers-color-scheme: dark)");
+    (mo.addEventListener ? mo.addEventListener.bind(mo, "change")
+                         : mo.addListener.bind(mo))(encrer);
+    new MutationObserver(encrer).observe(document.documentElement,
+      { attributes: true, attributeFilter: ["data-theme"] });
+    if (window.Marche) choisirPaire(PAIRE);
+    else addEventListener("load", () => { if (window.Marche) choisirPaire(PAIRE); });
+  }
+
+  if (document.readyState === "loading")
+    document.addEventListener("DOMContentLoaded", demarrer);
+  else demarrer();
+})();
+</script>
+</body>
+</html>

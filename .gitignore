@@ -24,3 +24,15 @@ docs/data/paper_grille_8paliers.log
 docs/data/paper_grille_8paliers_etat.json
 docs/data/paper_grille_8paliers_concentre.log
 docs/data/paper_grille_8paliers_concentre_etat.json
+data/etudes/
+rapport/compte-rendu.html
+rapport/compte-rendu.pdf
+
+#  Les tableurs d'origine de l'utilisateur, et les fichiers verrou d'Excel.
+#  ATTENTION : cette regle n'a AUCUN effet sur un fichier deja suivi. Les trois
+#  tableurs ont ete ajoutes au depot le 2026-09-06 (commit 3fe2146) et pousses
+#  sur un depot PUBLIC ; les retirer demande un « git rm --cached » pour l'avenir,
+#  et une reecriture d'historique pour le passe. La regle ci-dessous ne fait que
+#  les empecher de revenir.
+*.xlsx
+~$*

@@ -75,6 +75,115 @@ class Reglages:
     #  le prix ne va presque jamais. Une courbure superieure a 1 resserre les
     #  barreaux en haut et les ecarte en bas, dans la forme meme de cette
     #  distribution. La valeur 1 redonne exactement l'espacement lineaire.
+    #  ---- l'echelle exprimee en multiples de la volatilite de la paire ----
+    echelle_vol: str = ""           # "" inerte | "echelle" | "objectif" | "tout"
+    unite_vol: float = 0.0          # l'amplitude a laquelle ce qui est ecrit vaut tel quel
+    fenetre_vol: int = 0            # bougies sur lesquelles l'amplitude est mesuree
+    facteur_min: float = 0.25       # bornes de l'elargissement, pour qu'il reste une echelle
+    facteur_max: float = 4.0
+    #  UNE ECHELLE A -2 % NE VEUT PAS DIRE LA MEME CHOSE SUR DEUX MONNAIES.
+    #  Mesure faite sur les dix paires du panier : ETH bouge douze fois plus vite
+    #  que TRX en amplitude mediane a cinq minutes. Un barreau pose 2 % sous le
+    #  cours est donc, sur ETH, a portee d'une matinee, et sur TRX a portee d'un
+    #  mois. Poser la meme echelle sur les deux, c'est faire tourner deux
+    #  strategies differentes en croyant n'en tester qu'une.
+    #
+    #  CE QUE CES CHAMPS FONT. Quand echelle_vol n'est pas vide, ce qui est ecrit
+    #  dans profondeur, depart_sous et objectif_net n'est plus une fraction du
+    #  prix mais une fraction A LA VOLATILITE unite_vol. Sur une paire qui bouge
+    #  deux fois plus vite, tout est deux fois plus large. L'hypothese, et elle
+    #  est refutable : ainsi exprimees, les dix paires deviennent comparables et
+    #  un seul reglage vaut pour toutes. Si c'est faux, la dispersion entre
+    #  paires ne se resserrera pas, et il faudra bien des reglages par classe.
+    #
+    #  TROIS MODES PLUTOT QU'UN, parce que l'echelle et l'objectif ne repondent
+    #  pas de la meme chose : l'echelle commande ce qu'on achete, l'objectif
+    #  commande la DUREE, seule condition posee. Les separer permet de dire
+    #  lequel des deux paie.
+    #
+    #  LA VOLATILITE EST MESUREE SUR LES fenetre_vol BOUGIES PRECEDENTES, en
+    #  moyenne de (haut - bas) / cloture, et elle est FIGEE a la pose de
+    #  l'echelle : une echelle qui se redimensionnerait sous ses propres achats
+    #  n'aurait plus de prix de sortie stable. Moyenne et non mediane parce
+    #  qu'une moyenne glissante se tient a jour en temps constant quand une
+    #  mediane glissante rendrait le rejeu quadratique ; la mediane reste le
+    #  critere des CLASSES, qui se calculent une fois, hors rejeu.
+    #
+    #  VIDE VAUT EXACTEMENT L'ANCIEN COMPORTEMENT : facteur_vol rend 1.0 et
+    #  aucune multiplication n'a lieu. C'est ce qui rend le champ sur, et c'est
+    #  verifie par un test qui rejoue les deux moteurs sur les memes bougies.
+    #  ---- les declencheurs : QUAND l'echelle a le droit d'acheter ----
+    devi_chute: float = 0.0       # (b) chute exigee avant d'armer, en fraction
+    devi_fenetre: int = 0         # (b) sur combien de bougies cette chute se mesure
+    filtre_moyenne: int = 0       # (c) bougies de la moyenne mobile ; 0 = inerte
+    filtre_sens: str = "sous"     # (c) "sous" ou "dessus" la moyenne
+    confirmation: int = 0         # (e) clotures en hausse exigees avant d'acheter
+    #  L'ECHELLE, JUSQU'ICI, ACHETE DES QU'ON LA TOUCHE. Elle ne demande jamais
+    #  pourquoi le prix est la. Ces trois champs posent chacun une condition
+    #  differente sur le DROIT d'acheter, sans toucher a l'echelle elle-meme :
+    #
+    #    (b) DEVIATION  — n'acheter que si le prix a deja chute d'au moins
+    #        devi_chute par rapport a son plus haut des devi_fenetre dernieres
+    #        bougies. Idee : ne pas engager le budget sur un simple bruit.
+    #    (c) FILTRE DE MOYENNE — n'acheter que du bon cote d'une moyenne mobile.
+    #        « sous » achete dans les creux ; « dessus » n'achete qu'en tendance
+    #        haussiere. Les deux sens sont balayes parce que rien ne dit lequel
+    #        est le bon, et qu'affirmer l'un sans mesurer l'autre serait une
+    #        croyance deguisee en reglage.
+    #    (e) CONFIRMATION — n'acheter qu'apres confirmation clotures consecutives
+    #        en hausse. Idee : attendre que la chute s'arrete plutot que de
+    #        l'accompagner.
+    #
+    #  LES TROIS SE DECIDENT A LA CLOTURE PRECEDENTE, jamais pendant la bougie en
+    #  cours. C'est la meme regle que pour la fenetre de volatilite, et pour la
+    #  meme raison : un robot qui se reveille a chaque cloture ne sait rien de la
+    #  bougie qu'il est en train de traverser. Lire la cloture courante pour
+    #  decider d'un achat qui a lieu dans cette meme bougie serait du regard vers
+    #  l'avenir, et il serait invisible dans les resultats.
+    #
+    #  Ils ne bloquent QUE LES ACHATS. Une vente reste toujours possible : un
+    #  declencheur qui empecherait de solder un lot ne serait pas un declencheur,
+    #  ce serait un piege.
+    #  ---- deux facons de ne pas rester bloque ----
+    suivre_baisse: bool = False   # redescendre la reference quand le marche baisse a vide
+    sortie_jours: int = 0         # solder au marche apres N jours de capital bloque
+    #  suivre_baisse EST LE SYMETRIQUE DE suivre_hausse, AVEC UNE DIFFERENCE QUI
+    #  CHANGE TOUT : le seuil d'abandon reste FIGE sur l'ancre d'origine. Sans
+    #  cela, une echelle qui redescend emporte son abandon avec elle, et la
+    #  regle « sous le dernier barreau, on n'ajoute plus rien » ne se declenche
+    #  jamais — le bot poursuivrait le prix vers le bas indefiniment, ce qui est
+    #  exactement le mode de defaillance que l'abandon existe pour borner.
+    #
+    #  sortie_jours est la SEULE vente a perte autorisee, et elle demande cent
+    #  jours par defaut cote appelant. Elle existe parce qu'un capital bloque
+    #  n'est pas une perte comptable mais une perte reelle : il ne travaille plus.
+    #  ---- ce que le carnet pouvait reellement absorber ----
+    participation_max: float = 0.0   # part du volume de la bougie ; 0 = inerte
+    #  LE REJEU SERT UN ORDRE ENTIER, INSTANTANEMENT, DES QUE LE BAS D'UNE BOUGIE
+    #  TOUCHE SON PRIX, sans jamais regarder s'il s'est echange quoi que ce soit.
+    #  Mesure faite sur 880 jours des dix paires EUR d'OKX : le barreau du bas
+    #  d'une echelle a huit barreaux de raison 1,6 et dix mille euros vaut
+    #  3 839 EUR, et il n'aurait pu etre absorbe que dans 0,03 % des bougies de
+    #  cinq minutes de TRX, contre 25,5 % de celles de BTC. Sur six paires sur
+    #  dix, la quasi-totalite des achats de ce rejeu sont donc des achats que le
+    #  marche n'aurait pas pu servir.
+    #
+    #  CE CHAMP NE CORRIGE PAS LE MODELE, IL L'ENCADRE. Quand il est actif, un
+    #  ordre plus gros que participation_max fois ce qui s'est echange pendant la
+    #  bougie N'EST PAS SERVI DU TOUT : il reste au carnet et pourra l'etre plus
+    #  tard. C'est volontairement trop severe — dans la realite il serait servi
+    #  EN PARTIE. Le rejeu sans plafond majore donc le rendement, le rejeu avec
+    #  plafond le minore, et le vrai est entre les deux. Un encadrement vaut
+    #  mieux qu'une correction dont personne ne saurait dire le sens de l'erreur.
+    #
+    #  Il faut pour cela que les bougies portent un sixieme champ, le volume en
+    #  monnaie de base. Les series a cinq champs continuent de fonctionner : sans
+    #  volume, aucun plafond ne s'applique et le moteur est celui d'avant.
+    #
+    #  LA SORTIE AU MARCHE N'EST PAS PLAFONNEE, et c'est ecrit plutot que tu :
+    #  un ordre au marche traverse le carnet au lieu d'y dormir, et c'est
+    #  glissement_stop qui en porte le cout. La vente LIMITE, elle, est plafonnee
+    #  comme les achats, puisqu'elle dort au carnet exactement comme eux.
     #  ---- le cliquet : l'objectif devient un plancher, pas une sortie ----
     cliquet_pas: float | None = None    # None = inerte, le moteur ne change pas
     cliquet_retrait: float = 0.001      # de combien le stop se place sous le cran atteint
@@ -129,6 +238,39 @@ class Reglages:
             raise GrilleError(f"espacement inconnu : {self.espacement}")
         if self.courbure <= 0:
             raise GrilleError(f"courbure doit etre > 0, trouve {self.courbure}")
+        if not 0 <= self.devi_chute < 1:
+            raise GrilleError(f"devi_chute hors de [0, 1[ : {self.devi_chute}")
+        if bool(self.devi_chute) != bool(self.devi_fenetre):
+            raise GrilleError(
+                "devi_chute et devi_fenetre vont ensemble : une chute sans fenetre "
+                "ne se mesure sur rien, une fenetre sans chute ne declenche rien")
+        if self.filtre_moyenne < 0:
+            raise GrilleError(f"filtre_moyenne doit etre >= 0, trouve {self.filtre_moyenne}")
+        if self.filtre_sens not in ("sous", "dessus"):
+            raise GrilleError(f"filtre_sens inconnu : {self.filtre_sens!r}")
+        if self.confirmation < 0:
+            raise GrilleError(f"confirmation doit etre >= 0, trouve {self.confirmation}")
+        if self.sortie_jours < 0:
+            raise GrilleError(f"sortie_jours doit etre >= 0, trouve {self.sortie_jours}")
+        if not 0 <= self.participation_max <= 1:
+            raise GrilleError(
+                f"participation_max doit etre une part dans [0, 1], "
+                f"trouve {self.participation_max}")
+        if self.echelle_vol not in ("", "echelle", "objectif", "tout"):
+            raise GrilleError(f"echelle_vol inconnu : {self.echelle_vol!r}")
+        if self.echelle_vol:
+            if self.unite_vol <= 0:
+                raise GrilleError(
+                    f"echelle_vol={self.echelle_vol!r} exige une unite_vol > 0 : "
+                    f"sans unite de reference, « deux fois plus large » n'a pas de sens")
+            if self.fenetre_vol < 1:
+                raise GrilleError(
+                    f"echelle_vol={self.echelle_vol!r} exige fenetre_vol >= 1, "
+                    f"trouve {self.fenetre_vol}")
+            if not 0 < self.facteur_min <= 1 <= self.facteur_max:
+                raise GrilleError(
+                    f"les bornes de l'elargissement doivent encadrer 1, trouve "
+                    f"[{self.facteur_min}, {self.facteur_max}]")
         if self.cliquet_pas is not None:
             if self.cliquet_pas < 0:
                 raise GrilleError(f"cliquet_pas doit etre >= 0, trouve {self.cliquet_pas}")
@@ -159,7 +301,22 @@ class Reglages:
                     f"de frais ({2 * self.frais:.2%}) : la descente perdrait au fond"
                 )
 
-    def echelle(self, reference: float, budget: float) -> list[tuple[float, float]]:
+    def facteur_vol(self, vol: float) -> float:
+        """De combien la volatilite du moment elargit ce qui est ecrit.
+
+        Borne des deux cotes. Sans bornes, une paire endormie — et il y en a :
+        86 % des bougies de cinq minutes de TRX sont plates — donnerait un
+        facteur proche de zero et une echelle de quelques dixiemes de pour cent,
+        qui ne serait plus une grille mais du bruit ; et un jour de krach
+        donnerait une echelle plus profonde que la regle d'abandon. Les bornes
+        encadrent 1, donc une volatilite egale a l'unite ne change rien.
+        """
+        if not self.echelle_vol or self.unite_vol <= 0 or vol <= 0:
+            return 1.0
+        return min(self.facteur_max, max(self.facteur_min, vol / self.unite_vol))
+
+    def echelle(self, reference: float, budget: float,
+                vol: float = 0.0) -> list[tuple[float, float]]:
         """Les barreaux : (prix cible, mise en euros), du haut vers le bas.
 
         Les mises suivent une progression geometrique de raison `ratio` et
@@ -167,10 +324,21 @@ class Reglages:
         """
         if reference <= 0 or budget <= 0:
             raise GrilleError("reference et budget doivent etre > 0")
+        depart, profondeur = self.depart_sous, self.profondeur
+        if self.echelle_vol in ("echelle", "tout"):
+            f = self.facteur_vol(vol)
+            depart, profondeur = depart * f, profondeur * f
+            #  La garde de construction porte sur ce qui est ECRIT ; une echelle
+            #  elargie doit encore tenir sous la reference. On rogne la
+            #  PROFONDEUR et jamais le depart : deplacer l'entree changerait la
+            #  strategie, raccourcir le bas ne fait que la tronquer, ce qui est
+            #  le comportement d'un budget epuise et non d'un autre reglage.
+            if depart + profondeur >= 0.95:
+                profondeur = max(0.01, 0.95 - depart)
         poids = [self.ratio ** i for i in range(self.paliers)]
         total = sum(poids)
-        haut = reference * (1 - self.depart_sous)
-        bas = reference * (1 - self.depart_sous - self.profondeur)
+        haut = reference * (1 - depart)
+        bas = reference * (1 - depart - profondeur)
         n = self.paliers - 1
         if self.espacement == "puissance":
             #  la profondeur croit comme (i/n)^courbure : ecarts serres en haut,
@@ -186,16 +354,26 @@ class Reglages:
             prix = [haut + (bas - haut) * i / n for i in range(self.paliers)]
         return [(p, budget * w / total) for p, w in zip(prix, poids)]
 
-    def objectif_a(self, remplis: int) -> float:
+    def objectif_a(self, remplis: int, vol: float = 0.0) -> float:
         """L'objectif vise pour un lot de `remplis` barreaux.
 
         Interpole entre objectif_net au premier barreau et objectif_profond a
         l'echelle pleine. Sans objectif_profond, la cible ne bouge pas.
         """
         if self.objectif_profond is None or self.paliers < 2 or remplis <= 1:
-            return self.objectif_net
-        f = min(1.0, (remplis - 1) / (self.paliers - 1))
-        return self.objectif_net + (self.objectif_profond - self.objectif_net) * f
+            g = self.objectif_net
+        else:
+            f = min(1.0, (remplis - 1) / (self.paliers - 1))
+            g = self.objectif_net + (self.objectif_profond - self.objectif_net) * f
+        if self.echelle_vol in ("objectif", "tout"):
+            #  Le plancher n'est pas cosmetique : la garde de construction refuse
+            #  un objectif qui ne couvre pas l'aller-retour de frais, et un
+            #  facteur inferieur a 1 pourrait faire passer dessous une cible
+            #  pourtant valide a l'ecriture. On la retient au-dessus des frais
+            #  avec la meme marge que la garde, plutot que de laisser le moteur
+            #  vendre a perte en silence.
+            g = min(0.5, max(2.5 * self.frais, g * self.facteur_vol(vol)))
+        return g
 
 
 @dataclass
@@ -222,6 +400,15 @@ class Descente:
     #  refuse celui dont la mise n'atteint pas le minimum de la plateforme. Son
     #  budget reste en caisse et rien n'est redistribue.
     plafond: float = 0.0
+    #  L'AMPLITUDE MOYENNE RECENTE, figee a la pose de l'echelle. Zero = inerte.
+    #  Figee, parce qu'une echelle qui se redimensionnerait sous ses propres
+    #  achats n'aurait plus de prix de sortie stable : le lot serait achete sur
+    #  une echelle et revendu sur une autre, et le journal ne voudrait rien dire.
+    volatilite: float = 0.0
+    #  LE SEUIL D'ABANDON FIGE, transmis d'une echelle a la suivante quand la
+    #  reference redescend a vide. Zero = le seuil se recalcule sous le dernier
+    #  barreau, comportement d'origine. Voir suivre_baisse.
+    abandon_fige: float = 0.0
     ouverte_le: int | None = None                # horodatage ms du premier achat
     dernier_achat_le: int | None = None          # horodatage ms du dernier achat
     #  Deux horodatages, parce qu'ils repondent a deux questions. ouverte_le date
@@ -245,7 +432,7 @@ class Descente:
     # ---------------------------------------------------------------- vues
     @property
     def echelle(self) -> list[tuple[float, float]]:
-        return self.reglages.echelle(self.reference, self.budget)
+        return self.reglages.echelle(self.reference, self.budget, self.volatilite)
 
     @property
     def engagee(self) -> bool:
@@ -266,7 +453,8 @@ class Descente:
         if not self.cumul_unites:
             return 0.0
         r = self.reglages
-        return self.prix_revient * (1 + r.objectif_a(len(self.remplis))) / (1 - r.frais)
+        return (self.prix_revient * (1 + r.objectif_a(len(self.remplis), self.volatilite))
+                / (1 - r.frais))
 
     @property
     def dernier_palier(self) -> float:
@@ -274,6 +462,8 @@ class Descente:
 
     @property
     def seuil_abandon(self) -> float:
+        if self.abandon_fige > 0:
+            return self.abandon_fige
         return self.dernier_palier * (1 - self.reglages.abandon_sous)
 
     @property
@@ -320,7 +510,7 @@ class Descente:
         r = self.reglages
         if r.cliquet_pas is None or not self.cumul_unites:
             return False
-        g0 = r.objectif_a(len(self.remplis))
+        g0 = r.objectif_a(len(self.remplis), self.volatilite)
         rent = self.rentabilite(prix_lu)
         if rent < g0:                       # sous le seuil : on n'arme rien
             return False
@@ -426,7 +616,7 @@ class Cycle:
     prix_revient: float
     prix_sortie: float
     heures: float
-    sortie: str = "limite"   # "limite" | "stop" | "trou"
+    sortie: str = "limite"   # "limite" | "stop" | "trou" | "delai"
     crans: int = 0           # crans montes par le cliquet avant la sortie
     reference: float = 0.0   # prix de reference de l'echelle qui a servi
     #  La reference est celle EN VIGUEUR PENDANT le cycle. Sans elle, une page
@@ -480,6 +670,7 @@ def rejouer(
     symbole: str, bougies: list[tuple[int, float, float, float, float]],
     reglages: Reglages, budget: float, *, reference: float | None = None,
     trace: bool = True, prechauffe: list[float] | None = None,
+    prechauffe_vol: list[float] | None = None,
 ) -> dict:
     """Rejoue la strategie sur des bougies (ts, open, high, low, close).
 
@@ -501,7 +692,22 @@ def rejouer(
     if not bougies:
         raise GrilleError("aucune bougie a rejouer")
     ref = reference if reference is not None else bougies[0][1]
-    d = Descente(symbole, ref, budget, reglages, plafond=bougies[0][1])
+    #  LA FENETRE D'AMPLITUDE. Elle couvre les N bougies qui PRECEDENT celle en
+    #  cours : elle est mise a jour en fin de tour, jamais avant les decisions.
+    #  Une fenetre qui inclurait la bougie courante lirait son haut et son bas
+    #  avant d'y poser des ordres, ce qui est du regard vers l'avenir a l'echelle
+    #  d'une bougie — assez pour elargir l'echelle juste avant la meche qui la
+    #  remplit. Le prechauffage joue le meme role que celui de la moyenne : sans
+    #  lui, la fenetre grandirait de 1 a N au debut de chaque bloc et chaque N
+    #  se comporterait differemment la ou justement on les compare.
+    n_vol = reglages.fenetre_vol if reglages.echelle_vol else 0
+    fen_vol: deque[float] = deque(
+        (list(prechauffe_vol)[-n_vol:] if (n_vol and prechauffe_vol) else []),
+        maxlen=n_vol or 1)
+    somme_vol = sum(fen_vol)
+    vol = somme_vol / len(fen_vol) if fen_vol else 0.0
+    d = Descente(symbole, ref, budget, reglages, plafond=bougies[0][1],
+                 volatilite=vol)
     #  La fenetre glissante des clotures, amorcee par la reference de depart : a
     #  la premiere bougie il n'existe aucune cloture precedente, et une moyenne
     #  sur rien n'a pas de valeur. La somme est tenue a jour plutot que recalculee
@@ -527,8 +733,77 @@ def rejouer(
     pic, creux, somme_eng, heures_eng = float("-inf"), 0.0, 0.0, 0
 
     cliquet = reglages.cliquet_pas is not None
-    for ts, o, h, l, c in bougies:
+    #  L'ETAT DES TROIS DECLENCHEURS. Tout est decide a la cloture PRECEDENTE :
+    #  autorise_achat vaut True tant qu'aucun declencheur n'est actif, si bien
+    #  que le moteur sans declencheur ne paie pas un test de plus par barreau.
+    n_dev = reglages.devi_fenetre if reglages.devi_chute else 0
+    n_moy_f = reglages.filtre_moyenne
+    actifs = bool(n_dev or n_moy_f or reglages.confirmation)
+    #  Un maximum glissant par deque monotone : sans elle, refaire max() sur
+    #  576 bougies a chaque pas rendrait le rejeu quadratique — le meme piege
+    #  que la moyenne de reference, deja evite une fois.
+    haut_mono: deque[tuple[int, float]] = deque()
+    fen_flt: deque[float] = deque(maxlen=n_moy_f or 1)
+    somme_flt = 0.0
+    hausses = 0
+    prec = None
+    autorise_achat = not actifs
+
+    def avancer(k: int, cl: float) -> None:
+        """Fait entrer une cloture dans les trois fenetres des declencheurs."""
+        nonlocal somme_flt, hausses, prec
+        if n_dev:
+            while haut_mono and haut_mono[-1][1] <= cl:
+                haut_mono.pop()
+            haut_mono.append((k, cl))
+            while haut_mono[0][0] <= k - n_dev:
+                haut_mono.popleft()
+        if n_moy_f:
+            if len(fen_flt) == n_moy_f:
+                somme_flt -= fen_flt[0]
+            fen_flt.append(cl)
+            somme_flt += cl
+        hausses = hausses + 1 if (prec is not None and cl > prec) else 0
+        prec = cl
+
+    def decider() -> bool:
+        """Les trois conditions, lues sur l'etat des fenetres. Toutes doivent passer."""
+        if n_dev and prec is not None and prec > haut_mono[0][1] * (1 - reglages.devi_chute):
+            return False                     # (b) la chute exigee n'a pas eu lieu
+        if n_moy_f and len(fen_flt) == n_moy_f:
+            m = somme_flt / n_moy_f
+            if (prec > m) if reglages.filtre_sens == "sous" else (prec < m):
+                return False                 # (c) mauvais cote de la moyenne
+        if hausses < reglages.confirmation:
+            return False                     # (e) le rebond n'est pas confirme
+        return True
+
+    #  LE PRECHAUFFAGE DES DECLENCHEURS. Sans lui, une moyenne mobile de sept
+    #  jours reste sans avis sur les 2 016 premieres bougies de chaque tranche —
+    #  dix-sept pour cent d'un bloc de quarante jours — et un maximum glissant
+    #  se calcule sur une fenetre qui grandit. Chaque valeur de fenetre se
+    #  comporterait donc differemment au DEBUT de chaque bloc, precisement la ou
+    #  on les compare. Le depot a deja paye cette erreur sur moyenne_ref ; les
+    #  clotures qui precedent sont fournies par l'appelant et servent aux trois
+    #  fenetres a la fois. Les indices sont negatifs, donc la fenetre glissante
+    #  expulse l'amorce exactement quand il le faut.
+    if actifs and prechauffe:
+        amorce = list(prechauffe)[-max(n_dev, n_moy_f, 1):]
+        for j, x in enumerate(amorce):
+            avancer(j - len(amorce), x)
+        autorise_achat = decider()
+
+    for idx, (ts, o, h, l, c, *extra) in enumerate(bougies):
         ferme = False
+        #  CE QUE CETTE BOUGIE POUVAIT ENCORE ABSORBER, en euros. Un compteur et
+        #  non un test par ordre : plusieurs barreaux peuvent etre touches dans
+        #  la meme bougie, et les tester un a un contre le volume ENTIER les
+        #  autoriserait tous, chacun paraissant petit alors que leur somme
+        #  depasse tout ce qui s'est echange. Infini quand le plafond est inerte
+        #  ou que la serie ne porte pas de volume : le moteur est alors celui
+        #  d'avant, sans un test de plus dans la boucle chaude.
+        capacite = (reglages.participation_max * extra[0] * c
+                    if (reglages.participation_max and extra) else float("inf"))
 
         def sortir(px: float, genre: str, _ts: int = 0) -> None:
             """Solde le lot au marche et ouvre une descente au prix du moment."""
@@ -545,7 +820,7 @@ def rejouer(
             if trace:
                 journal.append(Evenement(ts, "vente", px, -1, det["recu"],
                                          det["prix_revient"], det["gain"]))
-            d = Descente(symbole, c, budget, reglages, plafond=c)
+            d = Descente(symbole, c, budget, reglages, plafond=c, volatilite=vol)
             ferme = True
 
         #  Un trou de cotation : la bougie OUVRE deja sous le stop. Le stop n'a pas
@@ -567,12 +842,21 @@ def rejouer(
                 #  Le cliquet ne lit JAMAIS le haut d'une bougie : ni pour armer, ni
                 #  pour monter, ni pour sortir. Un robot qui se reveille a la cloture
                 #  ne peut pas savoir qu'une meche est passee par la.
-                if not cliquet and d.cumul_unites and h >= d.prix_sortie and not trop_tot:
+                if (not cliquet and d.cumul_unites and h >= d.prix_sortie
+                        and not trop_tot
+                        and d.cumul_unites * d.prix_sortie <= capacite):
+                    #  La vente limite est plafonnee comme les achats : elle dort
+                    #  au carnet exactement comme eux, et le lot entier est le
+                    #  plus gros ordre de toute la strategie — la somme de tous
+                    #  les barreaux remplis. C'est donc lui qui souffre le plus
+                    #  du carnet mince, et le plafonner est ce qui rend
+                    #  l'encadrement honnete des deux cotes.
                     px = d.prix_sortie
                     # lire l'ouverture AVANT de vendre : vendre() remet la descente a zero
                     ouvert = ts if d.ouverte_le is None else d.ouverte_le
                     ref_cycle = d.reference
                     det = d.vendre(px)
+                    capacite -= det["brut"]
                     cash += det["recu"]
                     cycles.append(Cycle(
                         symbole, ouvert, ts, det["paliers"], det["investi"],
@@ -582,7 +866,9 @@ def rejouer(
                     if trace:
                         journal.append(Evenement(ts, "vente", px, -1, det["recu"],
                                                  det["prix_revient"], det["gain"]))
-                    d = Descente(symbole, c, budget, reglages, plafond=c)   # on repart du prix du moment
+                    #  on repart du prix du moment
+                    d = Descente(symbole, c, budget, reglages, plafond=c,
+                                 volatilite=vol)
                     d.abandonnee = False
             else:
                 #  Un ordre stop dormant au carnet se declenche en seance, sur le bas.
@@ -594,10 +880,17 @@ def rejouer(
                 #  dernier barreau : une bougie qui l'atteint a donc traverse
                 #  toute l'echelle en descendant. Poser l'abandon avant la boucle
                 #  vidait barreaux_a_poser() et faisait perdre ces achats reels.
-                for i, prix, euros in d.barreaux_a_poser():
-                    if l <= prix and cash >= euros - 1e-9:
+                for i, prix, euros in (d.barreaux_a_poser() if autorise_achat else ()):
+                    #  Un barreau trop gros pour ce qui s'echange n'est pas
+                    #  servi : il reste au carnet, et la bougie suivante le
+                    #  reproposera. Refuse en entier plutot que servi en partie
+                    #  — une execution partielle demanderait de tenir un reste
+                    #  par barreau, donc un autre moteur ; et ce refus est le
+                    #  cote SEVERE de l'encadrement, celui qui minore.
+                    if l <= prix and cash >= euros - 1e-9 and euros <= capacite:
                         d.acheter(i, prix, ts)
                         cash -= euros
+                        capacite -= euros
                         if trace:
                             journal.append(Evenement(ts, "achat", prix, i, euros,
                                                      d.prix_revient, 0.0))
@@ -645,7 +938,48 @@ def rejouer(
 
         if (reglages.suivre_hausse and not d.engagee
                 and ancre > d.reference * (1 + reglages.reancrage_min)):
-            d = Descente(symbole, ancre, budget, reglages, plafond=c)
+            #  Une echelle qui remonte repart a neuf : son abandon n'a plus de
+            #  raison d'etre fige sur une ancre que le marche a laissee derriere.
+            d = Descente(symbole, ancre, budget, reglages, plafond=c, volatilite=vol)
+        elif (reglages.suivre_baisse and not d.engagee
+                and ancre < d.reference * (1 - reglages.reancrage_min)):
+            #  L'ABANDON SUIT L'ANCRE D'ORIGINE, PAS LA NOUVELLE. On transmet le
+            #  seuil courant : il ne descend donc jamais, et la regle « sous le
+            #  dernier barreau, on n'ajoute plus rien » finit par mordre. Sans
+            #  cette transmission, chaque re-ancrage a la baisse emporterait son
+            #  abandon vers le bas et le bot poursuivrait le prix sans fin.
+            d = Descente(symbole, ancre, budget, reglages, plafond=c, volatilite=vol,
+                         abandon_fige=d.seuil_abandon)
+
+        #  LA SORTIE APRES N JOURS DE CAPITAL BLOQUE, la seule vente a perte
+        #  autorisee. Elle est lue A LA CLOTURE et sort AU MARCHE : un lot qu'on
+        #  solde parce qu'il dort depuis cent jours ne trouve pas un acheteur
+        #  poli a son prix de revient, il traverse le carnet.
+        if (reglages.sortie_jours and not ferme and d.cumul_unites
+                and d.ouverte_le is not None
+                and ts - d.ouverte_le >= reglages.sortie_jours * 86_400_000):
+            sortir(c * (1 - reglages.glissement_stop), "delai")
+
+        #  La fenetre avance MAINTENANT, decisions prises : la bougie qui vient
+        #  d'etre jouee entre dans la volatilite de la suivante, et pas dans la
+        #  sienne. Somme tenue a jour plutot que recalculee, pour la meme raison
+        #  que la moyenne des clotures : une fenetre de huit mille bougies
+        #  resommee a chaque pas ferait du rejeu un quadratique.
+        if n_vol:
+            if len(fen_vol) == n_vol:
+                somme_vol -= fen_vol[0]
+            a = (h - l) / c if c > 0 else 0.0
+            fen_vol.append(a)
+            somme_vol += a
+            vol = somme_vol / len(fen_vol)
+
+        #  LES TROIS DECLENCHEURS, decides a CETTE cloture pour la bougie
+        #  SUIVANTE. C'est la meme regle que la fenetre de volatilite : un robot
+        #  qui se reveille a chaque cloture ne sait rien de la bougie qu'il
+        #  traverse. Les evaluer ici, apres les achats, est ce qui l'interdit.
+        if actifs:
+            avancer(idx, c)
+            autorise_achat = decider()
 
         valeur = cash + d.valeur(c)
         if valeur > pic:

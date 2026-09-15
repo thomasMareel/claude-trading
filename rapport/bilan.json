@@ -1,0 +1,78 @@
+{
+  "date": "15 septembre 2026",
+  "chapo": "Le tableur d'origine posait une échelle d'achats sous le cours et revendait le lot entier au premier rebond. La question posée était : <b>trouver un réglage qui profite des petites résistances à la baisse</b>, avec des cycles sous quarante-huit heures. Quatre étapes, 1 113 réglages, 464 256 rejeux. La réponse tient en une phrase : <b>la condition de durée est facile à tenir, et tout le reste échoue</b> — choisir coûte plus que ne pas choisir, aucun mécanisme ne paie, et sur six monnaies sur dix le carnet d'ordres n'aurait de toute façon pas servi ce que le moteur prétend acheter.",
+  "tuiles": [
+    [
+      "−3,53 pt",
+      "ce que coûte le fait de CHOISIR un réglage, contre garder celui du direct",
+      "ko"
+    ],
+    [
+      "2 / 10",
+      "paires où un ordre de 10 000 € reste crédible : BTC et ETH",
+      "ko"
+    ],
+    [
+      "−0,97",
+      "corrélation entre « bien se comporter en baisse » et « ne pas acheter » : le classement mesure l'exposition, pas le talent",
+      "ko"
+    ],
+    [
+      "+0,77",
+      "stabilité du classement des paires par volatilité ; par rendement, −0,10",
+      "nu"
+    ]
+  ],
+  "etapes": {
+    "total": "1 113 réglages, 4 étapes"
+  },
+  "dit_execution": "<div class=\"att\"><b>Le résultat le plus solide de ce travail, et il n'a demandé aucun rejeu.</b> Sur TRX, un ordre ne peut dépasser 15 € sans sortir de ce que 5 % des bougies de cinq minutes pouvaient absorber — trois euros au-dessus du plancher de la plateforme. Le volume y est <b>nul sur 78 % des bougies</b>. Sur les 483 réglages balayés, <b>aucun</b> ne laisse un barreau du bas servable sur TRX, à aucun budget. À 10 000 € par paire, seules BTC et ETH tiennent.<br><br>Le coupable n'est pas le budget seul, c'est le <b>budget × la raison</b> : 8 paliers de raison 1,6 mettent 3 839 € au barreau du bas, là où 30 paliers de raison 1,0 n'y mettent que 333 €. Une échelle plate à beaucoup de barreaux est la forme <i>exécutable</i> — ce qui va dans le sens de la demande, à condition d'aplatir la progression.</div>",
+  "dit_marche": "<div class=\"dit\">Le critère de classe a failli être faux. La première version prenait la <b>médiane</b> de l'amplitude à cinq minutes : elle vaut <b>exactement zéro pour six paires sur dix</b>, parce que plus de la moitié de leurs bougies sont plates. Un critère qui rend zéro six fois ne sépare pas, il confond. Deux critères sont désormais publiés — moyenne à cinq minutes et médiane à l'heure — parce qu'ils sont tous deux stables mais ne rangent pas les paires dans le même ordre : UNI est plate 76 % du temps à cinq minutes mais bouge autant qu'ETH sur une heure. Choisir entre eux d'après les rendements serait exactement la faute que cette étude évite ; tout est donc relu sous chacun.</div>",
+  "moteur": [
+    [
+      "echelle_vol",
+      "exprime profondeur, entrée et objectif en multiples de la volatilité de la paire, au lieu d'un pourcentage fixe",
+      "vide = aucune multiplication"
+    ],
+    [
+      "participation_max",
+      "refuse un ordre plus gros qu'une part du volume de la bougie : borne basse du rendement, quand le moteur sans plafond en donne la borne haute",
+      "0 = aucun plafond"
+    ],
+    [
+      "devi_chute / devi_fenetre",
+      "(b) n'achète qu'après une chute déjà constituée sur une fenêtre glissante",
+      "0 = aucune condition"
+    ],
+    [
+      "filtre_moyenne / filtre_sens",
+      "(c) n'achète que d'un côté d'une moyenne mobile ; les deux sens sont balayés",
+      "0 = aucun filtre"
+    ],
+    [
+      "confirmation",
+      "(e) n'achète qu'après N clôtures consécutives en hausse",
+      "0 = aucune attente"
+    ],
+    [
+      "suivre_baisse",
+      "redescend la référence à vide, seuil d'abandon FIGÉ sur l'ancre d'origine",
+      "faux = échelle immobile"
+    ],
+    [
+      "sortie_jours",
+      "solde au marché après N jours de capital bloqué — la seule vente à perte autorisée",
+      "0 = jamais"
+    ]
+  ],
+  "dit_moteur": "<div class=\"dit\">Les trois déclencheurs se décident <b>à la clôture précédente</b>, jamais pendant la bougie en cours : un robot qui se réveille à chaque clôture ne sait rien de la bougie qu'il traverse. Lire la clôture courante pour autoriser un achat qui a lieu dans cette même bougie serait du regard vers l'avenir — et il serait invisible dans les résultats. La même règle vaut pour la fenêtre de volatilité et pour le maximum glissant, tenus tous deux en temps constant pour que le rejeu ne devienne pas quadratique.</div><div class=\"att\"><b>Un défaut trouvé en relisant le moteur, avant de l'utiliser.</b> Les fenêtres des déclencheurs n'étaient pas préchauffées : un filtre de moyenne à sept jours restait donc sans avis sur les 2 016 premières bougies de chaque tranche de quarante jours — <b>17 % du bloc</b>. Mesuré sur ETH : 72 achats dans cette fenêtre sans préchauffage contre 47 avec, et 124 contre 99 sur la tranche entière, soit <b>vingt pour cent d'écart</b>. Chaque longueur de fenêtre se serait donc comportée différemment au début de chaque bloc, précisément là où l'étape 3 les compare — on aurait mesuré le temps de chauffe autant que le déclencheur. Les clôtures qui précèdent sont désormais fournies aux trois fenêtres. Ce dépôt avait déjà payé exactement cette erreur sur la moyenne de référence ; elle revenait par une autre porte.</div>",
+  "corps_etapes": "<h2>Les trois étapes du balayage</h2><p class=\"trou\">Balayage en cours : cette section sera remplie par les mesures, pas avant.</p>",
+  "bilan_final": "<h3>Établi</h3><ul><li><b>Choisir un réglage sur le passé récent coûte de l'argent.</b> −1,17 point par tranche contre un tirage au sort à l'étape 1, −1,93 à l'étape 2, −2,04 à l'étape 4 — trois lots de combinaisons entièrement différents, trois fois le même signe. Contre le simple fait de garder le réglage en place : −3,53 points.</li><li><b>Aucun des treize mécanismes ne paie</b>, en comparaison appariée : de −0,07 à −1,95 point, aucun gagnant sur plus de 12 % des couples. La corrélation avec l'écart d'engagement n'étant que de +0,53, ce n'est pas un effet de position réduite : ils achètent plus tard et plus cher, à exposition égale.</li><li><b>Normaliser l'échelle par la volatilité ne rapproche pas les paires.</b> Sur douze variantes, aucune ne resserre la dispersion ; le rapport va de ×1,08 à ×2,08. L'hypothèse centrale de l'étude est réfutée par la mesure qu'elle s'était elle-même donnée.</li><li><b>La liquidité exclut six des dix monnaies dès 1 000 €, et huit sur dix à 10 000 €.</b> Mesure de marché, antérieure à tout rendement.</li><li><b>L'hypothèse d'exécution coûte 1 à 2 points par tranche</b>, et les trois taux de participation testés donnent la même conclusion.</li><li><b>La grille n'a pas d'avantage en marché baissier.</b> Le classement des réglages y est stable (+0,97) mais corrélé à −0,97 avec l'engagement : il classe par exposition, pas par savoir-faire. Le mieux placé engage 1,4 % du budget contre 58,2 % pour la médiane.</li><li><b>La condition de durée est tenable</b> : 401 combinaisons sur 483 sous 48 h de médiane, 183 sous 10 h. Elle n'était pas le verrou. Et normaliser le seul objectif par la volatilité fait passer la médiane de 84 h à 22 h pour −0,3 point : c'est un levier de durée, pas de performance.</li><li>Le moteur augmenté est <b>identique au bit près</b> à l'ancien tant qu'aucun mécanisme n'est allumé : 84 rejeux comparés champ par champ, 189 tests du dépôt qui passent.</li></ul><h3>Ce qui reste ouvert</h3><ul><li>Le rendement vrai, qui reste encadré entre deux hypothèses d'exécution distantes de 1 à 2 points.</li><li>Les paires en USDT, dix à cent fois plus liquides que leurs équivalents en euro sur OKX. Le problème d'exécution est celui du couple monnaie-EURO, pas celui de la monnaie.</li><li>Ce que donnerait la même méthode sur une fenêtre majoritairement baissière : celle-ci monte sur neuf paires sur dix, et tout ce qui réduit les achats y perd mécaniquement.</li></ul><h3>Écarté sciemment</h3><ul><li>Choisir le critère de volatilité, ou le taux de participation, d'après les rendements.</li><li>Retenir le gain par classe : +0,85 point à 1 000 €, +0,14 à 10 000 €. Un effet qui ne se reproduit pas d'un budget à l'autre est du bruit.</li><li>Écarter une combinaison pour sa durée avant de l'avoir mesurée.</li><li>Comparer une moyenne sur neuf paires à une moyenne sur dix : XRP, qui ne couvre que dix des vingt-deux tranches, est mesurée et publiée mais exclue de toute moyenne, de tout choix, et du seuil qui coupe les classes.</li></ul>",
+  "pied": "Toutes les mesures sont reproductibles depuis le dépôt : mesurer_marche.py, mesurer_execution.py, balayer.py, lire_balayage.py. Les données de marché sont publiques ; aucune clé d'API n'intervient nulle part dans cette chaîne.",
+  "dits_etapes": {
+    "1": "<div class=\"att\"><b>Le résultat, et il est négatif.</b> Sur 171 décisions en avant — dix-neuf tranches fois neuf paires — retenir la combinaison qui a le mieux rendu sur les trois tranches précédentes rapporte <b>−3,32 %</b> par tranche. Le tirage au sort rapporte −2,15 %. Le témoin, c'est-à-dire le réglage du direct qu'on ne rechoisit jamais, rapporte <b>+0,21 %</b>. Choisir coûte donc <b>1,17 point contre le hasard</b> et <b>3,53 points contre ne pas choisir</b>. C'est la troisième fois que ce dépôt mesure cet effet, et la première fois sur vingt-deux tranches.<br><br><b>Choisir par classe de volatilité fait mieux que choisir globalement</b> — +0,64 point avec l'amplitude à cinq minutes, +0,85 avec l'amplitude horaire. Mais à dix mille euros par paire, les mêmes écarts tombent à +0,02 et +0,14. Un effet qui ne se reproduit pas d'un budget à l'autre est du bruit : je ne le retiens pas.</div><div class=\"dit\"><b>La durée, elle, est largement tenable.</b> 401 combinaisons sur 483 ont une durée médiane sous 48 h, et 183 sous 10 h. Mais le compromis est net : les plus rapides ne rapportent rien (+0,00 à +0,17 %), et les plus rentables durent 48 à 200 heures.<br><br><b>En marché baissier</b> — les 87 couples (paire, tranche) où le prix a fini plus bas qu'il n'a commencé — le témoin rend <b>−6,56 %</b> et se classe 232<sup>e</sup> sur 483. D'autres géométries y rendent jusqu'à +1,90 %, et l'une d'elles tient la cible annoncée : <span class=\"mono\">20 barreaux, raison 1,6, profondeur 25 %, objectif 2 %</span> rend <b>+1,34 % avec une médiane de 9,5 h et 98 % de cycles gagnants</b>. Après coup seulement — c'est une piste pour l'étape 3, pas une recommandation.</div><div class=\"att\"><b>Un résultat séduisant, et pourquoi il ne vaut rien.</b> En marché baissier, le classement des 483 réglages tient à <b>+0,97</b> d'une moitié de période à l'autre — une stabilité quasi parfaite, là où le choix global échoue. Le meilleur de la première moitié rend −0,31 % sur la seconde quand la médiane y rend −7,52 % : sept points d'écart. J'allais l'écrire comme le résultat le plus utile de l'étude.<br><br>Vérification faite, ce classement est corrélé à <b>−0,97 avec l'engagement moyen</b> et à −0,96 avec le capital bloqué. Le « meilleur réglage en baisse » engage <b>1,4 % du budget</b> ; la médiane en engage <b>58,2 %</b>. Ce n'est pas un classement par savoir-faire, c'est un classement par <b>exposition</b> : le mieux placé est celui qui n'achète presque pas, et il perd moins parce qu'il risque moins. On obtiendrait le même effet en divisant la mise par vingt. La stabilité de +0,97 s'explique d'elle-même — l'engagement est une propriété mécanique d'une échelle, pas un talent.<br><br><b>La grille n'a pas d'avantage en marché baissier ; elle n'a que de l'exposition.</b> Les deux chiffres sont désormais imprimés ensemble par le lecteur : séparés, le premier se lit comme une bonne nouvelle.</div>",
+    "2": "<div class=\"att\"><b>L'hypothèse centrale est réfutée.</b> Elle disait : exprimée en multiples de la volatilité de chaque paire, la même échelle rendrait les dix monnaies comparables — donc la <b>dispersion entre paires devait se resserrer</b>, passer sous 1,00. Sur les douze variantes, <b>aucune</b> n'y parvient : le rapport va de ×1,08 à ×2,08. Normaliser par la volatilité <i>écarte</i> les paires au lieu de les rapprocher, et coûte en plus du rendement — de −0,29 à −2,60 point en comparaison appariée.<br><br>La question était posée <b>appariée</b> : la même géométrie, la même paire, la même tranche, avec et sans. C'est ce qui rend le refus difficile à contester — il ne compare pas deux balayages de tailles différentes, il compare 23 géométries à elles-mêmes.</div><div class=\"dit\"><b>Un résultat secondaire utile.</b> Mettre l'ÉCHELLE à l'échelle de la volatilité coûte cher (−1,6 à −1,9 point) ; ne normaliser que l'<b>objectif</b> ne coûte que −0,3 point, et c'est un <b>levier de durée puissant</b> : la médiane passe de 84 h à 22 h selon la seule unité de référence. Ce n'est pas un levier de performance, c'est un levier de durée — et la seule condition posée portait justement sur la durée.<br><br>Le choix en avant y perd encore : <b>−1,93 point contre un tirage au sort</b>, sur un lot de combinaisons entièrement différent de celui de l'étape 1. Deuxième confirmation indépendante.</div>",
+    "3": "<div class=\"att\"><b>Les treize mécanismes perdent, tous.</b> Chacun comparé à la même géométrie nue, sur les mêmes paires et les mêmes tranches : de −0,07 point pour la sortie à cent jours — qui ne se déclenche presque jamais — à −1,95 point pour le filtre qui n'achète qu'au-dessus de la moyenne à sept jours. Aucun ne gagne sur plus de 12 % des couples.<br><br><b>Et cette fois ce n'est pas un artefact d'exposition.</b> La corrélation entre l'écart de rendement et l'écart d'engagement n'est que de <b>+0,53</b>, et pour les mécanismes les moins mauvais l'engagement ne bouge pas du tout (+0,0 à +0,1 point) pendant que le rendement chute. Ils ne réduisent pas le risque : ils achètent au même niveau, plus tard, à un moins bon prix.</div><div class=\"dit\"><b>Trois régularités, toutes monotones.</b><br>• Plus le déclencheur est exigeant, plus il coûte : (b) 1 % &lt; 2 % &lt; 5 % ; (e) 1 &lt; 2 &lt; 3 hausses ; (c) 1 jour &lt; 7 jours.<br>• Acheter <i>au-dessus</i> de la moyenne coûte trois fois plus qu'acheter <i>sous</i> (−1,95 contre −0,57 point). L'instinct de la grille — acheter les creux — est le bon, et le filtrer coûte cher.<br>• Le ré-ancrage à la baisse est le seul mécanisme à transformer la stratégie : durée médiane de <b>1,0 h</b> et dispersion ×0,39. Mais il abandonne 6,5 points d'engagement, et il perd quand même.</div>",
+    "4": "<div class=\"dit\"><b>Le rendement vrai est encadré, pas corrigé.</b> Le rejeu sans plafond sert l'ordre entier dans une bougie de cinq minutes : il <b>majore</b>. Le rejeu qui refuse tout ordre dépassant une part du volume échangé refuse en entier ce qui aurait été servi en partie : il <b>minore</b>. Le vrai est entre les deux.<br><br>Le coût de l'hypothèse d'exécution vaut <b>1 à 2 points par tranche de quarante jours</b>, et il croît régulièrement à mesure que l'hypothèse se durcit : −1,05 / −1,27 / −1,56 point à 1 000 € pour 20 %, 10 % et 5 % de participation ; −1,62 / −1,79 / −1,98 à 10 000 €.<br><br><b>Les trois hypothèses disent la même chose</b>, ce qui était la question posée : le choix du taux de participation ne décide de rien. S'il avait fallu le choisir pour obtenir la conclusion, il aurait fallu le dire ; ce n'est pas le cas.</div>"
+  }
+}

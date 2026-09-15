@@ -43,12 +43,23 @@ def main() -> int:
     ap.add_argument("--tf", default="1h", choices=sorted(PAS))
     ap.add_argument("--paires", default=None, help="par defaut, le panier de liquidite")
     ap.add_argument("--verifier", action="store_true")
+    ap.add_argument("--fenetre", default="docs/simulations.json",
+                    help="fichier dont la fenetre est heritee")
     args = ap.parse_args()
 
-    #  La fenetre est celle que la page annonce, heritee et jamais recalculee.
-    meta = json.loads((RACINE / "docs/simulations.json").read_text(encoding="utf-8"))["meta"]
-    t0, heures = int(meta["t0"]), int(meta["heures"])
-    fin = t0 + heures * 3_600_000
+    #  La fenetre est HERITEE et jamais recalculee. Deux formes sont acceptees,
+    #  parce que deux etudes de ce depot decrivent la meme chose autrement :
+    #  la page des simulations compte en HEURES, les balayages comptent en
+    #  TRANCHES DE JOURS. Les lire toutes les deux evite de recopier une date a
+    #  la main, ce qui est la seule facon sure de se tromper de fenetre.
+    src = json.loads((RACINE / args.fenetre).read_text(encoding="utf-8"))
+    meta = src.get("meta", src)
+    t0 = int(meta["t0"])
+    if "heures" in meta:
+        fin = t0 + int(meta["heures"]) * 3_600_000
+    else:
+        fin = t0 + int(meta["n_blocs"]) * int(meta["bloc_jours"]) * 86_400_000
+    heures = (fin - t0) // 3_600_000
     attendu = (fin - t0) // PAS[args.tf]
 
     if args.paires:
