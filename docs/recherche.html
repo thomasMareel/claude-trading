@@ -43,7 +43,13 @@ header.tete .chapo{max-width:64ch; color:var(--ink-2); font-size:var(--t-chapo);
   box-shadow:var(--ombre); padding:18px 20px; margin:20px 0}
 .carte .titre{font-family:var(--f-mono); font-size:.66rem; letter-spacing:.14em;
   text-transform:uppercase; color:var(--ink-3); margin:0 0 14px}
-.dit{border-left:2px solid var(--achat); padding:2px 0 2px 14px; margin:18px 0;
+/*  .glose ET NON .dit : gabarit.css definit deja .dit, et ce n'est pas un bloc de
+    commentaire — c'est une INFOBULLE FLOTTANTE, position:fixed en bas de l'ecran,
+    fond inverse et animation qui la fait disparaitre en 1,4 s. Mes six blocs de
+    commentaire, dont les plus importants de la page, s'empilaient donc au bas de
+    la fenetre en clair sur fond sombre, puis s'effacaient. Une page qui reutilise
+    un nom du systeme partage en herite de TOUT ce qu'elle ne neutralise pas.  */
+.glose{border-left:2px solid var(--achat); padding:2px 0 2px 14px; margin:18px 0;
   color:var(--ink-2); max-width:64ch}
 
 /*  Les tableaux larges défilent DANS leur boîte : le corps de page ne part
@@ -59,8 +65,6 @@ th:first-child,td:first-child{text-align:left}
 td.n{font-family:var(--f-mono); font-variant-numeric:tabular-nums}
 tbody tr:hover{background:var(--surface-survol)}
 tr.faible td{color:var(--ink-3)}
-.puce{display:inline-block; width:7px; height:7px; border-radius:50%;
-  margin-right:7px; vertical-align:baseline}
 
 /*  La figure de l'exécutabilité : une échelle LOGARITHMIQUE, parce que les
     volumes vont de cinquante mille à quatorze millions d'euros par jour et
@@ -340,7 +344,7 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
       + '<span><i style="background:var(--baisse)"></i>barreau du bas hors de portée</span>';
 
     //  Le verdict, formulé comme le script le formule : au seuil de 5 %.
-    const v = el("div", { class: "dit" }, null);
+    const v = el("div", { class: "glose" }, null);
     const lignes = budgets.map(b => {
       const ok = paires.filter(s => bas[b] <= servable(x.paires[s]));
       const ko = paires.filter(s => bas[b] > servable(x.paires[s]));
@@ -375,9 +379,12 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
     for (const s of paires) {
       const d = D.marche[s];
       const r = el("tr", d.partielle ? { class: "faible" } : {}, tb);
+      //  Pas de pastille de couleur : elle n'encodait rien que le nom ne dise
+      //  deja, et elle empruntait --o1..--o3 qui sont des couches d'OMBRE
+      //  (rgba(20,29,28,.07)), pas des couleurs. Un signe qui ne porte aucune
+      //  information n'a pas sa place dans un tableau de sept colonnes.
       const c0 = el("td", {}, r);
-      c0.innerHTML = '<span class="puce" style="background:var(--o'
-        + (1 + paires.indexOf(s) % 3) + ')"></span>' + court(s)
+      c0.innerHTML = court(s)
         + (d.partielle ? ' <span class="etiq">partielle</span>' : "");
       el("td", { class: "n", t: d.tranches + " / " + D.n_blocs }, r);
       el("td", { class: "n", t: (d.moy5 * 100).toFixed(4) + " %" }, r);
@@ -387,7 +394,7 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
       el("td", { class: "n", t: d.baissieres + " / " + d.tranches }, r);
     }
     const s = D.stabilite || {};
-    const box = el("div", { class: "dit" }, null);
+    const box = el("div", { class: "glose" }, null);
     box.innerHTML = "Le classement des paires par volatilité tient d'une tranche à la "
       + "suivante à <b class=\"mono\">" + (s.moy5 ? s.moy5.moyenne.toFixed(2) : "?")
       + "</b> (moyenne à cinq minutes) et <b class=\"mono\">"
@@ -555,10 +562,18 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
     S("line", { x1: X(48), x2: X(48), y1: MT, y2: H - MB, stroke: "var(--achat)",
       "stroke-width": 1.5, "stroke-dasharray": "4 3" });
     S("text", { x: X(48) + 5, y: MT + 11, fill: "var(--achat)" }).textContent = "48 h";
+    //  LE NOMBRE DE BARREAUX EST UNE GRANDEUR ORDONNEE, pas une categorie : il
+    //  appelle une rampe d'UNE SEULE teinte, du clair au fonce, et non trois
+    //  couleurs distinctes. La version precedente empruntait --o1..--o3, qui
+    //  sont les trois couches de l'ombre portee : des noirs a 7, 10 et 22 % —
+    //  invisibles sur fond clair, et indiscernables entre eux.
+    const pmin = Math.min(...b.nuage.map(p => p[3]));
     const pmax = Math.max(...b.nuage.map(p => p[3]));
+    const teinte = (n) => "color-mix(in oklab, var(--achat) "
+      + Math.round(26 + 64 * (n - pmin) / (pmax - pmin || 1)) + "%, var(--surface-2))";
     for (const p of b.nuage) {
       const c = S("circle", { cx: X(p[1]).toFixed(1), cy: Y(p[2]).toFixed(1),
-        r: 3.2, fill: "var(--o" + (1 + Math.floor(p[3] / pmax * 2.99)) + ")",
+        r: 3.2, fill: teinte(p[3]),
         opacity: p[1] < 48 ? 0.92 : 0.34 });
       const t = document.createElementNS(NS, "title");
       t.textContent = p[3] + " paliers, r=" + p[4] + ", objectif " + pct(p[5], 1)
@@ -569,8 +584,8 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
     const sous48 = b.nuage.filter(p => p[1] < 48);
     const gagnantes = sous48.filter(p => p[2] > 0);
     el("p", { class: "legende", html:
-      '<span><i style="background:var(--o1)"></i>peu de paliers</span>'
-      + '<span><i style="background:var(--o3)"></i>beaucoup de paliers</span>'
+      '<span><i style="background:' + teinte(pmin) + '"></i>' + pmin + ' barreaux</span>'
+      + '<span><i style="background:' + teinte(pmax) + '"></i>' + pmax + ' barreaux</span>'
       + '<span>les points pâles dépassent 48 h</span>' }, carte);
     el("p", { style: "font-size:.82rem;color:var(--ink-2);margin:.6em 0 0", t:
       sous48.length + " combinaisons sur " + b.nuage.length
@@ -623,7 +638,7 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
           + ((par[k] - par.choix) * 100).toFixed(2) + " point</b>.");
       }
     }
-    if (dits.length) el("p", { class: "dit", html: dits.join("<br>")
+    if (dits.length) el("p", { class: "glose", html: dits.join("<br>")
       + "<br><span class=\"g\">Ce sont ces écarts qui sont le résultat. Le reste n'est "
       + "que description.</span>" }, carte);
   }
@@ -647,7 +662,7 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
 
     if (x.stabilite) {
       const st = x.stabilite;
-      el("p", { class: "dit", html:
+      el("p", { class: "glose", html:
         "Le classement des " + (b.nuage ? b.nuage.length : "") + " réglages tient à "
         + "<b class=\"mono h\">" + st.correlation.toFixed(2) + "</b> d'une moitié de "
         + "période à l'autre. Le meilleur de la première rend <b class=\"mono "
@@ -657,7 +672,7 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
     }
     if (x.exposition) {
       const ex = x.exposition;
-      el("p", { class: "dit", style: "border-left-color:var(--baisse)", html:
+      el("p", { class: "glose", style: "border-left-color:var(--baisse)", html:
         "<b>Et voici pourquoi ce chiffre ne vaut pas ce qu'il semble valoir.</b> Ce "
         + "classement est corrélé à <b class=\"mono b\">" + ex.corr_engagement.toFixed(2)
         + "</b> avec l'engagement moyen et à <b class=\"mono b\">"
@@ -912,7 +927,7 @@ pour tout revoir. Les réglages d'affichage sont dans l'engrenage de la barre du
     }
     const mieux = ap.variantes.filter(v => v.dispersion != null && v.dispersion < 1).length;
     const n = ap.variantes.filter(v => v.dispersion != null).length;
-    el("p", { class: "dit", html:
+    el("p", { class: "glose", html:
       "<b>« Écart apparié »</b> : la même géométrie, la même paire, la même tranche, "
       + "avec et sans la variante. C'est une différence, jamais deux moyennes mises côte "
       + "à côte.<br><b>« Dispersion »</b> : l'écart-type des rendements d'une paire à "
